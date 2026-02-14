@@ -1,4 +1,3 @@
-// vite.config.ts
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
@@ -23,7 +22,7 @@ export default defineConfig({
         description: "High performance fitness logging",
         display: "standalone",
         orientation: "portrait",
-        theme_color: "#ff0000", // Fits battery saver / dark theme goals
+        theme_color: "#ff0000",
         scope: "/fitnex/",
         start_url: "/fitnex/",
         icons: [
@@ -46,7 +45,7 @@ export default defineConfig({
             src: "pwa-512x512.png",
             sizes: "512x512",
             type: "image/png",
-            purpose: "any maskable", // This allows the icon to fill the circle on Android
+            purpose: "any maskable",
           },
           {
             src: "apple-touch-icon.png",

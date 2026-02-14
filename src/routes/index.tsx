@@ -8,7 +8,7 @@ export const AppRoutes = () => {
   return (
     <div className="page-container">
       <Routes location={location} key={location.pathname}>
-        <Route path="/fitnex/dashboard" element={<Dashboard />} />
+        <Route path="/dashboard" element={<Dashboard />} />
         <Route path="*" element={<LoginPage />} />
       </Routes>
     </div>

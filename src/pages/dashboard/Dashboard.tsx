@@ -1,11 +1,10 @@
 export const Dashboard = () => {
   return (
-    <div className="relative min-h-screen bg-black text-white">
-      {/* MAIN CONTENT */}
-      <main className="px-6 pt-[env(safe-area-inset-top)] pb-24 space-y-4">
+    <div className="flex flex-col min-h-full bg-black text-white safe-ios-top">
+      {/* SCROLL AREA */}
+      <div className="flex-1 overflow-y-auto samsung-scroll px-6 pt-4 pb-16 space-y-4">
         <h1 className="text-2xl font-black">Dashboard</h1>
 
-        {/* Fake content to prove scrolling */}
         {[...Array(30)].map((_, i) => (
           <div
             key={i}
@@ -14,10 +13,10 @@ export const Dashboard = () => {
             Item {i + 1}
           </div>
         ))}
-      </main>
+      </div>
 
-      {/* BOTTOM NAV */}
-      <div className="fixed bottom-0 left-0 right-0 h-20 bg-black border-t border-white/10 flex items-center justify-around">
+      {/* BOTTOM NAV — STICKY */}
+      <div className="sticky bottom-0 h-20 bg-black border-t border-white/10 flex items-center justify-around">
         <button className="font-bold">Home</button>
         <button className="font-bold">Stats</button>
         <button className="font-bold">Profile</button>

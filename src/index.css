@@ -6,18 +6,9 @@
   --color-brand: #ff7f50;
 }
 
-/* Hide scrollbars everywhere (Chrome, Safari, Firefox, Edge) */
-
-* {
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE / Edge legacy */
-}
-
-*::-webkit-scrollbar {
-  display: none; /* WebKit */
-}
-
+/* ============================================= */
 /* RESET */
+/* ============================================= */
 
 *,
 *::before,
@@ -25,60 +16,94 @@
   box-sizing: border-box;
 }
 
-:root {
-  --safe-top: env(safe-area-inset-top);
+/* Hide scrollbars globally */
+
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
-html {
-  background: #000;
+*::-webkit-scrollbar {
+  display: none;
 }
+
+/* ============================================= */
+/* ROOT */
+/* ============================================= */
+
 html,
 body {
-  overscroll-behavior: none;
-}
-
-body {
-  overscroll-behavior-y: contain;
-}
-
-body {
   margin: 0;
-  padding: 0;
-  min-height: 100vh;
+  height: 100%;
+  background: #000;
+}
+
+body {
   font-family: var(--font-sans);
   color: white;
+  overflow-x: hidden;
+  overscroll-behavior-y: contain;
   -webkit-tap-highlight-color: transparent;
   -webkit-touch-callout: none;
-  overflow-x: hidden;
   touch-action: pan-y;
 }
 
+/* ============================================= */
 /* APP ROOT */
+/* ============================================= */
 
 .app-root {
-  min-height: 100vh;
+  min-height: 100%;
   display: flex;
   flex-direction: column;
 }
 
-/* SCROLL AREA */
+/* ============================================= */
+/* PAGE TRANSITION */
+/* ============================================= */
 
-.mobile-scroll-container {
-  flex: 1;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+.page-container {
+  min-height: 100%;
+  animation: page-enter 200ms ease-out;
 }
 
-/* Hide scrollbar */
-.mobile-scroll-container::-webkit-scrollbar {
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ============================================= */
+/* SAFE TOP (mobile only) */
+/* ============================================= */
+
+@media (pointer: coarse) {
+  .safe-ios-top {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* ============================================= */
+/* HIDE SCROLLBAR CLASS */
+/* ============================================= */
+
+.no-scrollbar::-webkit-scrollbar {
   display: none;
 }
 
-.mobile-scroll-container {
+.no-scrollbar {
   scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
-/* Remove iOS styling from date inputs */
+/* ============================================= */
+/* INPUT FIX */
+/* ============================================= */
 
 input[type="date"] {
   display: block;
@@ -94,3 +119,56 @@ input[type="date"]::-webkit-date-and-time-value {
   text-align: left;
   margin: 0;
 }
+
+/* ============================================= */
+/* REDUCED MOTION */
+/* ============================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ============================================= */
+/* Samsung Internet scrollbar killer */
+/* ============================================= */
+
+.samsung-scroll {
+  -webkit-overflow-scrolling: touch;
+}
+
+.samsung-scroll::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+}
+
+.samsung-scroll {
+  scrollbar-width: none !important;
+}
+
+/* ============================================= */
+/* Login animation */
+/* ============================================= */
+
+.animate-login {
+  animation: loginFade 350ms ease-out;
+}
+
+@keyframes loginFade {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+/* Kill iOS rubber bounce on scroll containers */
+
+/* Final iOS elastic scroll killer */
