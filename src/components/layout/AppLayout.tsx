@@ -1,39 +1,66 @@
+import { useLayoutEffect, useRef } from "react";
+import { Outlet, useLocation } from "react-router-dom";
 import { UIProvider, useUI } from "../../context/UIContext";
 import { BottomNav } from "../nav/BottomNav";
 import { Sidebar } from "../nav/Sidebar";
 
-const LayoutContent = ({ children }: { children: React.ReactNode }) => {
+const NAV_HEIGHT = 80;
+
+const LayoutContent = () => {
   const { isSidebarOpen, closeSidebar } = useUI();
+  const location = useLocation();
+
+  // DIRECT REF TO SCROLL CONTAINER
+  const scrollRef = useRef<HTMLElement | null>(null);
+
+  // HARD RESET SCROLL ON ROUTE CHANGE
+  useLayoutEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = 0;
+    }
+
+    // ALSO reset window just in case Samsung/iOS uses it
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
 
   return (
-    <div className="flex h-screen text-white overflow-hidden">
-      {/* Sidebar: Persistent on Web (lg:block), Drawer on Mobile */}
-      <div className="hidden lg:block w-72 h-full border-r border-slate-900">
-        <Sidebar isOpen={true} onClose={() => {}} isStatic={true} />
-      </div>
-
-      {/* Mobile Drawer */}
-      <div className="lg:hidden">
-        <Sidebar isOpen={isSidebarOpen} onClose={closeSidebar} />
-      </div>
-
-      <div className="flex-1 flex flex-col relative h-full overflow-hidden">
-        {/* MAIN SCROLL AREA */}
-        <main className="flex-1 overflow-y-auto no-scrollbar pb-32 pt-4">
-          <div className="max-w-4xl mx-auto w-full">{children}</div>
-        </main>
-
-        {/* Bottom Nav: Only visible on Mobile */}
-        <div className="lg:hidden">
-          <BottomNav />
+    <div className="relative h-full text-white overflow-hidden">
+      <div className="flex h-full">
+        {/* Desktop Sidebar */}
+        <div className="hidden lg:block w-72 h-full border-r border-slate-900">
+          <Sidebar isOpen={true} onClose={() => {}} isStatic />
         </div>
+
+        {/* Mobile Drawer */}
+        <div className="lg:hidden">
+          <Sidebar isOpen={isSidebarOpen} onClose={closeSidebar} />
+        </div>
+
+        {/* MAIN SCROLL AREA */}
+        <main
+          ref={scrollRef}
+          className="flex-1 overflow-y-auto samsung-scroll pt-4"
+          style={{ paddingBottom: NAV_HEIGHT + 8 }}
+        >
+          <div className="max-w-4xl mx-auto w-full px-6">
+            <Outlet />
+          </div>
+        </main>
+      </div>
+
+      {/* FLOATING BOTTOM NAV */}
+      <div
+        className="fixed bottom-0 left-0 right-0 z-50 lg:hidden"
+        style={{ height: NAV_HEIGHT }}
+      >
+        <BottomNav />
       </div>
     </div>
   );
 };
 
-export const AppLayout = ({ children }: { children: React.ReactNode }) => (
+export const AppLayout = () => (
   <UIProvider>
-    <LayoutContent>{children}</LayoutContent>
+    <LayoutContent />
   </UIProvider>
 );

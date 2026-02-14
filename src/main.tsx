@@ -4,6 +4,7 @@ import App from "./App";
 import "./index.css";
 import { BrowserRouter } from "react-router-dom";
 import { registerSW } from "virtual:pwa-register";
+import { AuthProvider } from "./context/AuthContext";
 
 /**
  * Fix iOS full-height + home-indicator gap
@@ -24,12 +25,17 @@ window.addEventListener("orientationchange", setAppHeight);
 // Auto update PWA
 registerSW({
   immediate: true,
+  onNeedRefresh() {
+    window.location.reload();
+  },
 });
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <BrowserRouter basename="/fitnex">
-      <App />
+      <AuthProvider>
+        <App />
+      </AuthProvider>
     </BrowserRouter>
   </React.StrictMode>,
 );

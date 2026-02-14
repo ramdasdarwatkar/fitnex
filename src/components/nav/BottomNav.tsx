@@ -14,38 +14,37 @@ export const BottomNav = () => {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-[100]">
-      {/* Solid color background (#0b1221)
-        Height 72px (h-[72px]) ensures icons sit above the home indicator.
-        No pb-safe or safe-area padding here.
-      */}
-      <div className="bg-[#0b1221] border-t border-white/5 h-[72px] w-full">
-        <div className="flex justify-around items-center h-full max-w-md mx-auto px-2">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 px-3 pb-3 pointer-events-none">
+      <div className="max-w-md mx-auto pointer-events-auto">
+        <div className="flex justify-between items-center px-2 h-14 bg-slate-900/60 backdrop-blur-xl border border-white/5 rounded-[1.5rem] shadow-2xl">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path;
-            const Icon = item.icon;
 
             return (
               <button
                 key={item.path}
                 onClick={() => navigate(item.path)}
-                className="flex flex-col items-center justify-center flex-1 h-full pt-1 transition-all active:scale-95"
+                className="flex flex-col items-center justify-center flex-1 transition-all active:scale-95"
               >
-                <div className={isActive ? "text-[#ff7f50]" : "text-slate-500"}>
-                  <Icon size={22} strokeWidth={isActive ? 2.5 : 2} />
+                <div
+                  className={`relative p-1 transition-all duration-200 ${
+                    isActive ? "text-brand scale-110" : "text-slate-500"
+                  }`}
+                >
+                  <item.icon size={18} strokeWidth={isActive ? 2.5 : 2} />
+
+                  {isActive && (
+                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-brand rounded-full shadow-[0_0_8px_#0ea5e9]" />
+                  )}
                 </div>
 
                 <span
-                  className={`text-[9px] font-bold uppercase mt-1 ${
-                    isActive ? "text-[#ff7f50]" : "text-slate-600"
+                  className={`text-[7px] font-black uppercase tracking-tighter mt-0.5 ${
+                    isActive ? "text-brand" : "text-slate-600"
                   }`}
                 >
                   {item.label}
                 </span>
-
-                {isActive && (
-                  <div className="w-1 h-1 bg-[#ff7f50] rounded-full mt-1 shadow-[0_0_8px_#ff7f50]" />
-                )}
               </button>
             );
           })}
