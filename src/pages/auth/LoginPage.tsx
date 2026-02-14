@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { supabase } from "./lib/supabase";
-import { Input } from "./components/ui/Input";
+import { supabase } from "../../lib/supabase";
+import { Input } from "../../components/ui/Input";
 
 export const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -22,12 +22,15 @@ export const LoginPage = () => {
       setError(error.message);
       setLoading(false);
     }
+    if (!error) {
+      window.location.href = "/fitnex/dashboard";
+    }
   };
 
   return (
     /* 1. Changed bg-black to bg-transparent to see the AppBackground glow */
     /* 2. Changed h-full to flex-1 (or min-h-screen) for perfect vertical centering */
-    <div className="flex flex-col justify-center min-h-screen px-8 bg-transparent">
+    <div className="flex flex-col justify-center min-h-screen px-8 pt-[env(safe-area-inset-top)] bg-transparent">
       <div className="mb-10 text-center animate-in fade-in slide-in-from-bottom-4 duration-700">
         <div className="w-20 h-20 bg-brand rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg shadow-brand/20">
           <span className="text-3xl font-black italic text-white">TF</span>
@@ -68,48 +71,6 @@ export const LoginPage = () => {
         >
           {loading ? "Authenticating..." : "Sign In"}
         </button>
-        <br />
-        <br />
-        <br />
-        <br />
-        1
-        <br />
-        1.11
-        <br />
-        1.21
-        <br />
-        1.31
-        <br />
-        1.41
-        <br />
-        2
-        <br />
-        2.11
-        <br />
-        2.21
-        <br />
-        2.31
-        <br />
-        2.41
-        <br />3
-        <br />
-        3.11
-        <br />
-        3.21
-        <br />
-        3.31
-        <br />
-        3.41
-        <br />4
-        <br />
-        4.11
-        <br />
-        4.21
-        <br />
-        4.31
-        <br />
-        4.41
-        <br />5
       </form>
     </div>
   );

@@ -25,12 +25,20 @@
   box-sizing: border-box;
 }
 
+:root {
+  --safe-top: env(safe-area-inset-top);
+}
+
 html {
-  background: #01030fd3;
+  background: #000;
 }
 html,
 body {
-  overscroll-behavior-x: none;
+  overscroll-behavior: none;
+}
+
+body {
+  overscroll-behavior-y: contain;
 }
 
 body {
