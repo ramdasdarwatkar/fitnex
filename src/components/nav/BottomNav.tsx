@@ -21,11 +21,9 @@ export const BottomNav = () => {
 
   return (
     <nav className="pointer-events-none w-full h-full flex items-end justify-center pb-2">
-      {/* Rounded pill container */}
-      <div className="pointer-events-auto relative w-[90%] max-w-sm bg-slate-900/80 backdrop-blur-sm border border-white/5 rounded-full shadow-md px-3 py-2">
-        {/* Sliding active tile */}
+      <div className="pointer-events-auto relative w-[90%] max-w-sm bg-[var(--bg-surface)] backdrop-blur-sm border border-[var(--border-color)] rounded-full shadow-md px-3 py-2">
         <div
-          className="absolute top-2 left-3 h-10 w-[calc((100%-24px)/5)] bg-brand rounded-full transition-transform duration-300 ease-out"
+          className="absolute top-2 left-3 h-10 w-[calc((100%-24px)/5)] bg-[var(--brand-primary)] rounded-full transition-transform duration-300 ease-out"
           style={{
             transform: `translateX(${activeIndex * 100}%)`,
           }}
@@ -41,19 +39,19 @@ export const BottomNav = () => {
                 onClick={() => navigate(item.path)}
                 className="flex flex-col items-center justify-center flex-1 active:scale-95 transition"
               >
-                {/* Icon */}
                 <div
                   className={`w-10 h-10 flex items-center justify-center rounded-full ${
-                    isActive ? "text-white" : "text-slate-400"
+                    isActive ? "text-white" : "text-[var(--text-muted)]"
                   }`}
                 >
                   <item.icon size={20} strokeWidth={2} />
                 </div>
 
-                {/* Label */}
                 <span
                   className={`text-[10px] font-extrabold uppercase tracking-wide mt-1 ${
-                    isActive ? "text-brand" : "text-slate-500"
+                    isActive
+                      ? "text-[var(--brand-primary)]"
+                      : "text-[var(--text-muted)] opacity-60"
                   }`}
                 >
                   {item.label}

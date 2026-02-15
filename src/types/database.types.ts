@@ -196,16 +196,36 @@ export interface WorkoutLog {
   updated_at: string | null;
 }
 
-export interface AthleteProgress {
+export interface AthleteSummary {
   user_id: string;
-  current_level: string;
-  level_points: number;
-  level_start: number;
+  name: string;
+
+  gender: "male" | "female" | "other";
+  role: "admin" | "user";
+  birthdate: string;
+  target_days_per_week: number;
+  target_weight: number;
+
+  current_weight: number;
+  height: number;
+
+  bmi: number | null;
+  body_fat_percent: number | null;
+
+  current_level: string | null;
+  level_points: number | null;
+
+  level_start: number | null;
   level_end: number | null;
-  level_completion_percent: number;
-  points_remaining: number;
-  avg_weekly_gain: number;
-  estimated_weeks_to_next_level: number | null;
+  level_completion_percent: number | null;
+  points_remaining: number | null;
+
+  weight_lost: number | null;
+  goal_completion_percent: number | null;
+  estimated_goal_date: string | null;
+
+  // 🆕 NEW
+  projected_next_level_date: string | null;
 }
 
 /* =========================
@@ -301,6 +321,14 @@ export interface Database {
         Row: WorkoutLog;
         Insert: WorkoutLog;
         Update: Partial<WorkoutLog>;
+      };
+    };
+    Views: {
+      v_user_dashboard: {
+        Row: AthleteSummary;
+      };
+      v_latest_body_metrics: {
+        Row: BodyMetrics;
       };
     };
   };

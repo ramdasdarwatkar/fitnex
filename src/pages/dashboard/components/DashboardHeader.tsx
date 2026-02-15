@@ -1,16 +1,12 @@
 import { Trophy, Calendar, Sparkles } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 import { useUI } from "../../../context/UIContext";
-import { useEffect, useState } from "react";
-import { db } from "../../../db/database";
-import type { AthleteProgress } from "../../../types/database.types";
 
 export const DashboardHeader = () => {
-  const { profile, user_id } = useAuth();
+  const { athlete } = useAuth();
   const { openSidebar } = useUI();
-  const [progress, setProgress] = useState<AthleteProgress | null>(null);
 
-  // Time-aware interactive greetings to make the app feel "aware"
+  // Time-aware greeting
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return "Good morning,";
@@ -18,20 +14,10 @@ export const DashboardHeader = () => {
     return "Good evening,";
   };
 
-  useEffect(() => {
-    const loadProgress = async () => {
-      if (user_id) {
-        const data = await db.athlete_progress.get(user_id);
-        if (data) setProgress(data);
-      }
-    };
-    loadProgress();
-  }, [user_id]);
-
-  // Format name to Title Case (e.g., "John" instead of "JOHN")
-  const displayName = profile?.name
-    ? profile.name.split(" ")[0].charAt(0).toUpperCase() +
-      profile.name.split(" ")[0].slice(1).toLowerCase()
+  // Format name (e.g., "John" from "JOHN DOE")
+  const displayName = athlete?.name
+    ? athlete.name.split(" ")[0].charAt(0).toUpperCase() +
+      athlete.name.split(" ")[0].slice(1).toLowerCase()
     : "Athlete";
 
   return (
@@ -39,7 +25,7 @@ export const DashboardHeader = () => {
       {/* Top Row: Greeting & Calendar */}
       <div className="flex justify-between items-start">
         <div className="space-y-0.5">
-          <p className="flex items-center gap-1.5 text-brand font-black italic text-[11px] uppercase tracking-widest animate-pulse">
+          <p className="flex items-center gap-1.5 text-brand font-black italic text-[11px] uppercase tracking-widest">
             <Sparkles size={12} strokeWidth={3} />
             {getGreeting()}
           </p>
@@ -53,7 +39,7 @@ export const DashboardHeader = () => {
         </button>
       </div>
 
-      {/* Athlete Profile Card - Kept exactly as your original */}
+      {/* Athlete Profile Card */}
       <button
         onClick={openSidebar}
         className="w-full bg-gradient-to-br from-slate-900/80 to-slate-950 border border-slate-800 p-5 rounded-[2.5rem] text-left transition-all active:scale-[0.98]"
@@ -68,7 +54,7 @@ export const DashboardHeader = () => {
                 Athlete Rank
               </p>
               <p className="text-lg font-black text-white uppercase italic">
-                {progress?.current_level || "Novice"}
+                {athlete?.current_level || "Novice"}
               </p>
             </div>
           </div>
@@ -77,7 +63,7 @@ export const DashboardHeader = () => {
               Points
             </p>
             <p className="text-lg font-black text-brand italic">
-              {progress?.level_points || 0}
+              {athlete?.level_points || 0}
             </p>
           </div>
         </div>
@@ -87,13 +73,13 @@ export const DashboardHeader = () => {
           <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-tighter">
             <span className="text-slate-400">Progress to next rank</span>
             <span className="text-brand">
-              {progress?.level_completion_percent || 0}%
+              {athlete?.level_completion_percent || 0}%
             </span>
           </div>
           <div className="h-2 w-full bg-black rounded-full overflow-hidden">
             <div
-              className="h-full bg-brand transition-all duration-1000 shadow-[0_0_12px_#0ea5e9]"
-              style={{ width: `${progress?.level_completion_percent || 0}%` }}
+              className="h-full bg-brand transition-all duration-1000 shadow-[0_0_12px_var(--brand-primary)]"
+              style={{ width: `${athlete?.level_completion_percent || 0}%` }}
             />
           </div>
         </div>

@@ -5,6 +5,8 @@ import "./index.css";
 import { BrowserRouter } from "react-router-dom";
 import { registerSW } from "virtual:pwa-register";
 import { AuthProvider } from "./context/AuthContext";
+import { ThemeProvider } from "./context/ThemeContext";
+import { WorkoutProvider } from "./context/WorkoutContext";
 
 /**
  * iOS real viewport height fix
@@ -46,7 +48,11 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <BrowserRouter basename="/fitnex">
       <AuthProvider>
-        <App />
+        <ThemeProvider>
+          <WorkoutProvider>
+            <App />
+          </WorkoutProvider>
+        </ThemeProvider>
       </AuthProvider>
     </BrowserRouter>
   </React.StrictMode>,

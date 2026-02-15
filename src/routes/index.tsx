@@ -15,34 +15,54 @@ import { ProfileLevel } from "../pages/profile/ProfileLevel";
 import { ProfileTheme } from "../pages/profile/ProfileTheme";
 
 export const AppRoutes = () => {
-  const { user_id, profile, loading } = useAuth();
+  const { user_id, athlete, loading } = useAuth();
 
-  if (loading) return null;
+  // 1. FULL SCREEN BARRIER
+  // Prevents "Route Flashing" while initializing
+  if (loading) {
+    return (
+      <div className="h-screen w-full bg-[var(--bg-main)] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-[var(--brand-primary)] border-t-transparent rounded-full animate-spin" />
+          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)] animate-pulse">
+            Establishing Link...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <Routes>
-      {/* NOT LOGGED IN */}
-      {!user_id && <Route path="*" element={<LoginPage />} />}
+      {/* CASE 1: NOT LOGGED IN */}
+      {!user_id && (
+        <>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </>
+      )}
 
-      {/* ONBOARDING */}
-      {user_id && !profile && <Route path="*" element={<OnboardingPage />} />}
+      {/* CASE 2: LOGGED IN BUT NEEDS ONBOARDING */}
+      {user_id && !athlete && (
+        <>
+          <Route path="/onboarding" element={<OnboardingPage />} />
+          <Route path="*" element={<Navigate to="/onboarding" replace />} />
+        </>
+      )}
 
-      {/* AUTHENTICATED */}
-      {user_id && profile && (
+      {/* CASE 3: AUTHENTICATED & READY */}
+      {user_id && athlete && (
         <Route element={<CacheDataLoader />}>
-          {/* MAIN APP (HAS BOTTOM NAV) */}
           <Route element={<AppLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/profile" element={<ProfileHome />} />
           </Route>
 
-          {/* PROFILE SUB PAGES (NO BOTTOM NAV) */}
           <Route path="/profile/details" element={<ProfileDetails />} />
           <Route path="/profile/metrics" element={<ProfileMetrics />} />
           <Route path="/profile/level" element={<ProfileLevel />} />
           <Route path="/profile/theme" element={<ProfileTheme />} />
 
-          {/* FALLBACK */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>
       )}

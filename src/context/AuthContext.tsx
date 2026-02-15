@@ -1,15 +1,16 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { db } from "../db/database";
-import type { UserProfile } from "../types/database.types";
+import { AthleteService } from "../services/AthleteService";
+import type { AthleteSummary } from "../types/database.types";
 
 interface AuthContextType {
   user_id: string | null;
-  profile: UserProfile | null;
+  athlete: AthleteSummary | null;
   loading: boolean;
-  signOut: () => Promise<void>;
-  setProfile: (profile: UserProfile | null) => void;
-  refreshProfile: () => Promise<void>;
+  error: string | null;
+  signOut: () => Promise<{ success: boolean; message?: string }>;
+  refreshAthlete: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -18,34 +19,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [user_id, setUserId] = useState<string | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [athlete, setAthlete] = useState<AthleteSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const runDataLoader = async (uid: string) => {
-    // Only trigger global loading if we have no profile in memory
-    if (!profile) setLoading(true);
-
+  const fetchAthleteData = async (uid: string, forceRefresh = false) => {
+    setError(null);
+    setLoading(true); // Barrier ON
     try {
-      let localProfile = await db.user_profile.get(uid);
-
-      if (!localProfile) {
-        const { data } = await supabase
-          .from("user_profile")
-          .select("*")
-          .eq("user_id", uid)
-          .single();
-
-        if (data) {
-          await db.user_profile.put(data);
-          localProfile = data;
+      if (!forceRefresh) {
+        const localData = await db.athlete_summary.get(uid);
+        if (localData) {
+          setAthlete(localData);
+          setLoading(false); // Barrier OFF (Success Local)
+          return;
         }
       }
-      setProfile(localProfile || null);
-    } catch (err) {
-      console.error("Data Loader Error:", err);
-      setProfile(null);
+
+      const data = await AthleteService.syncSummary(uid);
+      setAthlete(data);
+    } catch (err: any) {
+      console.error("Fitnex Auth Error:", err);
+      setError(err.message || "Failed to sync athlete data");
+      setAthlete(null);
     } finally {
-      setLoading(false);
+      setLoading(false); // Barrier OFF (Final)
     }
   };
 
@@ -55,38 +53,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
         setUserId(session.user.id);
-        await runDataLoader(session.user.id);
+        await fetchAthleteData(session.user.id);
       } else {
         setUserId(null);
-        setProfile(null);
+        setAthlete(null);
         setLoading(false);
       }
     });
 
     return () => subscription.unsubscribe();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const refreshProfile = async () => {
-    if (user_id) await runDataLoader(user_id);
+  const refreshAthlete = async () => {
+    if (user_id) {
+      await fetchAthleteData(user_id, true);
+    }
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    await db.delete();
-    window.location.href = "/fitnex/login";
+    try {
+      const unsynced = await db.workout_logs
+        .where("is_synced")
+        .equals(0)
+        .count();
+      if (unsynced > 0) {
+        return {
+          success: false,
+          message: `Wait! ${unsynced} sets are not synced.`,
+        };
+      }
+      await supabase.auth.signOut();
+      await db.delete();
+      window.location.href = "/fitnex/login";
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, message: err.message };
+    }
   };
 
   return (
     <AuthContext.Provider
-      value={{
-        user_id,
-        profile,
-        loading,
-        signOut,
-        setProfile,
-        refreshProfile,
-      }}
+      value={{ user_id, athlete, loading, error, signOut, refreshAthlete }}
     >
       {children}
     </AuthContext.Provider>

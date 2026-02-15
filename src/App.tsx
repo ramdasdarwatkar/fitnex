@@ -1,9 +1,15 @@
 import { useEffect } from "react";
 import { AppRoutes } from "./routes";
 
+/**
+ * App.tsx - Root Component
+ * Handles global browser behaviors and main route injection.
+ */
 function App() {
   /**
-   * Block horizontal edge swipe (Safari back gesture)
+   * MOBILE UX: Block horizontal edge swipe (Safari/Chrome back gesture)
+   * This prevents the browser from "sliding away" the app when users
+   * swipe near the edges, keeping the experience native-like.
    */
   function useBlockHorizontalSwipe() {
     useEffect(() => {
@@ -19,9 +25,12 @@ function App() {
         const dx = Math.abs(e.touches[0].clientX - startX);
         const dy = Math.abs(e.touches[0].clientY - startY);
 
-        // Horizontal swipe = block everywhere
+        // If horizontal movement is greater than vertical, block it
         if (dx > dy && dx > 10) {
-          e.preventDefault();
+          // Check if swipe is near the edges (0-30px or screenWidth-30px)
+          if (startX < 30 || startX > window.innerWidth - 30) {
+            e.preventDefault();
+          }
         }
       };
 
@@ -35,10 +44,15 @@ function App() {
     }, []);
   }
 
+  // Trigger the swipe block
   useBlockHorizontalSwipe();
 
   return (
-    <div className="app-root">
+    /* Global Wrapper:
+       Using var(--bg-main) here is critical to prevent white "seams" 
+       or flashes during route transitions.
+    */
+    <div className="app-root min-h-screen bg-[var(--bg-main)] text-[var(--text-main)] overflow-x-hidden selection:bg-[var(--brand-primary)] selection:text-[var(--bg-main)]">
       <AppRoutes />
     </div>
   );
