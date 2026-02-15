@@ -3,7 +3,6 @@
   <head>
     <meta charset="UTF-8" />
 
-    <!-- PWA -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta
       name="apple-mobile-web-app-status-bar-style"
@@ -12,7 +11,6 @@
 
     <meta name="theme-color" content="#000000" />
 
-    <!-- IMPORTANT -->
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1, viewport-fit=cover"
@@ -21,8 +19,25 @@
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
 
     <title>fitnex</title>
-    <script type="module" crossorigin src="/fitnex/assets/index-BEo5SBLD.js"></script>
-    <link rel="stylesheet" crossorigin href="/fitnex/assets/index-DQOrRkW0.css">
+
+    <script>
+      (function () {
+        try {
+          const theme = localStorage.getItem("fitnex-theme");
+          const color = localStorage.getItem("fitnex-color");
+          if (theme === "light")
+            document.documentElement.classList.add("light-theme");
+          if (color)
+            document.documentElement.style.setProperty(
+              "--brand-primary",
+              color,
+              "important",
+            );
+        } catch (e) {}
+      })();
+    </script>
+    <script type="module" crossorigin src="/fitnex/assets/index-ZgSvIHoG.js"></script>
+    <link rel="stylesheet" crossorigin href="/fitnex/assets/index-CCz9dP10.css">
   <link rel="manifest" href="/fitnex/manifest.webmanifest"></head>
 
   <body>
