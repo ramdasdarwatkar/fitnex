@@ -8,67 +8,25 @@ function App() {
   function useBlockHorizontalSwipe() {
     useEffect(() => {
       let startX = 0;
-
-      const handleTouchStart = (e: TouchEvent) => {
-        startX = e.touches[0].clientX;
-      };
-
-      const handleTouchMove = (e: TouchEvent) => {
-        const diffX = e.touches[0].clientX - startX;
-
-        // If swipe starts near edge and moves horizontally
-        if (startX < 20 || startX > window.innerWidth - 20) {
-          if (Math.abs(diffX) > 10) {
-            e.preventDefault();
-          }
-        }
-      };
-
-      document.addEventListener("touchstart", handleTouchStart, {
-        passive: false,
-      });
-      document.addEventListener("touchmove", handleTouchMove, {
-        passive: false,
-      });
-
-      return () => {
-        document.removeEventListener("touchstart", handleTouchStart);
-        document.removeEventListener("touchmove", handleTouchMove);
-      };
-    }, []);
-  }
-
-  /**
-   * Kill iOS rubber bounce on scroll container (.no-bounce)
-   */
-  function usePreventIOSBounce() {
-    useEffect(() => {
       let startY = 0;
 
       const onTouchStart = (e: TouchEvent) => {
+        startX = e.touches[0].clientX;
         startY = e.touches[0].clientY;
       };
 
       const onTouchMove = (e: TouchEvent) => {
-        const el = document.querySelector(".no-bounce") as HTMLElement;
-        if (!el) return;
+        const dx = Math.abs(e.touches[0].clientX - startX);
+        const dy = Math.abs(e.touches[0].clientY - startY);
 
-        const diffY = e.touches[0].clientY - startY;
-
-        const atTop = el.scrollTop === 0;
-        const atBottom = el.scrollHeight - el.scrollTop === el.clientHeight;
-
-        if ((atTop && diffY > 0) || (atBottom && diffY < 0)) {
-          e.preventDefault(); // 🔥 stop rubber band
+        // Horizontal swipe = block everywhere
+        if (dx > dy && dx > 10) {
+          e.preventDefault();
         }
       };
 
-      document.addEventListener("touchstart", onTouchStart, {
-        passive: false,
-      });
-      document.addEventListener("touchmove", onTouchMove, {
-        passive: false,
-      });
+      document.addEventListener("touchstart", onTouchStart, { passive: false });
+      document.addEventListener("touchmove", onTouchMove, { passive: false });
 
       return () => {
         document.removeEventListener("touchstart", onTouchStart);
@@ -78,7 +36,6 @@ function App() {
   }
 
   useBlockHorizontalSwipe();
-  usePreventIOSBounce();
 
   return (
     <div className="app-root">

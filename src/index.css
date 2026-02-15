@@ -88,6 +88,14 @@ body {
   }
 }
 
+/* Remove extra top padding ONLY on iOS PWAs */
+
+@supports (-webkit-touch-callout: none) {
+  .ios-no-top {
+    padding-top: 0 !important;
+  }
+}
+
 /* ============================================= */
 /* HIDE SCROLLBAR CLASS */
 /* ============================================= */
