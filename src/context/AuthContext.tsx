@@ -3,6 +3,10 @@ import { supabase } from "../lib/supabase";
 import { db } from "../db/database";
 import { AthleteService } from "../services/AthleteService";
 import type { AthleteSummary } from "../types/database.types";
+import { LibraryService } from "../services/LibraryService";
+import { WorkoutService } from "../services/WorkoutService";
+import { RoutineService } from "../services/RoutineService";
+import { AthleteLevelService } from "../services/AthleteLevelService";
 
 interface AuthContextType {
   user_id: string | null;
@@ -72,6 +76,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const signOut = async () => {
     try {
+      // 1. Sync Check (Prevent logout if data is pending)
       const unsynced = await db.workout_logs
         .where("is_synced")
         .equals(0)
@@ -82,11 +87,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           message: `Wait! ${unsynced} sets are not synced.`,
         };
       }
+
+      // 2. Clear Session Locks (The "Smart Sync" booleans)
+      // This ensures the next login triggers fresh syncs
+      LibraryService.resetLock();
+      WorkoutService.resetLock();
+      RoutineService.resetLock();
+      AthleteLevelService.resetLock();
+
+      // 3. Perform Supabase Sign Out
       await supabase.auth.signOut();
+
+      // 4. Wipe Local Dexie Database
+      // This is the most secure way to handle multi-user scenarios
       await db.delete();
+
+      // 5. Clear Local Component State
+      setUserId(null);
+      setAthlete(null);
+
+      // 6. Redirect to Login
       window.location.href = "/fitnex/login";
+
       return { success: true };
     } catch (err: any) {
+      console.error("Sign-out error:", err);
       return { success: false, message: err.message };
     }
   };

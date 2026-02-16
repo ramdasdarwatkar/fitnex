@@ -7,6 +7,7 @@ import {
   X,
   ChevronRight,
   User,
+  Library,
 } from "lucide-react";
 
 interface Props {
@@ -73,6 +74,7 @@ export const Sidebar = ({ isOpen, onClose, isStatic = false }: Props) => {
             <SidebarLink icon={Trophy} label="Rank Progress" />
             <SidebarLink icon={Ruler} label="Body Metrics" />
             <SidebarLink icon={Settings} label="Settings" />
+            <SidebarLink icon={Library} label="Library" />
           </nav>
 
           <button
