@@ -16,6 +16,8 @@ import { ProfileTheme } from "../pages/profile/ProfileTheme";
 import { Library } from "../pages/library/Library";
 import { AddMuscle } from "../pages/library/muscles/AddMuscle";
 import { MuscleDetail } from "../pages/library/muscles/MuscleDetail";
+import { AddExercise } from "../pages/library/exercises/AddExercise";
+import { ExerciseDetail } from "../pages/library/exercises/ExerciseDetails";
 
 export const AppRoutes = () => {
   const { user_id, athlete, loading } = useAuth();
@@ -68,6 +70,8 @@ export const AppRoutes = () => {
           <Route path="/profile/theme" element={<ProfileTheme />} />
           <Route path="/library/muscles/add" element={<AddMuscle />} />
           <Route path="/library/muscles/:id" element={<MuscleDetail />} />
+          <Route path="/library/exercises/add" element={<AddExercise />} />
+          <Route path="/library/exercises/:id" element={<ExerciseDetail />} />
 
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>

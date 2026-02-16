@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { SubPageLayout } from "../../../components/layout/SubPageLayout";
-import { db } from "../../../db/database";
-import { supabase } from "../../../lib/supabase";
+import { LibraryService } from "../../../services/LibraryService";
 import {
   Save,
   Trash2,
@@ -12,14 +11,6 @@ import {
   AlertCircle,
 } from "lucide-react";
 
-// Types
-import type { Database } from "../../../types/database.types";
-type Muscle = Database["public"]["Tables"]["muscles"]["Row"];
-
-/**
- * Custom Confirm Modal Component
- * Styled to match the Fitnex aesthetic
- */
 const ConfirmModal = ({
   isOpen,
   onConfirm,
@@ -44,19 +35,19 @@ const ConfirmModal = ({
           Archive Muscle?
         </h3>
         <p className="text-sm font-bold text-[var(--text-muted)] leading-relaxed mb-8">
-          This muscle will be hidden from the library but will remain preserved
-          in your historical workout logs.
+          This muscle will be hidden from the library but preserved in your
+          history.
         </p>
         <div className="flex flex-col gap-3">
           <button
             onClick={onConfirm}
-            className="w-full py-4 bg-red-500 text-white rounded-2xl font-black uppercase italic tracking-widest active:scale-95 transition-all shadow-lg shadow-red-500/20"
+            className="w-full py-4 bg-red-500 text-white rounded-2xl font-black uppercase italic tracking-widest active:scale-95 shadow-lg shadow-red-500/20"
           >
-            Archive Muscle
+            Archive
           </button>
           <button
             onClick={onCancel}
-            className="w-full py-4 bg-transparent text-[var(--text-muted)] font-black uppercase italic tracking-widest text-[10px]"
+            className="w-full py-4 bg-transparent text-[var(--text-muted)] font-black uppercase italic text-[10px]"
           >
             Cancel
           </button>
@@ -69,73 +60,42 @@ const ConfirmModal = ({
 export const MuscleDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-
-  // State
   const [loading, setLoading] = useState(true);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [allMuscles, setAllMuscles] = useState<Muscle[]>([]);
-  const [form, setForm] = useState({
-    name: "",
-    parent_id: "" as string | null,
-  });
+  const [showModal, setShowModal] = useState(false);
+  const [muscles, setMuscles] = useState<any[]>([]);
+  const [form, setForm] = useState({ name: "", parent_id: "" });
 
-  // Load Muscle Data
   useEffect(() => {
-    const loadData = async () => {
+    const load = async () => {
       if (!id) return;
-
-      const [targetMuscle, list] = await Promise.all([
-        db.muscles.get(id),
-        db.muscles.toArray(),
+      const [target, list] = await Promise.all([
+        LibraryService.getMuscleById(id),
+        LibraryService.getActiveMuscles(),
       ]);
-
-      if (targetMuscle) {
-        setForm({
-          name: targetMuscle.name,
-          parent_id: targetMuscle.parent || "",
-        });
-      }
-
-      // Filter out self to avoid circular parent dependency
-      setAllMuscles(list.filter((m) => m.id !== id && m.status !== false));
+      if (target)
+        setForm({ name: target.name, parent_id: target.parent || "" });
+      setMuscles(list.filter((m) => m.id !== id));
       setLoading(false);
     };
-
-    loadData();
+    load();
   }, [id]);
 
-  // Update Logic
-  const handleUpdate = async () => {
-    if (!id || !form.name) return;
-
-    const payload = {
-      name: form.name,
-      parent: form.parent_id === "" ? null : form.parent_id,
-    };
-
-    const { error } = await supabase
-      .from("muscles")
-      .update(payload)
-      .eq("id", id);
-
-    if (!error) {
-      await db.muscles.update(id, payload);
+  const onUpdate = async () => {
+    try {
+      // Atomic Update: Reflected in Dexie immediately via Service
+      await LibraryService.updateMuscle(id!, form.name, form.parent_id);
       navigate(-1);
+    } catch (err) {
+      alert("Update failed.");
     }
   };
 
-  // Soft Delete (Archive) Logic
-  const handleArchive = async () => {
-    if (!id) return;
-
-    const { error } = await supabase
-      .from("muscles")
-      .update({ status: false })
-      .eq("id", id);
-
-    if (!error) {
-      await db.muscles.update(id, { status: false });
+  const onArchive = async () => {
+    try {
+      await LibraryService.archiveMuscle(id!);
       navigate(-1);
+    } catch (err) {
+      alert("Archive failed.");
     }
   };
 
@@ -144,35 +104,29 @@ export const MuscleDetail = () => {
   return (
     <SubPageLayout title="Muscle Settings">
       <div className="flex flex-col gap-6 pb-20">
-        {/* EDIT FORM CARD */}
-        <div className="bg-[var(--bg-surface)] border border-[var(--border-color)] p-6 rounded-[2rem] space-y-8">
-          {/* NAME */}
+        <div className="bg-[var(--bg-surface)] border border-[var(--border-color)] p-6 rounded-[2.2rem] space-y-8 shadow-sm">
           <div>
-            <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-3">
-              <Target size={12} className="text-[var(--brand-primary)]" />
-              Display Name
+            <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-3 block">
+              <Target size={12} className="inline mr-1" /> Display Name
             </label>
             <input
               type="text"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl py-4 px-4 text-lg font-black italic text-[var(--text-main)] outline-none focus:border-[var(--brand-primary)] transition-all"
+              className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl py-4 px-4 text-xl font-black italic text-[var(--text-main)] outline-none focus:border-[var(--brand-primary)]"
             />
           </div>
-
-          {/* PARENT SELECTION */}
           <div className="relative">
-            <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-3">
-              <GitMerge size={12} className="text-[var(--brand-primary)]" />
-              Parent Group
+            <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-3 block">
+              <GitMerge size={12} className="inline mr-1" /> Parent Group
             </label>
             <select
-              value={form.parent_id || ""}
+              value={form.parent_id}
               onChange={(e) => setForm({ ...form, parent_id: e.target.value })}
-              className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl py-4 px-4 text-sm font-black italic text-[var(--text-main)] outline-none appearance-none focus:border-[var(--brand-primary)] uppercase transition-all"
+              className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl py-4 px-4 text-xs font-black uppercase italic text-[var(--text-main)] outline-none appearance-none"
             >
               <option value="">No Parent (Primary)</option>
-              {allMuscles.map((m) => (
+              {muscles.map((m) => (
                 <option key={m.id} value={m.id}>
                   {m.name}
                 </option>
@@ -184,32 +138,25 @@ export const MuscleDetail = () => {
             />
           </div>
         </div>
-
-        {/* ACTIONS */}
         <div className="flex flex-col gap-3">
           <button
-            onClick={handleUpdate}
-            className="w-full py-5 bg-[var(--brand-primary)] text-[var(--bg-main)] font-black uppercase italic tracking-widest rounded-2xl flex items-center justify-center gap-2 active:scale-95 transition-all shadow-xl shadow-[var(--brand-primary)]/10"
+            onClick={onUpdate}
+            className="w-full py-5 bg-[var(--brand-primary)] text-[var(--bg-main)] font-black uppercase italic rounded-2xl flex items-center justify-center gap-2 active:scale-95 shadow-xl shadow-[var(--brand-primary)]/10"
           >
-            <Save size={20} />
-            Save Changes
+            <Save size={20} /> Save Changes
           </button>
-
           <button
-            onClick={() => setShowDeleteModal(true)}
-            className="w-full py-5 bg-red-500/10 border border-red-500/20 text-red-500 font-black uppercase italic tracking-widest rounded-2xl flex items-center justify-center gap-2 active:scale-95 transition-all mt-4"
+            onClick={() => setShowModal(true)}
+            className="w-full py-5 bg-red-500/10 text-red-500 font-black uppercase italic rounded-2xl flex items-center justify-center gap-2 border border-red-500/20 active:scale-95"
           >
-            <Trash2 size={20} />
-            Archive Muscle
+            <Trash2 size={20} /> Archive Muscle
           </button>
         </div>
       </div>
-
-      {/* CUSTOM CONFIRMATION MODAL */}
       <ConfirmModal
-        isOpen={showDeleteModal}
-        onConfirm={handleArchive}
-        onCancel={() => setShowDeleteModal(false)}
+        isOpen={showModal}
+        onConfirm={onArchive}
+        onCancel={() => setShowModal(false)}
       />
     </SubPageLayout>
   );

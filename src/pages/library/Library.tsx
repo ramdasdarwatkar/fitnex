@@ -7,12 +7,21 @@ import { MusclesTab } from "./muscles/MusclesTab";
 import { ExercisesTab } from "./exercises/ExecisesTab";
 import { RoutinesTab } from "./routines/RoutinesTab";
 
+/** * PERSISTENCE: State outside the component prevents
+ * resetting to "muscles" when navigating back.
+ */
+let persistedTab: "muscles" | "exercises" | "routines" = "muscles";
+
 export const Library = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<
-    "muscles" | "exercises" | "routines"
-  >("muscles");
+  const [activeTab, setActiveTab] = useState(persistedTab);
   const [searchQuery, setSearchQuery] = useState("");
+
+  const handleTabChange = (tab: typeof persistedTab) => {
+    persistedTab = tab; // Update the memory
+    setActiveTab(tab); // Update the UI
+    setSearchQuery("");
+  };
 
   const tabs = [
     { id: "muscles", label: "Muscles", icon: <Target size={14} /> },
@@ -28,10 +37,7 @@ export const Library = () => {
           {tabs.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => {
-                setActiveTab(tab.id);
-                setSearchQuery("");
-              }}
+              onClick={() => handleTabChange(tab.id)}
               className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-[1.4rem] transition-all duration-300 ${
                 activeTab === tab.id
                   ? "bg-[var(--brand-primary)] text-[var(--bg-main)] shadow-lg"
@@ -63,7 +69,6 @@ export const Library = () => {
             />
           </div>
 
-          {/* INLINE ADD BUTTON */}
           <button
             onClick={() => navigate(`/library/${activeTab}/add`)}
             className="h-[58px] w-[58px] bg-[var(--brand-primary)] text-[var(--bg-main)] rounded-2xl flex items-center justify-center active:scale-90 transition-all shadow-lg shadow-[var(--brand-primary)]/20 flex-shrink-0"
