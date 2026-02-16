@@ -1,19 +1,26 @@
 import { useEffect, useState } from "react";
-import { db } from "../../../db/database";
-import { ClipboardList, Play, Clock } from "lucide-react";
-import type { Database } from "../../../types/database.types";
-
-type Routine = Database["public"]["Tables"]["routines"]["Row"];
+import { useNavigate } from "react-router-dom";
+import {
+  LibraryService,
+  type EnrichedRoutine,
+} from "../../../services/LibraryService";
+import { Play, ClipboardList, ChevronRight } from "lucide-react";
 
 export const RoutinesTab = ({ search }: { search: string }) => {
-  const [routines, setRoutines] = useState<Routine[]>([]);
+  const navigate = useNavigate();
+  const [routines, setRoutines] = useState<EnrichedRoutine[]>([]);
+  const [hasActiveWorkout, setHasActiveWorkout] = useState(false);
 
   useEffect(() => {
-    const loadRoutines = async () => {
-      const data = await db.routines.toArray();
+    const loadData = async () => {
+      const [data, active] = await Promise.all([
+        LibraryService.getRoutinesWithMeta(),
+        LibraryService.getActiveWorkout(),
+      ]);
       setRoutines(data);
+      setHasActiveWorkout(!!active);
     };
-    loadRoutines();
+    loadData();
   }, []);
 
   const filtered = routines.filter((r) =>
@@ -21,59 +28,67 @@ export const RoutinesTab = ({ search }: { search: string }) => {
   );
 
   return (
-    <div className="space-y-4">
-      {filtered.map((routine) => (
+    <div className="flex flex-col gap-4 pb-32">
+      {/* ROUTINE CARDS */}
+      {filtered.map((route) => (
         <div
-          key={routine.id}
-          className="relative overflow-hidden bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-[2rem] p-6 group"
+          key={route.id}
+          className="bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-[2.2rem] p-6 space-y-5 shadow-sm active:scale-[0.99] transition-transform"
         >
-          {/* Subtle Accent Glow */}
-          <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--brand-primary)] opacity-5 blur-[50px] -mr-16 -mt-16 pointer-events-none" />
-
-          <div className="flex justify-between items-start mb-6">
-            <div>
-              <h3 className="text-xl font-black uppercase italic tracking-tighter text-[var(--text-main)]">
-                {routine.name}
-              </h3>
-              <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-[0.2em] mt-1">
-                Last Performed:{" "}
-                {routine.last_used
-                  ? new Date(routine.last_used).toLocaleDateString()
-                  : "Never"}
-              </p>
+          {/* HEADER AREA - Clickable to go to Detail/Edit */}
+          <div
+            className="flex items-center justify-between cursor-pointer"
+            onClick={() => navigate(`/library/routines/${route.id}`)}
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-[var(--bg-main)] flex items-center justify-center text-[var(--brand-primary)]">
+                <ClipboardList size={22} />
+              </div>
+              <div>
+                <h3 className="text-[13px] font-black uppercase italic text-[var(--text-main)] leading-none">
+                  {route.name}
+                </h3>
+                <p className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-widest mt-1.5">
+                  {route.exercise_count} Exercises
+                </p>
+              </div>
             </div>
-            <div className="p-3 rounded-2xl bg-[var(--brand-primary)] text-[var(--bg-main)] shadow-lg shadow-[var(--brand-primary)]/20 active:scale-90 transition-all cursor-pointer">
-              <Play size={20} fill="currentColor" />
-            </div>
-          </div>
-
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2">
-              <ClipboardList
-                size={14}
-                className="text-[var(--brand-primary)]"
-              />
-              <span className="text-[11px] font-black italic text-[var(--text-main)] uppercase">
-                {/* This would be a count from routine_exercises */}8 Exercises
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Clock size={14} className="text-[var(--text-muted)]" />
-              <span className="text-[11px] font-black italic text-[var(--text-muted)] uppercase">
-                ~45 Mins
-              </span>
+            <div className="p-2 opacity-30">
+              <ChevronRight size={18} />
             </div>
           </div>
+
+          {/* MUSCLE PREVIEW CHIPS */}
+          <div className="flex flex-wrap gap-1.5">
+            {route.muscles.map((m) => (
+              <span
+                key={m}
+                className="text-[7px] font-black uppercase px-2.5 py-1.5 bg-[var(--bg-main)] border border-[var(--border-color)] text-[var(--text-muted)] rounded-lg"
+              >
+                {m}
+              </span>
+            ))}
+          </div>
+
+          {/* START WORKOUT BUTTON */}
+          <button
+            disabled={hasActiveWorkout}
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent navigating to detail
+              console.log("Starting workout logic...");
+            }}
+            className={`w-full py-4.5 rounded-[1.4rem] flex items-center justify-center gap-2 transition-all font-black uppercase italic text-[11px] tracking-[0.1em]
+              ${
+                hasActiveWorkout
+                  ? "bg-[var(--bg-main)] text-[var(--text-muted)] border border-[var(--border-color)] opacity-60"
+                  : "bg-[var(--brand-primary)] text-[var(--bg-main)] shadow-lg shadow-[var(--brand-primary)]/20 active:scale-95"
+              }`}
+          >
+            <Play size={14} fill="currentColor" />
+            {hasActiveWorkout ? "Session in Progress" : "Start Workout"}
+          </button>
         </div>
       ))}
-
-      {filtered.length === 0 && (
-        <div className="text-center py-20">
-          <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">
-            No routines found
-          </p>
-        </div>
-      )}
     </div>
   );
 };

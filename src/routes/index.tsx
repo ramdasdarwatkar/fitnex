@@ -18,6 +18,8 @@ import { AddMuscle } from "../pages/library/muscles/AddMuscle";
 import { MuscleDetail } from "../pages/library/muscles/MuscleDetail";
 import { AddExercise } from "../pages/library/exercises/AddExercise";
 import { ExerciseDetail } from "../pages/library/exercises/ExerciseDetails";
+import { AddRoutine } from "../pages/library/routines/AddRoutine";
+import { RoutineDetail } from "../pages/library/routines/RoutineDetail";
 
 export const AppRoutes = () => {
   const { user_id, athlete, loading } = useAuth();
@@ -72,6 +74,8 @@ export const AppRoutes = () => {
           <Route path="/library/muscles/:id" element={<MuscleDetail />} />
           <Route path="/library/exercises/add" element={<AddExercise />} />
           <Route path="/library/exercises/:id" element={<ExerciseDetail />} />
+          <Route path="/library/routines/add" element={<AddRoutine />} />
+          <Route path="/library/routines/:id" element={<RoutineDetail />} />
 
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>

@@ -142,6 +142,7 @@ export interface Routine {
 export interface RoutineExercise {
   routine_id: string;
   exercise_id: string;
+  sort_order: number;
   target_sets?: number | null;
   target_reps?: number | null;
   target_distance?: number | null;
