@@ -20,7 +20,11 @@ export const ProfileHome = () => {
   if (!athlete) return null;
 
   return (
-    <div className="page-container no-scrollbar px-6 pb-28 bg-[var(--bg-main)]">
+    /* 1. pt-[env(safe-area-inset-top)] skips the notch.
+       2. min-h-screen keeps background flush to bottom.
+       3. pb-32 provides clearance for floating BottomNav.
+    */
+    <div className="flex-1 flex flex-col bg-[var(--bg-main)] min-h-screen px-6 pb-32 pt-[env(safe-area-inset-top)]">
       <header className="flex justify-end pt-6 pb-2">
         <button
           onClick={() => signOut()}
@@ -47,11 +51,11 @@ export const ProfileHome = () => {
             {athlete.name}
           </h1>
           <div className="mt-3 flex items-center justify-center gap-2">
-            <span className="h-[1px] w-6 bg-[var(--border-color)]" />
+            <span className="h-[1px] w-6 bg-slate-800" />
             <p className="text-[11px] font-black uppercase tracking-[0.4em] text-[var(--brand-primary)] italic">
               Level — {athlete.current_level}
             </p>
-            <span className="h-[1px] w-6 bg-[var(--border-color)]" />
+            <span className="h-[1px] w-6 bg-slate-800" />
           </div>
         </div>
       </section>
@@ -80,10 +84,10 @@ export const ProfileHome = () => {
       </div>
 
       <div className="flex items-center gap-4 mb-6">
-        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)] whitespace-nowrap">
+        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 whitespace-nowrap">
           Account Settings
         </p>
-        <div className="h-[1px] w-full bg-[var(--divider-color)]" />
+        <div className="h-[1px] w-full bg-slate-800/50" />
       </div>
 
       <nav className="space-y-3">
@@ -112,20 +116,23 @@ export const ProfileHome = () => {
           onClick={() => navigate("/profile/theme")}
         />
       </nav>
+
+      {/* THE SPRING: Pushes everything up but keeps the background solid */}
+      <div className="flex-1" />
     </div>
   );
 };
 
 const TinyCard = ({ label, value, icon }: any) => (
-  <div className="bg-[var(--bg-surface)] border border-[var(--border-color)] p-3 rounded-[1.2rem] flex items-center gap-3">
-    <div className="w-7 h-7 rounded-lg bg-[var(--bg-main)] border border-[var(--border-color)] flex items-center justify-center text-[var(--brand-primary)]">
+  <div className="bg-[var(--bg-surface)] border border-slate-800 p-3 rounded-[1.2rem] flex items-center gap-3">
+    <div className="w-7 h-7 rounded-lg bg-[var(--bg-main)] border border-slate-800 flex items-center justify-center text-[var(--brand-primary)]">
       {icon}
     </div>
     <div>
       <p className="text-sm font-black italic text-[var(--text-main)] leading-none">
         {value}
       </p>
-      <p className="text-[8px] font-bold text-[var(--text-muted)] uppercase tracking-tight mt-0.5">
+      <p className="text-[8px] font-bold text-slate-500 uppercase tracking-tight mt-0.5">
         {label}
       </p>
     </div>
@@ -135,24 +142,24 @@ const TinyCard = ({ label, value, icon }: any) => (
 const MenuButton = ({ label, sub, icon, onClick }: any) => (
   <button
     onClick={onClick}
-    className="w-full flex items-center justify-between p-4 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-[1.8rem] active:opacity-70 transition-all group"
+    className="w-full flex items-center justify-between p-4 bg-[var(--bg-surface)] border border-slate-800 rounded-[1.8rem] active:opacity-70 transition-all group"
   >
     <div className="flex items-center gap-4">
-      <div className="w-10 h-10 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)] flex items-center justify-center text-[var(--text-muted)] group-active:text-[var(--brand-primary)]">
+      <div className="w-10 h-10 rounded-2xl bg-[var(--bg-main)] border border-slate-800 flex items-center justify-center text-slate-500 group-active:text-[var(--brand-primary)]">
         {icon}
       </div>
       <div className="text-left">
         <p className="text-[11px] font-black uppercase italic tracking-wider text-[var(--text-main)]">
           {label}
         </p>
-        <p className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-tighter">
+        <p className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">
           {sub}
         </p>
       </div>
     </div>
     <ChevronRight
       size={16}
-      className="text-[var(--text-muted)] group-active:text-[var(--brand-primary)]"
+      className="text-slate-600 group-active:text-[var(--brand-primary)]"
     />
   </button>
 );

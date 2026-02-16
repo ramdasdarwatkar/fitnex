@@ -39,9 +39,8 @@ export const MusclesTab = ({ search }: MusclesTabProps) => {
     muscles.filter((m) => m.parent === parentId);
 
   // 3. Deep Filter Logic
-  // Show primary muscles if they match OR if any of their children match
   const filteredPrimary = muscles.filter((m) => {
-    if (m.parent) return false; // We only map from the top-level parents
+    if (m.parent) return false;
 
     const parentMatches = m.name.toLowerCase().includes(query);
     const subMuscles = getSubMuscles(m.id);
@@ -55,103 +54,107 @@ export const MusclesTab = ({ search }: MusclesTabProps) => {
   if (loading) return null;
 
   return (
-    <div className="space-y-6">
-      {filteredPrimary.map((muscle) => {
-        // Determine which children to show:
-        // If searching, only show children that match the query
-        const children = getSubMuscles(muscle.id).filter(
-          (c) =>
-            query === "" ||
-            c.name.toLowerCase().includes(query) ||
-            muscle.name.toLowerCase().includes(query),
-        );
+    /* flex-1 ensures the background color is forced to the bottom */
+    <div className="flex-1 flex flex-col gap-6">
+      <div className="space-y-6">
+        {filteredPrimary.map((muscle) => {
+          const children = getSubMuscles(muscle.id).filter(
+            (c) =>
+              query === "" ||
+              c.name.toLowerCase().includes(query) ||
+              muscle.name.toLowerCase().includes(query),
+          );
 
-        return (
-          <div
-            key={muscle.id}
-            className="space-y-2 animate-in fade-in slide-in-from-bottom-1 duration-300"
-          >
-            {/* Primary Muscle Card */}
-            <button
-              onClick={() => navigate(`/library/muscles/${muscle.id}`)}
-              className="w-full flex items-center justify-between p-5 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-[1.5rem] group active:scale-[0.98] transition-all"
+          return (
+            <div
+              key={muscle.id}
+              className="space-y-2 animate-in fade-in slide-in-from-bottom-1 duration-300"
             >
-              <div className="flex items-center gap-4">
-                <div
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center font-black italic border transition-all ${
-                    muscle.name.toLowerCase().includes(query) && query !== ""
-                      ? "bg-[var(--brand-primary)] border-[var(--brand-primary)] text-[var(--bg-main)]"
-                      : "bg-[var(--bg-main)] border-[var(--border-color)] text-[var(--brand-primary)]"
-                  }`}
-                >
-                  {muscle.name.charAt(0)}
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-black uppercase italic text-[var(--text-main)] group-hover:text-[var(--brand-primary)] transition-colors leading-none">
-                    {muscle.name}
-                  </p>
-                  <p className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest mt-1">
-                    Primary Group
-                  </p>
-                </div>
-              </div>
-              <ChevronRight
-                size={16}
-                className="text-[var(--text-muted)] group-hover:text-[var(--brand-primary)] transition-colors"
-              />
-            </button>
-
-            {/* Sub-Muscles List (Indented) */}
-            {children.length > 0 && (
-              <div className="ml-6 space-y-2 border-l-2 border-[var(--border-color)] pl-4">
-                {children.map((child) => (
-                  <button
-                    key={child.id}
-                    onClick={() => navigate(`/library/muscles/${child.id}`)}
-                    className="w-full flex items-center justify-between p-3.5 bg-[var(--bg-surface)] bg-opacity-40 border border-[var(--border-color)] rounded-xl group active:scale-[0.98] transition-all"
+              {/* Primary Muscle Card */}
+              <button
+                onClick={() => navigate(`/library/muscles/${muscle.id}`)}
+                className="w-full flex items-center justify-between p-5 bg-[var(--bg-surface)] border border-slate-800 rounded-[1.5rem] group active:scale-[0.98] transition-all"
+              >
+                <div className="flex items-center gap-4">
+                  <div
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center font-black italic border transition-all ${
+                      muscle.name.toLowerCase().includes(query) && query !== ""
+                        ? "bg-[var(--brand-primary)] border-[var(--brand-primary)] text-black"
+                        : "bg-[var(--bg-main)] border-slate-800 text-[var(--brand-primary)]"
+                    }`}
                   >
-                    <div className="flex items-center gap-3">
-                      <GitCommit
-                        size={14}
-                        className={
-                          child.name.toLowerCase().includes(query) &&
-                          query !== ""
-                            ? "text-[var(--brand-primary)]"
-                            : "text-[var(--text-muted)]"
-                        }
-                      />
-                      <p
-                        className={`text-[12px] font-bold uppercase italic transition-colors ${
-                          child.name.toLowerCase().includes(query) &&
-                          query !== ""
-                            ? "text-[var(--text-main)]"
-                            : "text-[var(--text-muted)]"
-                        }`}
-                      >
-                        {child.name}
-                      </p>
-                    </div>
-                    <ChevronRight
-                      size={12}
-                      className="text-[var(--text-muted)] group-hover:text-[var(--brand-primary)]"
-                    />
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        );
-      })}
+                    {muscle.name.charAt(0)}
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm font-black uppercase italic text-[var(--text-main)] group-hover:text-[var(--brand-primary)] transition-colors leading-none">
+                      {muscle.name}
+                    </p>
+                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-1">
+                      Primary Group
+                    </p>
+                  </div>
+                </div>
+                <ChevronRight
+                  size={16}
+                  className="text-slate-600 group-hover:text-[var(--brand-primary)] transition-colors"
+                />
+              </button>
 
-      {/* Empty State */}
-      {filteredPrimary.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-24 opacity-20">
-          <Target size={48} strokeWidth={1} className="mb-4" />
-          <p className="text-[10px] font-black uppercase tracking-[0.4em]">
-            No Muscles Found
-          </p>
-        </div>
-      )}
+              {/* Sub-Muscles List */}
+              {children.length > 0 && (
+                <div className="ml-6 space-y-2 border-l-2 border-slate-800 pl-4">
+                  {children.map((child) => (
+                    <button
+                      key={child.id}
+                      onClick={() => navigate(`/library/muscles/${child.id}`)}
+                      className="w-full flex items-center justify-between p-3.5 bg-[var(--bg-surface)] bg-opacity-40 border border-slate-800 rounded-xl group active:scale-[0.98] transition-all"
+                    >
+                      <div className="flex items-center gap-3">
+                        <GitCommit
+                          size={14}
+                          className={
+                            child.name.toLowerCase().includes(query) &&
+                            query !== ""
+                              ? "text-[var(--brand-primary)]"
+                              : "text-slate-600"
+                          }
+                        />
+                        <p
+                          className={`text-[12px] font-bold uppercase italic transition-colors ${
+                            child.name.toLowerCase().includes(query) &&
+                            query !== ""
+                              ? "text-[var(--text-main)]"
+                              : "text-slate-500"
+                          }`}
+                        >
+                          {child.name}
+                        </p>
+                      </div>
+                      <ChevronRight
+                        size={12}
+                        className="text-slate-600 group-hover:text-[var(--brand-primary)]"
+                      />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        {/* Empty State */}
+        {filteredPrimary.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-24 opacity-20">
+            <Target size={48} strokeWidth={1} className="mb-4" />
+            <p className="text-[10px] font-black uppercase tracking-[0.4em]">
+              No Muscles Found
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* THE SPRING: Pushes everything up but stays flush to the bottom */}
+      <div className="flex-1" />
     </div>
   );
 };

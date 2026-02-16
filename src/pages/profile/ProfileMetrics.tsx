@@ -66,7 +66,7 @@ export const ProfileMetrics = () => {
         const data = await BodyMetricsService.getLatestMetrics();
         if (data) {
           const formatted: MetricsState = { ...INITIAL_METRICS };
-          Object.keys(INITIAL_METRICS).forEach((key: string) => {
+          Object.keys(INITIAL_METRICS).forEach((key) => {
             const val = (data as any)[key];
             formatted[key] = val != null ? val.toString() : "";
           });
@@ -90,17 +90,20 @@ export const ProfileMetrics = () => {
   const onSave = async () => {
     if (!user_id) return;
     setSaving(true);
+
     const payload: BodyMetricsInsert = {
       user_id,
       logdate: new Date().toISOString().split("T")[0],
       weight: parseFloat(metrics.weight) || 0,
       height: parseFloat(metrics.height) || 0,
     };
-    Object.keys(INITIAL_METRICS).forEach((key: string) => {
+
+    Object.keys(INITIAL_METRICS).forEach((key) => {
       if (key === "weight" || key === "height") return;
       const val = metrics[key];
       (payload as any)[key] = val === "" ? null : parseFloat(val);
     });
+
     try {
       await BodyMetricsService.updateMetrics(payload);
       await refreshAthlete();
@@ -123,7 +126,8 @@ export const ProfileMetrics = () => {
 
   return (
     <SubPageLayout title="Measurements">
-      <div className="space-y-10 px-1 bg-[var(--bg-main)]">
+      {/* min-h-full + flex-col to force background to bottom */}
+      <div className="flex-1 flex flex-col space-y-10 bg-[var(--bg-main)]">
         <section>
           <SectionHeader icon={<Activity size={16} />} title="Core Vitals" />
           <div className="grid grid-cols-2 gap-4">
@@ -166,42 +170,23 @@ export const ProfileMetrics = () => {
             title="Limb Symmetry"
           />
           <div className="space-y-4">
-            <SymmetryRow
-              label="Bicep"
-              leftKey="left_bicep"
-              rightKey="right_bicep"
-              metrics={metrics}
-              onUpdate={(k: string, v: string) =>
-                handleUpdate(k as keyof MetricsState, v)
-              }
-            />
-            <SymmetryRow
-              label="Forearm"
-              leftKey="left_forearm"
-              rightKey="right_forearm"
-              metrics={metrics}
-              onUpdate={(k: string, v: string) =>
-                handleUpdate(k as keyof MetricsState, v)
-              }
-            />
-            <SymmetryRow
-              label="Thigh"
-              leftKey="left_thigh"
-              rightKey="right_thigh"
-              metrics={metrics}
-              onUpdate={(k: string, v: string) =>
-                handleUpdate(k as keyof MetricsState, v)
-              }
-            />
-            <SymmetryRow
-              label="Calf"
-              leftKey="left_calf"
-              rightKey="right_calf"
-              metrics={metrics}
-              onUpdate={(k: string, v: string) =>
-                handleUpdate(k as keyof MetricsState, v)
-              }
-            />
+            {[
+              { label: "Bicep", l: "left_bicep", r: "right_bicep" },
+              { label: "Forearm", l: "left_forearm", r: "right_forearm" },
+              { label: "Thigh", l: "left_thigh", r: "right_thigh" },
+              { label: "Calf", l: "left_calf", r: "right_calf" },
+            ].map((row) => (
+              <SymmetryRow
+                key={row.label}
+                label={row.label}
+                leftKey={row.l}
+                rightKey={row.r}
+                metrics={metrics}
+                onUpdate={(k: string, v: string) =>
+                  handleUpdate(k as keyof MetricsState, v)
+                }
+              />
+            ))}
           </div>
         </section>
 
@@ -209,7 +194,7 @@ export const ProfileMetrics = () => {
           <button
             disabled={saving}
             onClick={onSave}
-            className="w-full py-4 bg-[var(--brand-primary)] text-[var(--bg-main)] text-base font-black uppercase italic tracking-[0.1em] rounded-[1.5rem] flex items-center justify-center gap-2 active:scale-[0.97] transition-all disabled:opacity-50"
+            className="w-full py-4 bg-[var(--brand-primary)] text-black text-base font-black uppercase italic tracking-[0.1em] rounded-[1.5rem] flex items-center justify-center gap-2 active:scale-[0.97] transition-all disabled:opacity-50 shadow-lg shadow-[var(--brand-primary)]/20"
           >
             {saving ? (
               <RefreshCcw size={22} className="animate-spin" />
@@ -219,6 +204,9 @@ export const ProfileMetrics = () => {
             {saving ? "Updating..." : "Update Athlete Data"}
           </button>
         </div>
+
+        {/* SPRING SPACER */}
+        <div className="flex-1" />
       </div>
     </SubPageLayout>
   );
@@ -226,37 +214,35 @@ export const ProfileMetrics = () => {
 
 // Internal Components
 const SectionHeader = ({ icon, title }: any) => (
-  <div className="flex items-center gap-3 mb-5 px-2 font-black uppercase tracking-[0.25em] text-[12px] text-[var(--text-muted)]">
+  <div className="flex items-center gap-3 mb-5 px-2 font-black uppercase tracking-[0.25em] text-[12px] text-slate-500">
     <div className="text-[var(--brand-primary)]">{icon}</div>
     {title}
   </div>
 );
 
 const CompactInput = ({ label, value, unit, icon, onChange }: any) => (
-  <div className="bg-[var(--bg-surface)] border border-[var(--border-color)] p-5 rounded-[2rem]">
+  <div className="bg-[var(--bg-surface)] border border-slate-800 p-5 rounded-[2rem]">
     <div className="flex justify-between items-start mb-3 text-[var(--brand-primary)]">
       {icon}
-      <span className="text-[10px] font-black text-[var(--text-dim)]">
-        {unit}
-      </span>
+      <span className="text-[10px] font-black text-slate-600">{unit}</span>
     </div>
     <input
       type="text"
       inputMode="decimal"
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="bg-transparent border-none outline-none text-2xl font-black italic text-[var(--text-main)] w-full"
+      className="bg-transparent border-none outline-none text-2xl font-black italic text-[var(--text-main)] w-full placeholder:text-slate-800"
       placeholder="0.0"
     />
-    <p className="text-[11px] font-bold text-[var(--text-dim)] uppercase mt-1.5">
+    <p className="text-[11px] font-bold text-slate-500 uppercase mt-1.5">
       {label}
     </p>
   </div>
 );
 
 const MiniInput = ({ label, value, onChange }: any) => (
-  <div className="bg-[var(--bg-surface)] border border-[var(--border-color)] p-4 rounded-[1.5rem] text-center">
-    <p className="text-[9px] font-black text-[var(--text-dim)] uppercase mb-2">
+  <div className="bg-[var(--bg-surface)] border border-slate-800 p-4 rounded-[1.5rem] text-center">
+    <p className="text-[9px] font-black text-slate-600 uppercase mb-2">
       {label}
     </p>
     <input
@@ -264,7 +250,7 @@ const MiniInput = ({ label, value, onChange }: any) => (
       inputMode="decimal"
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="bg-transparent border-none outline-none text-base font-black italic text-[var(--text-main)] w-full text-center"
+      className="bg-transparent border-none outline-none text-base font-black italic text-[var(--text-main)] w-full text-center placeholder:text-slate-800"
       placeholder="—"
     />
   </div>
@@ -272,7 +258,7 @@ const MiniInput = ({ label, value, onChange }: any) => (
 
 const SymmetryRow = ({ label, leftKey, rightKey, metrics, onUpdate }: any) => (
   <div className="flex items-center gap-4">
-    <div className="w-20 text-[11px] font-black uppercase text-[var(--text-dim)] italic">
+    <div className="w-20 text-[11px] font-black uppercase text-slate-500 italic">
       {label}
     </div>
     <div className="flex-1 grid grid-cols-2 gap-3">
@@ -281,7 +267,7 @@ const SymmetryRow = ({ label, leftKey, rightKey, metrics, onUpdate }: any) => (
         inputMode="decimal"
         value={metrics[leftKey]}
         onChange={(e) => onUpdate(leftKey, e.target.value)}
-        className="w-full bg-[var(--bg-surface)] border border-[var(--border-color)] p-4 rounded-2xl text-sm font-black italic text-[var(--text-main)] text-center"
+        className="w-full bg-[var(--bg-surface)] border border-slate-800 p-4 rounded-2xl text-sm font-black italic text-[var(--text-main)] text-center placeholder:text-slate-800"
         placeholder="L"
       />
       <input
@@ -289,7 +275,7 @@ const SymmetryRow = ({ label, leftKey, rightKey, metrics, onUpdate }: any) => (
         inputMode="decimal"
         value={metrics[rightKey]}
         onChange={(e) => onUpdate(rightKey, e.target.value)}
-        className="w-full bg-[var(--bg-surface)] border border-[var(--border-color)] p-4 rounded-2xl text-sm font-black italic text-[var(--text-main)] text-center"
+        className="w-full bg-[var(--bg-surface)] border border-slate-800 p-4 rounded-2xl text-sm font-black italic text-[var(--text-main)] text-center placeholder:text-slate-800"
         placeholder="R"
       />
     </div>

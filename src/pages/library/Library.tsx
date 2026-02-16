@@ -30,17 +30,20 @@ export const Library = () => {
   ] as const;
 
   return (
-    <div className="flex-1 flex flex-col bg-[var(--bg-main)]">
-      {/* TABS */}
+    /* min-h-screen: forces background to stay flush to the bottom.
+      pt-[env(safe-area-inset-top)]: skips the notch/dynamic island.
+    */
+    <div className="flex-1 flex flex-col bg-[var(--bg-main)] min-h-screen pt-[env(safe-area-inset-top)]">
+      {/* TABS HEADER - Sticky stays below notch area */}
       <div className="sticky top-0 z-30 bg-[var(--bg-main)] px-4 pt-6 pb-2">
-        <div className="flex bg-[var(--bg-surface)] p-1.5 rounded-[1.8rem] border border-[var(--border-color)]">
+        <div className="flex bg-[var(--bg-surface)] p-1.5 rounded-[1.8rem] border border-slate-800">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => handleTabChange(tab.id)}
               className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-[1.4rem] transition-all duration-300 ${
                 activeTab === tab.id
-                  ? "bg-[var(--brand-primary)] text-[var(--bg-main)] shadow-lg"
+                  ? "bg-[var(--brand-primary)] text-black shadow-lg"
                   : "text-[var(--text-muted)] active:scale-95"
               }`}
             >
@@ -53,7 +56,8 @@ export const Library = () => {
         </div>
       </div>
 
-      <div className="px-4 pb-24">
+      {/* Main Content Area: flex-1 allows the "Spring" div inside tabs to push down */}
+      <div className="px-4 flex-1 flex flex-col pb-32">
         {/* SEARCH & ADD ACTION LINE */}
         <div className="flex items-center gap-3 mt-4 mb-6">
           <div className="relative flex-1">
@@ -65,23 +69,26 @@ export const Library = () => {
               placeholder={`Search ${activeTab}...`}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl py-4 pl-12 pr-4 text-sm font-bold text-[var(--text-main)] outline-none focus:border-[var(--brand-primary)] transition-all"
+              className="w-full bg-[var(--bg-surface)] border border-slate-800 rounded-2xl py-4 pl-12 pr-4 text-sm font-bold text-[var(--text-main)] outline-none focus:border-[var(--brand-primary)] transition-all"
             />
           </div>
 
           <button
             onClick={() => navigate(`/library/${activeTab}/add`)}
-            className="h-[58px] w-[58px] bg-[var(--brand-primary)] text-[var(--bg-main)] rounded-2xl flex items-center justify-center active:scale-90 transition-all shadow-lg shadow-[var(--brand-primary)]/20 flex-shrink-0"
+            className="h-[58px] w-[58px] bg-[var(--brand-primary)] text-black rounded-2xl flex items-center justify-center active:scale-90 transition-all shadow-lg shadow-[var(--brand-primary)]/20 flex-shrink-0"
           >
             <Plus size={24} strokeWidth={3} />
           </button>
         </div>
 
-        {/* LISTS */}
-        <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+        {/* LISTS - Wrapped in flex-1 to maintain vertical stretch */}
+        <div className="flex-1 flex flex-col animate-in fade-in slide-in-from-bottom-2 duration-500">
           {activeTab === "muscles" && <MusclesTab search={searchQuery} />}
           {activeTab === "exercises" && <ExercisesTab search={searchQuery} />}
           {activeTab === "routines" && <RoutinesTab search={searchQuery} />}
+
+          {/* THE SPRING: This pushes the container to fill empty space if the list is short */}
+          <div className="flex-1" />
         </div>
       </div>
     </div>

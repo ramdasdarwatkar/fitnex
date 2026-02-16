@@ -12,32 +12,36 @@ const LayoutContent = () => {
   const scrollRef = useRef<HTMLElement | null>(null);
 
   useLayoutEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+    // Scroll to top on every route change
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
   return (
-    <div className="relative h-full text-[var(--text-main)] bg-[var(--bg-main)] overflow-hidden">
-      <div className="flex h-full">
-        <div className="hidden lg:block w-72 h-full border-r border-[var(--border-color)]">
+    /* We remove overflow-hidden to let the page backgrounds flow naturally */
+    <div className="relative min-h-screen text-[var(--text-main)] bg-[var(--bg-main)]">
+      <div className="flex min-h-screen">
+        {/* Desktop Sidebar */}
+        <div className="hidden lg:block w-72 border-r border-[var(--border-color)]">
           <Sidebar isOpen={true} onClose={() => {}} isStatic />
         </div>
 
+        {/* Mobile Sidebar */}
         <div className="lg:hidden">
           <Sidebar isOpen={isSidebarOpen} onClose={closeSidebar} />
         </div>
 
-        <main
-          ref={scrollRef}
-          className="flex-1 overflow-y-auto samsung-scroll safe-ios-top bg-[var(--bg-main)]"
-          style={{ paddingBottom: NAV_HEIGHT + 8 }}
-        >
+        {/* MAIN CONTAINER 
+            No overflow-y-auto here; we let the body/document handle the scroll 
+            to ensure the background is never interrupted.
+        */}
+        <main className="flex-1 flex flex-col w-full">
           <Outlet />
         </main>
       </div>
 
+      {/* FIXED BOTTOM NAV */}
       <div
-        className="fixed bottom-0 left-0 right-0 z-50 lg:hidden"
+        className="fixed bottom-0 left-0 right-0 z-50 lg:hidden pointer-events-none"
         style={{ height: NAV_HEIGHT }}
       >
         <BottomNav />

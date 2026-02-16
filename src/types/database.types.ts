@@ -187,6 +187,7 @@ export interface WorkoutLog {
   workout_id: string;
   exercise_id: string;
   set_number: number;
+  sort_order: number;
 
   reps?: number | null;
   weight?: number | null;

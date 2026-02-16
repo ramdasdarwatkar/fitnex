@@ -38,52 +38,6 @@ export const DashboardHeader = () => {
           <Calendar size={22} />
         </button>
       </div>
-
-      {/* Athlete Profile Card */}
-      <button
-        onClick={openSidebar}
-        className="w-full bg-gradient-to-br from-slate-900/80 to-slate-950 border border-slate-800 p-5 rounded-[2.5rem] text-left transition-all active:scale-[0.98]"
-      >
-        <div className="flex justify-between items-center mb-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-brand/10 rounded-xl">
-              <Trophy size={20} className="text-brand" />
-            </div>
-            <div>
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none">
-                Athlete Rank
-              </p>
-              <p className="text-lg font-black text-white uppercase italic">
-                {athlete?.current_level || "Novice"}
-              </p>
-            </div>
-          </div>
-          <div className="text-right">
-            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none">
-              Points
-            </p>
-            <p className="text-lg font-black text-brand italic">
-              {athlete?.level_points || 0}
-            </p>
-          </div>
-        </div>
-
-        {/* Progress Bar */}
-        <div className="space-y-2">
-          <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-tighter">
-            <span className="text-slate-400">Progress to next rank</span>
-            <span className="text-brand">
-              {athlete?.level_completion_percent || 0}%
-            </span>
-          </div>
-          <div className="h-2 w-full bg-black rounded-full overflow-hidden">
-            <div
-              className="h-full bg-brand transition-all duration-1000 shadow-[0_0_12px_var(--brand-primary)]"
-              style={{ width: `${athlete?.level_completion_percent || 0}%` }}
-            />
-          </div>
-        </div>
-      </button>
     </header>
   );
 };
