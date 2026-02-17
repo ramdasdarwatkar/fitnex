@@ -55,13 +55,12 @@ export const LibraryService = {
       return;
     }
 
-    const [m, e, ex, exM, exE, r, rEx] = await Promise.all([
+    const [m, e, ex, exM, exE, rEx] = await Promise.all([
       supabase.from("muscles").select("*"),
       supabase.from("equipment").select("*"),
       supabase.from("exercises").select("*"),
       supabase.from("exercise_muscles").select("*"),
       supabase.from("exercise_equipment").select("*"),
-      supabase.from("routines").select("*"),
       supabase.from("routine_exercises").select("*"),
     ]);
 
@@ -73,7 +72,6 @@ export const LibraryService = {
         db.exercises,
         db.exercise_muscles,
         db.exercise_equipment,
-        db.routines,
         db.routine_exercises,
       ],
       async () => {
@@ -83,7 +81,6 @@ export const LibraryService = {
         if (exM.data) await db.exercise_muscles.bulkPut(exM.data as ExMuscle[]);
         if (exE.data)
           await db.exercise_equipment.bulkPut(exE.data as ExEquip[]);
-        if (r.data) await db.routines.bulkPut(r.data as Routine[]);
         if (rEx.data)
           await db.routine_exercises.bulkPut(rEx.data as RoutineExercise[]);
       },
@@ -318,161 +315,6 @@ export const LibraryService = {
       .single();
     if (error) throw error;
     await db.exercises.put(data as Exercise);
-  },
-
-  // --- ROUTINE OPERATIONS ---
-
-  async getRoutinesWithMeta(): Promise<EnrichedRoutine[]> {
-    const [routines, rEx, exMuscles, muscles] = await Promise.all([
-      db.routines.filter((r) => r.status !== false).toArray(),
-      db.routine_exercises.toArray(),
-      db.exercise_muscles.toArray(),
-      db.muscles.toArray(),
-    ]);
-
-    return routines.map((route) => {
-      const linkedExercises = rEx.filter((re) => re.routine_id === route.id);
-
-      const muscleNames = new Set<string>();
-      linkedExercises.forEach((link) => {
-        exMuscles
-          .filter(
-            (em) =>
-              em.exercise_id === link.exercise_id && em.role === "primary",
-          )
-          .forEach((em) => {
-            const m = muscles.find((m) => m.id === em.muscle_id);
-            if (m) muscleNames.add(m.name);
-          });
-      });
-
-      return {
-        ...route,
-        exercise_count: linkedExercises.length,
-        muscles: Array.from(muscleNames).slice(0, 3),
-      } as EnrichedRoutine;
-    });
-  },
-
-  async addRoutine(
-    payload: RoutineInsert,
-    exercises: { id: string; target_sets: number; target_reps: number }[],
-  ): Promise<void> {
-    const { data: routine, error } = await supabase
-      .from("routines")
-      .insert([payload])
-      .select()
-      .single();
-    if (error) throw error;
-
-    if (exercises.length > 0) {
-      const links: RoutineExerciseInsert[] = exercises.map((ex, index) => ({
-        routine_id: routine.id,
-        exercise_id: ex.id,
-        target_sets: ex.target_sets,
-        target_reps: ex.target_reps,
-        sort_order: index,
-      }));
-
-      await supabase.from("routine_exercises").insert(links);
-
-      // Atomic Local Patch
-      await db.routines.put(routine as Routine);
-      await db.routine_exercises.bulkPut(links as RoutineExercise[]);
-    }
-  },
-
-  /**
-   * Fetches full routine details including the linked exercises and their targets
-   */
-  async getRoutineDetail(id: string) {
-    const [routine, routineEx, allExercises] = await Promise.all([
-      db.routines.get(id),
-      db.routine_exercises.where("routine_id").equals(id).sortBy("sort_order"),
-      db.exercises.toArray(),
-    ]);
-
-    if (!routine) return null;
-
-    // Join exercise names and data for the UI
-    const joinedExercises = routineEx.map((link) => {
-      const base = allExercises.find((ex) => ex.id === link.exercise_id);
-      return {
-        ...link,
-        name: base?.name || "Unknown Exercise",
-      };
-    });
-
-    return {
-      ...routine,
-      exercises: joinedExercises,
-    };
-  },
-
-  /**
-   * Atomic Update: Updates the routine name/desc and replaces all exercise links
-   */
-  async updateRoutine(
-    id: string,
-    payload: RoutineUpdate,
-    exercises: {
-      exercise_id: string;
-      target_sets: number;
-      target_reps: number;
-    }[],
-  ): Promise<void> {
-    // 1. Remote Update Routine Header
-    const { data: updatedRoutine, error: rErr } = await supabase
-      .from("routines")
-      .update(payload)
-      .eq("id", id)
-      .select()
-      .single();
-
-    if (rErr) throw rErr;
-
-    // 2. Atomic Junction Sync (Remote)
-    // Delete existing links and insert new ones in order
-    await supabase.from("routine_exercises").delete().eq("routine_id", id);
-
-    const links: RoutineExerciseInsert[] = exercises.map((ex, index) => ({
-      routine_id: id,
-      exercise_id: ex.exercise_id,
-      target_sets: ex.target_sets,
-      target_reps: ex.target_reps,
-      sort_order: index,
-    }));
-
-    const { error: linkErr } = await supabase
-      .from("routine_exercises")
-      .insert(links);
-    if (linkErr) throw linkErr;
-
-    // 3. Local Sync (Dexie)
-    await db.transaction(
-      "rw",
-      [db.routines, db.routine_exercises],
-      async () => {
-        await db.routines.put(updatedRoutine as Routine);
-        await db.routine_exercises.where("routine_id").equals(id).delete();
-        await db.routine_exercises.bulkPut(links as RoutineExercise[]);
-      },
-    );
-  },
-
-  /**
-   * Soft-delete a routine
-   */
-  async archiveRoutine(id: string): Promise<void> {
-    const { data, error } = await supabase
-      .from("routines")
-      .update({ status: false })
-      .eq("id", id)
-      .select()
-      .single();
-
-    if (error) throw error;
-    if (data) await db.routines.put(data as Routine);
   },
 
   resetLock(): void {

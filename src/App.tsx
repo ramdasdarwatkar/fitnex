@@ -1,15 +1,31 @@
 import { useEffect } from "react";
 import { AppRoutes } from "./routes";
+import { SyncManager } from "./services/SyncManager";
+import { useAuth } from "./context/AuthContext";
 
 /**
  * App.tsx - Root Component
- * Handles global browser behaviors and main route injection.
+ * Handles global browser behaviors, sync reconciliation, and main route injection.
  */
 function App() {
+  const { user_id } = useAuth();
+
+  /**
+   * GLOBAL SYNC: Initialize the background sync manager.
+   * Runs reconciliation on mount if a user is logged in and sets up
+   * event listeners for network restoration.
+   */
+  useEffect(() => {
+    if (user_id) {
+      // 2. Listen for 'online' events to retry sync automatically
+      SyncManager.watchConnection();
+      // 1. Initial attempt to sync any "dirty" local records
+      SyncManager.reconcile();
+    }
+  }, [user_id]);
+
   /**
    * MOBILE UX: Block horizontal edge swipe (Safari/Chrome back gesture)
-   * This prevents the browser from "sliding away" the app when users
-   * swipe near the edges, keeping the experience native-like.
    */
   function useBlockHorizontalSwipe() {
     useEffect(() => {
@@ -25,11 +41,10 @@ function App() {
         const dx = Math.abs(e.touches[0].clientX - startX);
         const dy = Math.abs(e.touches[0].clientY - startY);
 
-        // If horizontal movement is greater than vertical, block it
         if (dx > dy && dx > 10) {
-          // Check if swipe is near the edges (0-30px or screenWidth-30px)
           if (startX < 30 || startX > window.innerWidth - 30) {
-            e.preventDefault();
+            // Block edge swipe to keep navigation internal
+            if (e.cancelable) e.preventDefault();
           }
         }
       };

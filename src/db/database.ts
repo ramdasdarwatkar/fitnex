@@ -9,9 +9,9 @@ import type {
   Routine,
   RoutineExercise,
   PersonalRecord,
-  Workout,
-  WorkoutLog,
   AthleteLevelsLookup,
+  LocalWorkoutLog,
+  LocalWorkout,
 } from "../types/database.types";
 
 export interface AppSettings {
@@ -35,12 +35,13 @@ export class FitnexDB extends Dexie {
   routines!: Table<Routine, string>;
   routine_exercises!: Table<RoutineExercise, [string, string]>;
 
-  workouts!: Table<Workout, string>;
-  workout_logs!: Table<WorkoutLog, string>;
+  workouts!: Table<LocalWorkout, string>;
+  workout_logs!: Table<LocalWorkoutLog, string>;
 
   constructor() {
     super("FitnexDB");
-    this.version(1).stores({
+    // Version bumped to 2 to handle the schema change
+    this.version(2).stores({
       athlete_summary: "user_id",
       app_settings: "id",
       athlete_levels_lookup: "id, level_name",
@@ -52,9 +53,9 @@ export class FitnexDB extends Dexie {
       exercise_equipment: "[exercise_id+equipment_id], equipment_id",
       routines: "id, name",
       routine_exercises: "[routine_id+exercise_id], exercise_id",
-      workouts: "id, user_id, start_time, is_synced",
+      workouts: "id, user_id, start_time, status, is_synced",
       workout_logs:
-        "id, workout_id, exercise_id,is_synced, [workout_id+exercise_id+set_number]",
+        "id, workout_id, exercise_id, is_synced, [workout_id+exercise_id+set_number]",
     });
   }
 }

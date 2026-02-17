@@ -230,6 +230,15 @@ export interface AthleteSummary {
   projected_next_level_date: string | null;
 }
 
+// Extend the Supabase type for local use
+export interface LocalWorkoutLog extends WorkoutLog {
+  completed: boolean;
+  is_synced: boolean;
+}
+
+export interface LocalWorkout extends Workout {
+  is_synced: boolean;
+}
 /* =========================
    SUPABASE DATABASE TYPE
 ========================= */

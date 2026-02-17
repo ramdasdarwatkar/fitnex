@@ -7,6 +7,7 @@ import { LibraryService } from "../services/LibraryService";
 import { WorkoutService } from "../services/WorkoutService";
 import { RoutineService } from "../services/RoutineService";
 import { AthleteLevelService } from "../services/AthleteLevelService";
+import { SyncManager } from "../services/SyncManager";
 
 interface AuthContextType {
   user_id: string | null;
@@ -76,6 +77,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const signOut = async () => {
     try {
+      // 2. Listen for 'online' events to retry sync automatically
+      SyncManager.watchConnection();
+      await SyncManager.reconcile();
       // 1. Sync Check (Prevent logout if data is pending)
       const unsynced = await db.workout_logs
         .where("is_synced")
