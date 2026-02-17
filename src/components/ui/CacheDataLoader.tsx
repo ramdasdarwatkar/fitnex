@@ -22,6 +22,7 @@ export const CacheDataLoader = () => {
         await Promise.all([
           LibraryService.syncLibrary(),
           WorkoutService.syncRecentWorkouts(user_id),
+          WorkoutService.syncPRs(user_id),
           RoutineService.syncRoutine(user_id),
           AthleteLevelService.syncMetadata(),
         ]);

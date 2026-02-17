@@ -12,6 +12,7 @@ import type {
   AthleteLevelsLookup,
   LocalWorkoutLog,
   LocalWorkout,
+  LatestPersonalRecord,
 } from "../types/database.types";
 
 export interface AppSettings {
@@ -23,6 +24,7 @@ export interface AppSettings {
 
 export class FitnexDB extends Dexie {
   athlete_summary!: Table<AthleteSummary, string>;
+  latest_personal_record!: Table<LatestPersonalRecord, string>;
   app_settings!: Table<AppSettings, string>;
   athlete_levels_lookup!: Table<AthleteLevelsLookup, number>;
   personal_records!: Table<PersonalRecord, [string, string]>;
@@ -43,6 +45,7 @@ export class FitnexDB extends Dexie {
     // Bumped to version 3 for exercise_order index support
     this.version(3).stores({
       athlete_summary: "user_id",
+      latest_personal_record: "exercise_id",
       app_settings: "id",
       athlete_levels_lookup: "id, level_name",
       personal_records: "[user_id+exercise_id]",

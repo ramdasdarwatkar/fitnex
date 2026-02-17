@@ -253,6 +253,62 @@ export const WorkoutService = {
     });
   },
 
+  /**
+   * Syncs Personal Records from Supabase to local Dexie cache.
+   * Logic: Fetches all records for user, ensures local cache is up to date.
+   */
+  async syncPRs(userId: string) {
+    // 1. Fetch from your new Supabase View
+    const { data, error } = await supabase
+      .from("v_latest_personal_records")
+      .select("*")
+      .eq("user_id", userId);
+
+    if (error) {
+      console.error("Error syncing latest PRs:", error);
+      return;
+    }
+
+    if (data) {
+      await db.transaction("rw", db.latest_personal_record, async () => {
+        // 2. Clear local "Lean" cache
+        await db.latest_personal_record.clear();
+
+        // 3. Bulk put the optimized view data
+        await db.latest_personal_record.bulkPut(data);
+      });
+    }
+  },
+
+  /**
+   * Enhanced checkPR to handle local vs remote comparisons
+   */
+  async checkPR(userId: string, exerciseId: string, weight: number) {
+    // 1. Check against the lean local cache
+    const existingPR = await db.latest_personal_record.get(exerciseId);
+
+    if (!existingPR || weight > existingPR.value) {
+      const now = DateUtils.getISTDate();
+
+      const newPR = {
+        user_id: userId,
+        exercise_id: exerciseId,
+        value: weight,
+        record_date: now,
+      };
+
+      // 2. Update the lean cache (overwrites existing exercise_id row)
+      await db.latest_personal_record.put(newPR);
+
+      // 3. Insert into Supabase history table
+      // Your view v_latest_personal_records will update automatically!
+      await supabase.from("personal_record").insert(newPR);
+
+      return true;
+    }
+    return false;
+  },
+
   resetLock() {
     isWorkoutSynced = false;
   },

@@ -241,6 +241,13 @@ export interface AthleteSummary {
   projected_next_level_date: string | null;
 }
 
+export interface LatestPersonalRecord {
+  user_id: string;
+  exercise_id: string;
+  value: number;
+  record_date: string; // ISO date
+}
+
 /* =========================
    SUPABASE DATABASE TYPE
 ========================= */
@@ -342,6 +349,9 @@ export interface Database {
       };
       v_latest_body_metrics: {
         Row: BodyMetrics;
+      };
+      v_latest_personal_records: {
+        Row: LatestPersonalRecord;
       };
     };
   };
