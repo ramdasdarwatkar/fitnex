@@ -6,12 +6,13 @@ import {
 } from "../../../services/RoutineService";
 import { useWorkout } from "../../../context/WorkoutContext";
 import { useAuth } from "../../../context/AuthContext";
+import { WorkoutService } from "../../../services/WorkoutService";
 import { Play, ClipboardList, ChevronRight } from "lucide-react";
 
 export const RoutinesTab = ({ search }: { search: string }) => {
   const navigate = useNavigate();
   const { user_id } = useAuth();
-  const { isOngoing, startWorkout, resumeSession } = useWorkout();
+  const { isOngoing, resumeSession } = useWorkout();
   const [routines, setRoutines] = useState<EnrichedRoutine[]>([]);
 
   useEffect(() => {
@@ -20,17 +21,38 @@ export const RoutinesTab = ({ search }: { search: string }) => {
 
   const handleStartRoutine = async (routine: EnrichedRoutine) => {
     if (!user_id) return;
-    if (isOngoing) return resumeSession();
 
-    // Mapping routine exercises to the format the context expects
-    const logs = routine.exercises.map((ex: any) => ({
+    // 1. If a workout is already running, navigate to it immediately
+    if (isOngoing) {
+      resumeSession();
+      return;
+    }
+
+    const exercises = routine.exercises || [];
+    if (exercises.length === 0) {
+      console.warn("This routine has no exercises to start.");
+      return;
+    }
+
+    // 2. Map routine exercises to initial logs
+    const logs = exercises.map((ex: any, idx: number) => ({
       exercise_id: ex.exercise_id,
       reps: ex.target_reps || 10,
-      weight: null,
+      weight: 0,
       set_number: 1,
+      exercise_order: ex.exercise_order ?? idx,
     }));
 
-    await startWorkout(user_id, routine.id, logs as any);
+    // 3. Use the Service to create the record in Dexie
+    try {
+      await WorkoutService.startNewWorkout(user_id, routine.id, logs);
+
+      // 4. Use the Context to navigate the user to the Active Workout page
+      // (The Context will automatically detect the new active workout via useLiveQuery)
+      resumeSession();
+    } catch (error) {
+      console.error("Failed to start workout:", error);
+    }
   };
 
   const filtered = routines.filter((r) =>
@@ -44,6 +66,7 @@ export const RoutinesTab = ({ search }: { search: string }) => {
           key={route.id}
           className="bg-slate-900 border border-slate-800 rounded-[2.2rem] p-6 space-y-5 shadow-xl"
         >
+          {/* Routine Header */}
           <div
             className="flex items-center justify-between cursor-pointer"
             onClick={() => navigate(`/library/routines/${route.id}`)}
@@ -64,6 +87,7 @@ export const RoutinesTab = ({ search }: { search: string }) => {
             <ChevronRight size={18} className="opacity-20" />
           </div>
 
+          {/* Muscle Groups Tags */}
           <div className="flex flex-wrap gap-2">
             {route.muscles.map((m) => (
               <span
@@ -75,9 +99,14 @@ export const RoutinesTab = ({ search }: { search: string }) => {
             ))}
           </div>
 
+          {/* Action Button */}
           <button
             onClick={() => handleStartRoutine(route)}
-            className={`w-full py-4 rounded-[1.4rem] flex items-center justify-center gap-2 transition-all font-black uppercase italic text-[11px] tracking-widest active:scale-95 ${isOngoing ? "bg-slate-800 text-slate-600" : "bg-[var(--brand-primary)] text-black"}`}
+            className={`w-full py-4 rounded-[1.4rem] flex items-center justify-center gap-2 transition-all font-black uppercase italic text-[11px] tracking-widest active:scale-95 ${
+              isOngoing
+                ? "bg-slate-800 text-slate-500 cursor-not-allowed opacity-80"
+                : "bg-[var(--brand-primary)] text-black"
+            }`}
           >
             <Play size={14} fill="currentColor" />
             {isOngoing ? "Ongoing session..." : "Start Routine"}
