@@ -8,9 +8,9 @@ import type {
   Workout,
 } from "../types/database.types";
 import { SyncManager } from "./SyncManager";
+import { DateUtils } from "../util/dateUtils";
 
 let isWorkoutSynced = false;
-type WorkoutInsert = Database["public"]["Tables"]["workouts"]["Insert"];
 
 export const WorkoutService = {
   // --- READ METHODS ---
@@ -27,7 +27,19 @@ export const WorkoutService = {
     return db.workout_logs
       .where("workout_id")
       .equals(workoutId)
-      .sortBy("sort_order");
+      .sortBy("exercise_order", "set_number");
+  },
+
+  async getPendingWorkouts(): Promise<LocalWorkout[]> {
+    return await db.workouts
+      .where("is_synced")
+      .equals(0)
+      .and((w) => w.status === 0)
+      .toArray();
+  },
+
+  async getPendingLogs(): Promise<LocalWorkoutLog[]> {
+    return await db.workout_logs.where("is_synced").equals(0).toArray();
   },
 
   // --- WRITE METHODS ---
@@ -37,12 +49,11 @@ export const WorkoutService = {
     routineId?: string,
     routineLogs: any[] = [],
   ) {
-    // SAFETY: Prevent multiple active sessions
     const existing = await db.workouts.where("status").equals(1).first();
     if (existing) return existing.id;
 
     const workoutId = crypto.randomUUID();
-    const now = new Date().toISOString();
+    const now = DateUtils.getISTDate();
 
     await db.workouts.put({
       id: workoutId,
@@ -51,15 +62,19 @@ export const WorkoutService = {
       start_time: now,
       finish_time: "",
       status: 1,
+      rest_day: 0,
       is_synced: 0,
-    });
+      created_at: now,
+      updated_at: null,
+    } as any);
 
     if (routineLogs.length > 0) {
       const logsData = routineLogs.map((l, idx) => ({
         ...l,
         id: crypto.randomUUID(),
         workout_id: workoutId,
-        sort_order: idx,
+        exercise_order: l.exercise_order ?? idx,
+        set_number: l.set_number || 1,
         is_synced: 0,
         completed: 0,
       }));
@@ -69,31 +84,56 @@ export const WorkoutService = {
   },
 
   async addExercisesToActive(workoutId: string, exerciseIds: string[]) {
-    const baseOrder = Date.now();
+    const logs = await db.workout_logs
+      .where("workout_id")
+      .equals(workoutId)
+      .toArray();
+    const maxOrder =
+      logs.length > 0
+        ? Math.max(...logs.map((l) => l.exercise_order || 0))
+        : -1;
+
     const newLogs = exerciseIds.map((id, index) => ({
       id: crypto.randomUUID(),
       workout_id: workoutId,
       exercise_id: id,
       set_number: 1,
       reps: 10,
-      sort_order: baseOrder + index,
+      weight: 0,
+      exercise_order: maxOrder + 1 + index,
       is_synced: 0,
       completed: 0,
+      created_at: DateUtils.getISTDate(),
+      updated_at: null,
     }));
     return await db.workout_logs.bulkPut(newLogs as any);
   },
 
   async addSet(workoutId: string, exerciseId: string, nextSetNumber: number) {
+    const lastSet = await db.workout_logs
+      .where({ workout_id: workoutId, exercise_id: exerciseId })
+      .reverse()
+      .first();
+
+    const existingGroup = await db.workout_logs
+      .where({ workout_id: workoutId, exercise_id: exerciseId })
+      .first();
+
     return await db.workout_logs.add({
       id: crypto.randomUUID(),
       workout_id: workoutId,
       exercise_id: exerciseId,
       set_number: nextSetNumber,
-      reps: 10,
-      sort_order: Date.now(),
+      exercise_order: existingGroup?.exercise_order || 0,
+      reps: lastSet?.reps || 10,
+      weight: lastSet?.weight || 0,
+      distance: lastSet?.distance || 0,
+      duration: lastSet?.duration || 0,
       completed: 0,
       is_synced: 0,
-    });
+      created_at: DateUtils.getISTDate(),
+      updated_at: null,
+    } as any);
   },
 
   async updateLog(log: LocalWorkoutLog) {
@@ -115,24 +155,16 @@ export const WorkoutService = {
     notes: string,
     customTimes?: { start: string; end: string },
   ) {
-    const updateData: any = {
-      notes,
-      status: 0,
-      is_synced: 0,
-    };
-
+    const updateData: any = { notes, status: 0, is_synced: 0 };
     if (customTimes) {
       updateData.start_time = customTimes.start;
       updateData.finish_time = customTimes.end;
     } else {
-      updateData.finish_time = new Date().toISOString();
+      updateData.finish_time = DateUtils.getISTDate();
     }
     await db.workouts.update(workoutId, updateData);
-    // 2. Listen for 'online' events to retry sync automatically
     SyncManager.watchConnection();
-    // 2. Listen for 'online' events to retry sync automatically
     SyncManager.reconcile();
-    return;
   },
 
   async discardWorkout(workoutId: string) {
@@ -146,7 +178,29 @@ export const WorkoutService = {
     );
   },
 
-  // --- UTILS ---
+  async pushWorkoutsToSupabase(localWorkouts: LocalWorkout[]) {
+    const workoutsToUpload = localWorkouts.map(
+      ({ is_synced, status, rest_day, ...rest }) => ({
+        ...rest,
+        status: false,
+        rest_day: rest_day === 1,
+      }),
+    );
+    const { error } = await supabase.from("workouts").upsert(workoutsToUpload);
+    if (error) throw error;
+    const ids = localWorkouts.map((w) => w.id);
+    await db.workouts.where("id").anyOf(ids).modify({ is_synced: 1 });
+  },
+
+  async pushLogsToSupabase(localLogs: LocalWorkoutLog[]) {
+    const logsToUpload = localLogs.map(({ is_synced, completed, ...rest }) => ({
+      ...rest,
+    }));
+    const { error } = await supabase.from("workout_logs").upsert(logsToUpload);
+    if (error) throw error;
+    const ids = localLogs.map((l) => l.id);
+    await db.workout_logs.where("id").anyOf(ids).modify({ is_synced: 1 });
+  },
 
   async syncRecentWorkouts(user_id: string, force = false) {
     if (isWorkoutSynced && !force) return;
@@ -161,7 +215,6 @@ export const WorkoutService = {
       isWorkoutSynced = true;
       return;
     }
-
     const { data, error } = await supabase
       .from("workouts")
       .select("*")
@@ -180,7 +233,7 @@ export const WorkoutService = {
   },
 
   async logRestDay(userId: string) {
-    const now = new Date().toISOString();
+    const now = DateUtils.getISTDate();
     const payload: any = {
       id: crypto.randomUUID(),
       user_id: userId,
@@ -188,43 +241,16 @@ export const WorkoutService = {
       status: false,
       start_time: now,
       finish_time: now,
+      created_at: now,
+      updated_at: now,
     };
-
     const { error } = await supabase.from("workouts").insert(payload);
-    await db.workouts.put({ ...payload, status: 0, is_synced: error ? 0 : 1 });
-  },
-
-  /** * Pushes specific workouts to Supabase, mapping local 1/0 to booleans.
-   */
-  async pushWorkoutsToSupabase(localWorkouts: LocalWorkout[]) {
-    const workoutsToUpload = localWorkouts.map(
-      ({ is_synced, status, ...rest }) => ({
-        ...rest,
-        status: false, // Locally 0 always means finished/false for Supabase
-      }),
-    );
-
-    const { error } = await supabase.from("workouts").upsert(workoutsToUpload);
-    if (error) throw error;
-
-    const ids = localWorkouts.map((w) => w.id);
-    await db.workouts.where("id").anyOf(ids).modify({ is_synced: 1 });
-  },
-
-  /** * Pushes specific logs to Supabase, mapping local 1/0 to booleans.
-   */
-  async pushLogsToSupabase(localLogs: LocalWorkoutLog[]) {
-    const logsToUpload = localLogs.map(({ is_synced, completed, ...rest }) => ({
-      ...rest,
-    }));
-
-    console.log("logsToUpload : ", ...logsToUpload);
-
-    const { error } = await supabase.from("workout_logs").upsert(logsToUpload);
-    if (error) throw error;
-
-    const ids = localLogs.map((l) => l.id);
-    await db.workout_logs.where("id").anyOf(ids).modify({ is_synced: 1 });
+    await db.workouts.put({
+      ...payload,
+      status: 0,
+      is_synced: error ? 0 : 1,
+      rest_day: 1,
+    });
   },
 
   resetLock() {

@@ -40,8 +40,8 @@ export class FitnexDB extends Dexie {
 
   constructor() {
     super("FitnexDB");
-    // Version bumped to 2 to handle the schema change
-    this.version(2).stores({
+    // Bumped to version 3 for exercise_order index support
+    this.version(3).stores({
       athlete_summary: "user_id",
       app_settings: "id",
       athlete_levels_lookup: "id, level_name",
@@ -55,7 +55,7 @@ export class FitnexDB extends Dexie {
       routine_exercises: "[routine_id+exercise_id], exercise_id",
       workouts: "id, user_id, start_time, status, is_synced",
       workout_logs:
-        "id, workout_id, exercise_id, is_synced, [workout_id+exercise_id+set_number]",
+        "id, workout_id, exercise_id, exercise_order, is_synced, [workout_id+exercise_id+set_number]",
     });
   }
 }

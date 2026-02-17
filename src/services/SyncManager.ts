@@ -1,28 +1,23 @@
-import { db } from "../db/database";
 import { WorkoutService } from "./WorkoutService";
 
 export const SyncManager = {
+  /**
+   * Orchestrates reconciliation by delegating all data retrieval
+   * and network operations to the WorkoutService.
+   */
   async reconcile() {
-    console.log("🔄 SyncManager: Checking for unsynced data...");
+    console.log("🔄 SyncManager: Reconciling...");
 
     try {
-      // 1. Handle Workouts
-      const pendingWorkouts = await db.workouts
-        .where("is_synced")
-        .equals(0)
-        .and((w) => w.status === 0)
-        .toArray();
+      // 1. Get pending data via Service
+      const pendingWorkouts = await WorkoutService.getPendingWorkouts();
+      const pendingLogs = await WorkoutService.getPendingLogs();
 
+      // 2. Delegate upload to Service
       if (pendingWorkouts.length > 0) {
         await WorkoutService.pushWorkoutsToSupabase(pendingWorkouts);
         console.log(`✅ Synced ${pendingWorkouts.length} workouts.`);
       }
-
-      // 2. Handle Logs
-      const pendingLogs = await db.workout_logs
-        .where("is_synced")
-        .equals(0)
-        .toArray();
 
       if (pendingLogs.length > 0) {
         await WorkoutService.pushLogsToSupabase(pendingLogs);

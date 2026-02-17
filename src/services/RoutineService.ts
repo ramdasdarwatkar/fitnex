@@ -88,7 +88,10 @@ export const RoutineService = {
   async getRoutineDetail(id: string) {
     const [routine, routineEx, allExercises] = await Promise.all([
       db.routines.get(id),
-      db.routine_exercises.where("routine_id").equals(id).sortBy("sort_order"),
+      db.routine_exercises
+        .where("routine_id")
+        .equals(id)
+        .sortBy("exercise_order"),
       db.exercises.toArray(),
     ]);
 
@@ -119,7 +122,7 @@ export const RoutineService = {
       exercise_id: ex.id,
       target_sets: ex.target_sets,
       target_reps: ex.target_reps,
-      sort_order: index,
+      exercise_order: index,
     }));
 
     await supabase.from("routine_exercises").insert(links);
@@ -155,7 +158,7 @@ export const RoutineService = {
       exercise_id: ex.exercise_id || ex.id,
       target_sets: ex.target_sets,
       target_reps: ex.target_reps,
-      sort_order: index,
+      exercise_order: index,
     }));
 
     await supabase.from("routine_exercises").insert(links);

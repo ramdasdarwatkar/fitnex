@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
 import { format } from "date-fns";
 import {
   Timer,
   Plus,
+  Minus,
   MoreVertical,
   ChevronDown,
   ChevronUp,
@@ -12,7 +13,6 @@ import {
   X,
   CircleMinus,
   Trash2,
-  Calculator,
   Play,
 } from "lucide-react";
 import { SubPageLayout } from "../../components/layout/SubPageLayout";
@@ -21,7 +21,7 @@ import { useAuth } from "../../context/AuthContext";
 import { db } from "../../db/database";
 import { WorkoutService } from "../../services/WorkoutService";
 import { ExercisePicker } from "../library/exercises/ExercisePicker";
-import { PlateCalculator } from "./PlateCalculator";
+import { DateUtils } from "../../util/dateUtils";
 
 export const ActiveWorkout = () => {
   const navigate = useNavigate();
@@ -30,27 +30,64 @@ export const ActiveWorkout = () => {
   const { user_id } = useAuth();
   const { activeWorkout, activeLogs } = useWorkout();
 
+  const istNow = DateUtils.getISTDate();
+  const [defaultDate, defaultFullTime] = istNow.split("T");
+  const defaultTime = defaultFullTime.substring(0, 5);
+
   const [seconds, setSeconds] = useState(0);
   const [restSeconds, setRestSeconds] = useState<number | null>(null);
   const [showPicker, setShowPicker] = useState(false);
   const [showFinishModal, setShowFinishModal] = useState(false);
-  const [calcWeight, setCalcWeight] = useState<number | null>(null);
   const [notes, setNotes] = useState("");
 
-  const [pastDate, setPastDate] = useState(format(new Date(), "yyyy-MM-dd"));
-  const [pastStart, setPastStart] = useState("12:00");
-  const [pastEnd, setPastEnd] = useState("13:00");
+  const [pastDate, setPastDate] = useState(defaultDate);
+  const [pastStart, setPastStart] = useState(defaultTime);
+  const [pastEnd, setPastEnd] = useState(defaultTime);
 
+  // Helper for Beep Sound
+  const playBeep = () => {
+    const audioCtx = new (
+      window.AudioContext || (window as any).webkitAudioContext
+    )();
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+
+    oscillator.type = "sine";
+    oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // A5 note
+    gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+
+    oscillator.start();
+    oscillator.stop(audioCtx.currentTime + 0.2);
+  };
+
+  // Live Timer
   useEffect(() => {
     if (activeWorkout && mode === "live") {
       const start = new Date(activeWorkout.start_time).getTime();
-      const interval = setInterval(
-        () => setSeconds(Math.floor((Date.now() - start) / 1000)),
-        1000,
-      );
+      const interval = setInterval(() => {
+        const now = new Date(DateUtils.getISTDate()).getTime();
+        setSeconds(Math.floor((now - start) / 1000));
+      }, 1000);
       return () => clearInterval(interval);
     }
   }, [activeWorkout, mode]);
+
+  // Rest Timer Countdown with Beep
+  useEffect(() => {
+    let interval: any;
+    if (restSeconds !== null && restSeconds > 0) {
+      interval = setInterval(() => {
+        setRestSeconds((prev) => (prev !== null && prev > 0 ? prev - 1 : null));
+      }, 1000);
+    } else if (restSeconds === 0) {
+      playBeep();
+      setRestSeconds(null);
+    }
+    return () => clearInterval(interval);
+  }, [restSeconds]);
 
   const groupedExercises = useMemo(() => {
     const groups: Record<string, any[]> = {};
@@ -74,27 +111,26 @@ export const ActiveWorkout = () => {
                 type="date"
                 value={pastDate}
                 onChange={(e) => setPastDate(e.target.value)}
-                className="w-full bg-black border border-slate-800 p-4 rounded-2xl text-white font-black"
+                className="w-full bg-black border border-slate-800 p-4 rounded-2xl text-white font-black outline-none"
               />
               <div className="grid grid-cols-2 gap-4">
                 <input
                   type="time"
                   value={pastStart}
                   onChange={(e) => setPastStart(e.target.value)}
-                  className="bg-black border border-slate-800 p-4 rounded-2xl text-white font-black"
+                  className="bg-black border border-slate-800 p-4 rounded-2xl text-white font-black outline-none"
                 />
                 <input
                   type="time"
                   value={pastEnd}
                   onChange={(e) => setPastEnd(e.target.value)}
-                  className="bg-black border border-slate-800 p-4 rounded-2xl text-white font-black"
+                  className="bg-black border border-slate-800 p-4 rounded-2xl text-white font-black outline-none"
                 />
               </div>
             </div>
-            {/* THIS BUTTON TRIGGER IS EXPLICIT - NO AUTO CALLS */}
             <button
               onClick={() => user_id && WorkoutService.startNewWorkout(user_id)}
-              className="w-full py-5 bg-[var(--brand-primary)] text-black rounded-3xl font-black uppercase italic tracking-widest flex items-center justify-center gap-2 active:scale-95 shadow-xl"
+              className="w-full py-5 bg-[var(--brand-primary)] text-black rounded-3xl font-black uppercase italic tracking-widest flex items-center justify-center gap-2 active:scale-95 shadow-xl transition-all"
             >
               <Play size={18} fill="currentColor" /> Start Entry
             </button>
@@ -123,7 +159,7 @@ export const ActiveWorkout = () => {
           </button>
           <button
             onClick={() => setShowFinishModal(true)}
-            className="bg-[var(--brand-primary)] text-black px-4 py-1.5 rounded-lg text-[10px] font-black uppercase italic active:scale-95"
+            className="bg-[var(--brand-primary)] text-black px-4 py-1.5 rounded-lg text-[10px] font-black uppercase italic active:scale-95 shadow-sm"
           >
             Finish
           </button>
@@ -132,27 +168,23 @@ export const ActiveWorkout = () => {
     >
       <div className="flex flex-col gap-6 pb-48">
         <div className="bg-slate-900 border border-slate-800 p-6 rounded-[2.2rem]">
-          {mode === "live" ? (
-            <div className="flex justify-between items-center px-2">
-              <span className="text-[10px] font-black text-slate-500 uppercase italic">
-                Duration
-              </span>
-              <div className="text-2xl font-black italic text-[var(--brand-primary)] tabular-nums flex items-center gap-2">
-                <Timer size={18} className="animate-pulse" />{" "}
-                {Math.floor(seconds / 60)}:
-                {(seconds % 60).toString().padStart(2, "0")}
-              </div>
+          <div className="flex justify-between items-center px-2">
+            <span className="text-[10px] font-black text-slate-500 uppercase italic tracking-widest">
+              {mode === "live" ? "Duration" : "Logged on"}
+            </span>
+            <div className="text-2xl font-black italic text-[var(--brand-primary)] tabular-nums flex items-center gap-2">
+              {mode === "live" ? (
+                <>
+                  <Timer size={18} className="animate-pulse" />
+                  {Math.floor(seconds / 60)}m {seconds % 60}s
+                </>
+              ) : (
+                <span className="text-sm text-white">
+                  {format(new Date(pastDate), "MMM d, yyyy")}
+                </span>
+              )}
             </div>
-          ) : (
-            <div className="flex justify-between items-center px-2">
-              <span className="text-[10px] font-black text-slate-500 uppercase italic tracking-widest">
-                Completed on
-              </span>
-              <span className="text-[11px] font-black uppercase text-white tracking-widest">
-                {format(new Date(pastDate), "MMM d, yyyy")}
-              </span>
-            </div>
-          )}
+          </div>
         </div>
 
         <div className="space-y-10">
@@ -166,7 +198,6 @@ export const ActiveWorkout = () => {
               }
               onRest={() => mode === "live" && setRestSeconds(60)}
               activeWorkoutId={activeWorkout.id}
-              onCalc={setCalcWeight}
             />
           ))}
         </div>
@@ -179,12 +210,6 @@ export const ActiveWorkout = () => {
             WorkoutService.addExercisesToActive(activeWorkout.id, ids);
             setShowPicker(false);
           }}
-        />
-      )}
-      {calcWeight !== null && (
-        <PlateCalculator
-          weight={calcWeight}
-          onClose={() => setCalcWeight(null)}
         />
       )}
 
@@ -205,10 +230,8 @@ export const ActiveWorkout = () => {
                 const times =
                   mode === "past"
                     ? {
-                        start: new Date(
-                          `${pastDate}T${pastStart}`,
-                        ).toISOString(),
-                        end: new Date(`${pastDate}T${pastEnd}`).toISOString(),
+                        start: `${pastDate}T${pastStart}:00`,
+                        end: `${pastDate}T${pastEnd}:00`,
                       }
                     : undefined;
                 WorkoutService.finishWorkout(
@@ -225,20 +248,25 @@ export const ActiveWorkout = () => {
         </div>
       )}
 
-      <div className="fixed bottom-10 right-6 z-40">
-        <button
-          onClick={() => setShowPicker(true)}
-          className="w-14 h-14 bg-white text-black rounded-full flex items-center justify-center shadow-xl active:scale-90 transition-all"
-        >
-          <Plus size={28} />
-        </button>
-      </div>
-
-      {restSeconds && (
+      {restSeconds !== null && (
         <div className="fixed bottom-28 left-4 right-4 bg-[var(--brand-primary)] rounded-2xl p-4 flex justify-between items-center shadow-2xl animate-in slide-in-from-bottom z-50">
           <div className="flex items-center gap-4 text-black font-black italic">
-            <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center text-[var(--brand-primary)]">
-              {restSeconds}s
+            <div className="flex items-center bg-black/20 rounded-xl overflow-hidden">
+              <button
+                onClick={() => setRestSeconds(Math.max(0, restSeconds - 15))}
+                className="px-3 py-2"
+              >
+                <Minus size={16} />
+              </button>
+              <div className="w-14 h-10 bg-black rounded-xl flex items-center justify-center text-[var(--brand-primary)] text-lg tabular-nums">
+                {restSeconds}s
+              </div>
+              <button
+                onClick={() => setRestSeconds(restSeconds + 15)}
+                className="px-3 py-2"
+              >
+                <Plus size={16} />
+              </button>
             </div>
             <span className="text-[10px] uppercase tracking-tighter">
               Resting
@@ -252,6 +280,15 @@ export const ActiveWorkout = () => {
           </button>
         </div>
       )}
+
+      <div className="fixed bottom-10 right-6 z-40">
+        <button
+          onClick={() => setShowPicker(true)}
+          className="w-14 h-14 bg-white text-black rounded-full flex items-center justify-center shadow-xl active:scale-90 transition-all"
+        >
+          <Plus size={28} />
+        </button>
+      </div>
     </SubPageLayout>
   );
 };
@@ -262,10 +299,8 @@ const ExerciseTable = ({
   onRemove,
   onRest,
   activeWorkoutId,
-  onCalc,
 }: any) => {
   const [collapsed, setCollapsed] = useState(false);
-  const [menu, setMenu] = useState(false);
   const exercise = useLiveQuery(() => db.exercises.get(exerciseId));
 
   return (
@@ -284,39 +319,21 @@ const ExerciseTable = ({
             <ChevronUp size={14} className="text-slate-600" />
           )}
         </div>
-        <button onClick={() => setMenu(!menu)} className="text-slate-600 p-1">
-          <MoreVertical size={16} />
+        <button onClick={onRemove} className="text-slate-600 p-1">
+          <Trash2 size={16} />
         </button>
-        {menu && (
-          <div className="absolute right-0 top-10 bg-slate-900 border border-slate-800 rounded-xl p-2 z-10 shadow-2xl">
-            <button
-              onClick={onRemove}
-              className="flex items-center gap-2 px-4 py-2 text-red-500 text-[10px] font-black uppercase italic whitespace-nowrap"
-            >
-              <Trash2 size={12} /> Remove Card
-            </button>
-          </div>
-        )}
       </div>
 
       {!collapsed && (
         <div className="space-y-1">
-          <div className="grid grid-cols-[30px_30px_1fr_60px_60px_45px] gap-2 px-1 mb-2 items-center text-center">
+          <div className="grid grid-cols-[30px_30px_1fr_1fr_45px] gap-2 px-1 mb-2 items-center text-center">
             <div />
             <span className="text-[7px] font-black text-slate-600 uppercase">
               Set
             </span>
-            <span className="text-[7px] font-black text-slate-600 uppercase">
-              Prev
-            </span>
             {exercise?.weight && (
               <span className="text-[7px] font-black text-slate-600 uppercase">
-                {exercise.bodyweight ? "+ KG" : "KG"}
-              </span>
-            )}
-            {exercise?.reps && (
-              <span className="text-[7px] font-black text-slate-600 uppercase">
-                Reps
+                Weight
               </span>
             )}
             {exercise?.distance && (
@@ -324,9 +341,14 @@ const ExerciseTable = ({
                 KM
               </span>
             )}
+            {exercise?.reps && (
+              <span className="text-[7px] font-black text-slate-600 uppercase">
+                Reps
+              </span>
+            )}
             {exercise?.duration && (
               <span className="text-[7px] font-black text-slate-600 uppercase">
-                Sec
+                Min:Sec
               </span>
             )}
             <span className="text-[7px] font-black text-slate-600 uppercase text-right mr-1">
@@ -334,102 +356,185 @@ const ExerciseTable = ({
             </span>
           </div>
 
-          {sets.map((set: any, i: number) => (
-            <div
-              key={set.id}
-              className={`grid grid-cols-[30px_30px_1fr_60px_60px_45px] gap-2 items-center py-1 rounded-lg ${set.completed === 1 ? "bg-green-500/10" : ""}`}
-            >
-              <button
-                onClick={() => WorkoutService.deleteSet(set.id)}
-                className="text-red-500/30 flex justify-center active:scale-90"
-              >
-                <CircleMinus size={16} />
-              </button>
-              <span className="text-[10px] font-black text-slate-500 text-center">
-                {i + 1}
-              </span>
-              <div className="text-[8px] font-bold text-slate-700 text-center italic">
-                —
-              </div>
+          {sets.map((set: any, i: number) => {
+            const mins = Math.floor((set.duration || 0) / 60);
+            const secs = (set.duration || 0) % 60;
 
-              {exercise?.weight && (
-                <div className="relative group">
-                  <input
-                    type="number"
-                    step="0.5"
-                    placeholder={exercise.bodyweight ? "Add" : "0"}
-                    value={set.weight || ""}
-                    onChange={(e) =>
-                      WorkoutService.updateLog({
-                        ...set,
-                        weight: parseFloat(e.target.value),
-                      })
-                    }
-                    className="bg-slate-900 border-none rounded-md py-2 text-center text-xs font-black text-white w-full outline-none focus:bg-slate-800"
-                  />
-                  {!exercise.bodyweight && (set.weight || 0) >= 20 && (
+            return (
+              <div
+                key={set.id}
+                className={`grid grid-cols-[30px_30px_1fr_1fr_45px] gap-2 items-center py-2 rounded-lg ${set.completed === 1 ? "bg-green-500/10" : ""}`}
+              >
+                <button
+                  onClick={() => WorkoutService.deleteSet(set.id)}
+                  className="text-red-500/30 flex justify-center"
+                >
+                  <CircleMinus size={16} />
+                </button>
+                <span className="text-[10px] font-black text-slate-500 text-center">
+                  {i + 1}
+                </span>
+
+                {exercise?.weight ? (
+                  <div className="flex items-center bg-slate-900 rounded-xl overflow-hidden border border-slate-800">
                     <button
-                      onClick={() => onCalc(set.weight)}
-                      className="absolute -top-1 -right-1 bg-black p-0.5 rounded border border-slate-800 text-[var(--brand-primary)]"
+                      onClick={() =>
+                        WorkoutService.updateLog({
+                          ...set,
+                          weight: Math.max(0, (set.weight || 0) - 2.5),
+                        })
+                      }
+                      className="px-1.5 py-2 text-slate-500"
                     >
-                      <Calculator size={8} />
+                      <Minus size={12} />
                     </button>
-                  )}
-                </div>
-              )}
-              {exercise?.reps && (
-                <input
-                  type="number"
-                  value={set.reps || ""}
-                  onChange={(e) =>
-                    WorkoutService.updateLog({
-                      ...set,
-                      reps: parseInt(e.target.value),
-                    })
-                  }
-                  className="bg-slate-900 border-none rounded-md py-2 text-center text-xs font-black text-white w-full outline-none focus:bg-slate-800"
-                />
-              )}
-              {exercise?.distance && (
-                <input
-                  type="number"
-                  step="0.1"
-                  value={set.distance || ""}
-                  onChange={(e) =>
-                    WorkoutService.updateLog({
-                      ...set,
-                      distance: parseFloat(e.target.value),
-                    })
-                  }
-                  className="bg-slate-900 border-none rounded-md py-2 text-center text-xs font-black text-white w-full outline-none focus:bg-slate-800"
-                />
-              )}
-              {exercise?.duration && (
-                <input
-                  type="number"
-                  value={set.duration || ""}
-                  onChange={(e) =>
-                    WorkoutService.updateLog({
-                      ...set,
-                      duration: parseInt(e.target.value),
-                    })
-                  }
-                  className="bg-slate-900 border-none rounded-md py-2 text-center text-xs font-black text-white w-full outline-none focus:bg-slate-800"
-                />
-              )}
+                    <input
+                      type="number"
+                      step="0.5"
+                      value={set.weight || ""}
+                      onChange={(e) =>
+                        WorkoutService.updateLog({
+                          ...set,
+                          weight: parseFloat(e.target.value),
+                        })
+                      }
+                      className="w-full bg-transparent text-center text-[10px] font-black text-white outline-none"
+                    />
+                    <button
+                      onClick={() =>
+                        WorkoutService.updateLog({
+                          ...set,
+                          weight: (set.weight || 0) + 5,
+                        })
+                      }
+                      className="px-1.5 py-2 text-slate-500"
+                    >
+                      <Plus size={12} />
+                    </button>
+                  </div>
+                ) : exercise?.distance ? (
+                  <div className="flex items-center bg-slate-900 rounded-xl overflow-hidden border border-slate-800">
+                    <button
+                      onClick={() =>
+                        WorkoutService.updateLog({
+                          ...set,
+                          distance: Math.max(0, (set.distance || 0) - 0.1),
+                        })
+                      }
+                      className="px-1.5 py-2 text-slate-500"
+                    >
+                      <Minus size={12} />
+                    </button>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={set.distance || ""}
+                      onChange={(e) =>
+                        WorkoutService.updateLog({
+                          ...set,
+                          distance: parseFloat(e.target.value),
+                        })
+                      }
+                      className="w-full bg-transparent text-center text-[10px] font-black text-white outline-none"
+                    />
+                    <button
+                      onClick={() =>
+                        WorkoutService.updateLog({
+                          ...set,
+                          distance: (set.distance || 0) + 0.5,
+                        })
+                      }
+                      className="px-1.5 py-2 text-slate-500"
+                    >
+                      <Plus size={12} />
+                    </button>
+                  </div>
+                ) : (
+                  <div />
+                )}
 
-              <button
-                onClick={() => {
-                  const nextVal = set.completed === 1 ? 0 : 1;
-                  WorkoutService.updateLog({ ...set, completed: nextVal });
-                  if (nextVal === 1) onRest();
-                }}
-                className={`w-8 h-8 rounded-lg flex items-center justify-center mx-auto transition-all active:scale-90 ${set.completed === 1 ? "bg-green-500 text-black" : "bg-slate-800 text-slate-700"}`}
-              >
-                <Check size={14} strokeWidth={4} />
-              </button>
-            </div>
-          ))}
+                {exercise?.reps ? (
+                  <div className="flex items-center bg-slate-900 rounded-xl overflow-hidden border border-slate-800">
+                    <button
+                      onClick={() =>
+                        WorkoutService.updateLog({
+                          ...set,
+                          reps: Math.max(0, (set.reps || 0) - 1),
+                        })
+                      }
+                      className="px-1.5 py-2 text-slate-500"
+                    >
+                      <Minus size={12} />
+                    </button>
+                    <input
+                      type="number"
+                      value={set.reps || ""}
+                      onChange={(e) =>
+                        WorkoutService.updateLog({
+                          ...set,
+                          reps: parseInt(e.target.value),
+                        })
+                      }
+                      className="w-full bg-transparent text-center text-[10px] font-black text-white outline-none"
+                    />
+                    <button
+                      onClick={() =>
+                        WorkoutService.updateLog({
+                          ...set,
+                          reps: (set.reps || 0) + 2,
+                        })
+                      }
+                      className="px-1.5 py-2 text-slate-500"
+                    >
+                      <Plus size={12} />
+                    </button>
+                  </div>
+                ) : exercise?.duration ? (
+                  <div className="flex items-center bg-slate-900 rounded-xl overflow-hidden border border-slate-800 px-1">
+                    <input
+                      type="number"
+                      placeholder="M"
+                      value={mins || ""}
+                      onChange={(e) =>
+                        WorkoutService.updateLog({
+                          ...set,
+                          duration: (parseInt(e.target.value) || 0) * 60 + secs,
+                        })
+                      }
+                      className="w-1/2 bg-transparent text-center text-[10px] font-black text-white outline-none"
+                    />
+                    <span className="text-slate-600 text-[8px]">:</span>
+                    <input
+                      type="number"
+                      placeholder="S"
+                      max="59"
+                      value={secs || ""}
+                      onChange={(e) =>
+                        WorkoutService.updateLog({
+                          ...set,
+                          duration: mins * 60 + (parseInt(e.target.value) || 0),
+                        })
+                      }
+                      className="w-1/2 bg-transparent text-center text-[10px] font-black text-white outline-none"
+                    />
+                  </div>
+                ) : (
+                  <div />
+                )}
+
+                <button
+                  onClick={() => {
+                    const nextVal = set.completed === 1 ? 0 : 1;
+                    WorkoutService.updateLog({ ...set, completed: nextVal });
+                    if (nextVal === 1) onRest();
+                  }}
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center mx-auto transition-all ${set.completed === 1 ? "bg-green-500 text-black shadow-[0_0_15px_rgba(34,197,94,0.3)]" : "bg-slate-800 text-slate-700"}`}
+                >
+                  <Check size={14} strokeWidth={4} />
+                </button>
+              </div>
+            );
+          })}
           <button
             onClick={() =>
               WorkoutService.addSet(
@@ -438,7 +543,7 @@ const ExerciseTable = ({
                 sets.length + 1,
               )
             }
-            className="w-full py-2 bg-slate-900/40 rounded-lg text-[9px] font-black uppercase text-slate-500 mt-2 hover:bg-slate-800 hover:text-white transition-all"
+            className="w-full py-2 bg-slate-900/40 rounded-lg text-[9px] font-black uppercase text-slate-500 mt-2 hover:bg-slate-800 transition-colors"
           >
             + Add Set
           </button>

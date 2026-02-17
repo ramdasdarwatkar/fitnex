@@ -83,6 +83,7 @@ export interface AthleteLevel {
 export interface Equipment {
   id: number;
   name: string;
+  plate: boolean;
 }
 
 export interface Muscle {
@@ -142,7 +143,7 @@ export interface Routine {
 export interface RoutineExercise {
   routine_id: string;
   exercise_id: string;
-  sort_order: number;
+  exercise_order: number;
   target_sets?: number | null;
   target_reps?: number | null;
   target_distance?: number | null;
@@ -169,15 +170,11 @@ export interface Workout {
   id: string;
   user_id: string;
   routine_id?: string | null;
-
   notes?: string | null;
-
-  status: boolean;
-  rest_day: boolean;
-
+  status: boolean; // Supabase Boolean
+  rest_day: boolean; // Supabase Boolean
   start_time: string;
   finish_time: string;
-
   created_at: string;
   updated_at: string | null;
 }
@@ -187,16 +184,30 @@ export interface WorkoutLog {
   workout_id: string;
   exercise_id: string;
   set_number: number;
-  sort_order: number;
-
+  exercise_order: number; // Standardized sorting field
   reps?: number | null;
   weight?: number | null;
   distance?: number | null;
   duration?: number | null;
-
   created_at: string;
   updated_at: string | null;
 }
+
+// Extend for local Dexie use
+export interface LocalWorkoutLog extends Omit<WorkoutLog, "completed"> {
+  completed: number; // 1 or 0 for Dexie indexing
+  is_synced: number; // 1 or 0 for Dexie indexing
+}
+
+export interface LocalWorkout extends Omit<Workout, "status" | "rest_day"> {
+  status: number; // 1 (active) or 0 (finished)
+  rest_day: number; // 1 or 0
+  is_synced: number; // 1 or 0
+}
+
+/* =========================
+   Athlete Summary
+========================= */
 
 export interface AthleteSummary {
   user_id: string;
@@ -230,15 +241,6 @@ export interface AthleteSummary {
   projected_next_level_date: string | null;
 }
 
-// Extend the Supabase type for local use
-export interface LocalWorkoutLog extends WorkoutLog {
-  completed: boolean;
-  is_synced: boolean;
-}
-
-export interface LocalWorkout extends Workout {
-  is_synced: boolean;
-}
 /* =========================
    SUPABASE DATABASE TYPE
 ========================= */
