@@ -2,7 +2,6 @@ import { db } from "../db/database";
 import { supabase } from "../lib/supabase";
 import { startOfWeek } from "date-fns";
 import type {
-  Database,
   LocalWorkout,
   LocalWorkoutLog,
   Workout,
@@ -27,7 +26,7 @@ export const WorkoutService = {
     return db.workout_logs
       .where("workout_id")
       .equals(workoutId)
-      .sortBy("exercise_order", "set_number");
+      .sortBy("exercise_order"); // Sorted primarily by exercise grouping
   },
 
   async getPendingWorkouts(): Promise<LocalWorkout[]> {
@@ -110,6 +109,7 @@ export const WorkoutService = {
   },
 
   async addSet(workoutId: string, exerciseId: string, nextSetNumber: number) {
+    // 1. Get the last set to clone its weight/reps as a baseline
     const lastSet = await db.workout_logs
       .where({ workout_id: workoutId, exercise_id: exerciseId })
       .reverse()
@@ -129,7 +129,7 @@ export const WorkoutService = {
       weight: lastSet?.weight || 0,
       distance: lastSet?.distance || 0,
       duration: lastSet?.duration || 0,
-      completed: 0,
+      completed: 0, // CRITICAL: Always start uncompleted
       is_synced: 0,
       created_at: DateUtils.getISTDate(),
       updated_at: null,
@@ -137,7 +137,11 @@ export const WorkoutService = {
   },
 
   async updateLog(log: LocalWorkoutLog) {
-    return await db.workout_logs.put(log);
+    // Mark as dirty so SyncManager picks it up
+    return await db.workout_logs.put({
+      ...log,
+      is_synced: 0,
+    });
   },
 
   async deleteSet(setId: string) {
@@ -163,6 +167,8 @@ export const WorkoutService = {
       updateData.finish_time = DateUtils.getISTDate();
     }
     await db.workouts.update(workoutId, updateData);
+
+    // Trigger sync immediately upon finishing
     SyncManager.watchConnection();
     SyncManager.reconcile();
   },
@@ -178,48 +184,30 @@ export const WorkoutService = {
     );
   },
 
-  async pushWorkoutsToSupabase(localWorkouts: LocalWorkout[]) {
-    const workoutsToUpload = localWorkouts.map(
-      ({ is_synced, status, rest_day, ...rest }) => ({
-        ...rest,
-        status: false,
-        rest_day: rest_day === 1,
-      }),
-    );
-    const { error } = await supabase.from("workouts").upsert(workoutsToUpload);
-    if (error) throw error;
-    const ids = localWorkouts.map((w) => w.id);
-    await db.workouts.where("id").anyOf(ids).modify({ is_synced: 1 });
-  },
-
-  async pushLogsToSupabase(localLogs: LocalWorkoutLog[]) {
-    const logsToUpload = localLogs.map(({ is_synced, completed, ...rest }) => ({
-      ...rest,
-    }));
-    const { error } = await supabase.from("workout_logs").upsert(logsToUpload);
-    if (error) throw error;
-    const ids = localLogs.map((l) => l.id);
-    await db.workout_logs.where("id").anyOf(ids).modify({ is_synced: 1 });
-  },
+  // --- SYNC METHODS ---
 
   async syncRecentWorkouts(user_id: string, force = false) {
     if (isWorkoutSynced && !force) return;
     const weekStart = startOfWeek(new Date(), {
       weekStartsOn: 1,
     }).toISOString();
+
     const count = await db.workouts
       .where("start_time")
       .above(weekStart)
       .count();
+
     if (count > 0 && !force) {
       isWorkoutSynced = true;
       return;
     }
+
     const { data, error } = await supabase
       .from("workouts")
       .select("*")
       .eq("user_id", user_id)
       .gte("start_time", weekStart);
+
     if (error) throw error;
     if (data) {
       const syncedData = data.map((w: Workout) => ({
@@ -232,33 +220,7 @@ export const WorkoutService = {
     isWorkoutSynced = true;
   },
 
-  async logRestDay(userId: string) {
-    const now = DateUtils.getISTDate();
-    const payload: any = {
-      id: crypto.randomUUID(),
-      user_id: userId,
-      rest_day: true,
-      status: false,
-      start_time: now,
-      finish_time: now,
-      created_at: now,
-      updated_at: now,
-    };
-    const { error } = await supabase.from("workouts").insert(payload);
-    await db.workouts.put({
-      ...payload,
-      status: 0,
-      is_synced: error ? 0 : 1,
-      rest_day: 1,
-    });
-  },
-
-  /**
-   * Syncs Personal Records from Supabase to local Dexie cache.
-   * Logic: Fetches all records for user, ensures local cache is up to date.
-   */
   async syncPRs(userId: string) {
-    // 1. Fetch from your new Supabase View
     const { data, error } = await supabase
       .from("v_latest_personal_records")
       .select("*")
@@ -271,24 +233,18 @@ export const WorkoutService = {
 
     if (data) {
       await db.transaction("rw", db.latest_personal_record, async () => {
-        // 2. Clear local "Lean" cache
         await db.latest_personal_record.clear();
-
-        // 3. Bulk put the optimized view data
         await db.latest_personal_record.bulkPut(data);
       });
     }
   },
 
-  /**
-   * Enhanced checkPR to handle local vs remote comparisons
-   */
   async checkPR(userId: string, exerciseId: string, weight: number) {
-    // 1. Check against the lean local cache
     const existingPR = await db.latest_personal_record.get(exerciseId);
 
     if (!existingPR || weight > existingPR.value) {
       const now = DateUtils.getISTDate();
+      const prId = crypto.randomUUID(); // Added ID for Supabase table primary key
 
       const newPR = {
         user_id: userId,
@@ -297,11 +253,10 @@ export const WorkoutService = {
         record_date: now,
       };
 
-      // 2. Update the lean cache (overwrites existing exercise_id row)
+      // 1. Update lean cache
       await db.latest_personal_record.put(newPR);
 
-      // 3. Insert into Supabase history table
-      // Your view v_latest_personal_records will update automatically!
+      // 2. Insert into history table
       await supabase.from("personal_record").insert(newPR);
 
       return true;

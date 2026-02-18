@@ -43,14 +43,14 @@ export const ActiveWorkout = () => {
   );
 
   const istNow = DateUtils.getISTDate();
-  const [defaultDateFull, defaultFullTime] = istNow.split("T");
-  const defaultTime = defaultFullTime.substring(0, 5);
+  const [defaultDateFull] = istNow.split("T");
+  const defaultTime = istNow.split("T")[1].substring(0, 5);
 
   const [pastDate, setPastDate] = useState(defaultDateFull);
   const [pastStart, setPastStart] = useState(defaultTime);
   const [pastEnd, setPastEnd] = useState(defaultTime);
 
-  // --- Summary Calculations ---
+  // --- Summary Stats ---
   const stats = useMemo(() => {
     const completed = activeLogs.filter((l) => l.completed === 1);
     const volume = completed.reduce(
@@ -61,10 +61,8 @@ export const ActiveWorkout = () => {
       (acc, curr) => acc + (curr.reps || 0),
       0,
     );
-    const duration = mode === "live" ? `${Math.floor(seconds / 60)}m` : "Past";
-
-    return { volume, sets: completed.length, reps: totalReps, duration };
-  }, [activeLogs, seconds, mode]);
+    return { volume, sets: completed.length, reps: totalReps };
+  }, [activeLogs]);
 
   // --- Haptics & Celebrations ---
   const triggerHaptic = (pattern: number | number[]) => {
@@ -72,9 +70,9 @@ export const ActiveWorkout = () => {
   };
 
   const fireConfetti = (intensity: "light" | "heavy") => {
-    const duration = intensity === "heavy" ? 3 * 1000 : 0;
+    const duration = intensity === "heavy" ? 3000 : 0;
     const animationEnd = Date.now() + duration;
-    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 400 };
+    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 600 };
 
     if (intensity === "light") {
       confetti({ ...defaults, particleCount: 80, origin: { y: 0.6 } });
@@ -82,10 +80,9 @@ export const ActiveWorkout = () => {
       const interval: any = setInterval(() => {
         const timeLeft = animationEnd - Date.now();
         if (timeLeft <= 0) return clearInterval(interval);
-        const particleCount = 50 * (timeLeft / duration);
         confetti({
           ...defaults,
-          particleCount,
+          particleCount: 40,
           origin: { x: Math.random(), y: Math.random() - 0.2 },
         });
       }, 250);
@@ -131,23 +128,32 @@ export const ActiveWorkout = () => {
 
   const groupedExercises = useMemo(() => {
     const groups: Record<string, any[]> = {};
-    activeLogs.forEach((log: any) => {
+    const sortedLogs = [...activeLogs].sort((a, b) => {
+      if (a.exercise_order !== b.exercise_order)
+        return a.exercise_order - b.exercise_order;
+      return a.set_number - b.set_number;
+    });
+
+    sortedLogs.forEach((log: any) => {
       if (!groups[log.exercise_id]) groups[log.exercise_id] = [];
       groups[log.exercise_id].push(log);
     });
     return groups;
   }, [activeLogs]);
 
+  // --- FIXED FINISH LOGIC ---
   const handleFinishWorkout = async () => {
-    const times =
-      mode === "past"
-        ? {
-            start: `${pastDate}T${pastStart}:00`,
-            end: `${pastDate}T${pastEnd}:00`,
-          }
-        : undefined;
+    let customTimes = undefined;
 
-    await WorkoutService.finishWorkout(activeWorkout!.id, notes, times);
+    if (mode === "past") {
+      // Construct ISO strings for the manual entry
+      customTimes = {
+        start: `${pastDate}T${pastStart}:00`,
+        end: `${pastDate}T${pastEnd}:00`,
+      };
+    }
+
+    await WorkoutService.finishWorkout(activeWorkout!.id, notes, customTimes);
     navigate("/dashboard");
   };
 
@@ -167,18 +173,28 @@ export const ActiveWorkout = () => {
                 className="w-full bg-black border border-slate-800 p-4 rounded-2xl text-white font-black outline-none"
               />
               <div className="grid grid-cols-2 gap-4">
-                <input
-                  type="time"
-                  value={pastStart}
-                  onChange={(e) => setPastStart(e.target.value)}
-                  className="bg-black border border-slate-800 p-4 rounded-2xl text-white font-black outline-none"
-                />
-                <input
-                  type="time"
-                  value={pastEnd}
-                  onChange={(e) => setPastEnd(e.target.value)}
-                  className="bg-black border border-slate-800 p-4 rounded-2xl text-white font-black outline-none"
-                />
+                <div className="space-y-1">
+                  <label className="text-[7px] text-slate-500 uppercase font-black ml-2">
+                    Start Time
+                  </label>
+                  <input
+                    type="time"
+                    value={pastStart}
+                    onChange={(e) => setPastStart(e.target.value)}
+                    className="w-full bg-black border border-slate-800 p-4 rounded-2xl text-white font-black outline-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[7px] text-slate-500 uppercase font-black ml-2">
+                    End Time
+                  </label>
+                  <input
+                    type="time"
+                    value={pastEnd}
+                    onChange={(e) => setPastEnd(e.target.value)}
+                    className="w-full bg-black border border-slate-800 p-4 rounded-2xl text-white font-black outline-none"
+                  />
+                </div>
               </div>
             </div>
             <button
@@ -206,7 +222,7 @@ export const ActiveWorkout = () => {
                 navigate("/dashboard"),
               )
             }
-            className="text-red-500/50 hover:text-red-500 transition-colors"
+            className="text-red-500/50 active:scale-90 transition-all"
           >
             <Trash2 size={18} />
           </button>
@@ -216,7 +232,7 @@ export const ActiveWorkout = () => {
               fireConfetti("heavy");
               triggerHaptic([100, 50, 100, 50, 400]);
             }}
-            className="bg-[var(--brand-primary)] text-black px-4 py-1.5 rounded-lg text-[10px] font-black uppercase italic active:scale-95 shadow-sm"
+            className="bg-[var(--brand-primary)] text-black px-4 py-1.5 rounded-lg text-[10px] font-black uppercase italic active:scale-95 shadow-lg"
           >
             Finish
           </button>
@@ -227,7 +243,7 @@ export const ActiveWorkout = () => {
         <div className="bg-slate-900 border border-slate-800 p-6 rounded-[2.2rem]">
           <div className="flex justify-between items-center px-2">
             <span className="text-[10px] font-black text-slate-500 uppercase italic tracking-widest">
-              {mode === "live" ? "Duration" : "Logged on"}
+              {mode === "live" ? "Duration" : "Status"}
             </span>
             <div className="text-2xl font-black italic text-[var(--brand-primary)] tabular-nums flex items-center gap-2">
               {mode === "live" ? (
@@ -236,8 +252,8 @@ export const ActiveWorkout = () => {
                   {Math.floor(seconds / 60)}m {seconds % 60}s
                 </>
               ) : (
-                <span className="text-sm text-white">
-                  {format(new Date(pastDate), "MMM d, yyyy")}
+                <span className="text-sm uppercase tracking-widest">
+                  Manual Entry
                 </span>
               )}
             </div>
@@ -256,6 +272,9 @@ export const ActiveWorkout = () => {
               onPR={setNewPR}
               fireConfetti={() => fireConfetti("light")}
               triggerHaptic={triggerHaptic}
+              onRemove={() =>
+                WorkoutService.deleteExercise(activeWorkout.id, exId)
+              }
             />
           ))}
         </div>
@@ -272,17 +291,16 @@ export const ActiveWorkout = () => {
         />
       )}
 
-      {/* PR Celebration Overlay */}
       {newPR && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center p-6 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[500] flex items-center justify-center p-6 bg-black/60 backdrop-blur-md">
           <div className="bg-slate-900 border-2 border-[var(--brand-primary)] rounded-[3rem] p-10 flex flex-col items-center text-center shadow-2xl animate-in zoom-in duration-300">
-            <div className="w-20 h-20 bg-[var(--brand-primary)] rounded-full flex items-center justify-center mb-6 animate-bounce">
+            <div className="w-20 h-20 bg-[var(--brand-primary)] rounded-full flex items-center justify-center mb-6 animate-bounce shadow-xl">
               <Trophy size={40} className="text-black" />
             </div>
-            <h2 className="text-2xl font-black uppercase italic text-white mb-2 tracking-tight">
+            <h2 className="text-2xl font-black uppercase italic text-white mb-2">
               New Record!
             </h2>
-            <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-4">
+            <p className="text-slate-400 text-[10px] font-black uppercase mb-4">
               {newPR.name}
             </p>
             <div className="text-5xl font-black italic text-[var(--brand-primary)] mb-8">
@@ -298,20 +316,16 @@ export const ActiveWorkout = () => {
         </div>
       )}
 
-      {/* Finish Workout Summary Modal */}
       {showFinishModal && (
-        <div className="fixed inset-0 z-[300] bg-black/95 flex items-end justify-center p-4">
-          <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-[3.5rem] p-8 animate-in slide-in-from-bottom duration-500">
+        <div className="fixed inset-0 z-[400] bg-black/95 flex items-end justify-center p-4">
+          <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-[3.5rem] p-8 animate-in slide-in-from-bottom duration-500 shadow-2xl">
             <div className="flex flex-col items-center text-center mb-8">
-              <div className="w-20 h-20 bg-[var(--brand-primary)] rounded-full flex items-center justify-center mb-4 shadow-[0_0_30px_rgba(204,255,0,0.2)]">
+              <div className="w-20 h-20 bg-[var(--brand-primary)] rounded-full flex items-center justify-center mb-4">
                 <Trophy size={36} className="text-black" />
               </div>
-              <h2 className="text-2xl font-black uppercase italic text-white italic tracking-tight">
+              <h2 className="text-2xl font-black uppercase italic text-white tracking-tight">
                 Workout Complete!
               </h2>
-              <p className="text-slate-500 text-[9px] font-black uppercase tracking-[0.2em] mt-1">
-                Excellent Performance
-              </p>
             </div>
 
             <div className="grid grid-cols-3 gap-3 mb-8">
@@ -353,13 +367,12 @@ export const ActiveWorkout = () => {
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Add a note about this session..."
-              className="w-full bg-black border border-slate-800 rounded-3xl p-5 text-xs text-white h-24 mb-8 outline-none focus:border-[var(--brand-primary)] transition-colors"
+              placeholder="How did it feel?"
+              className="w-full bg-black border border-slate-800 rounded-3xl p-5 text-xs text-white h-24 mb-8 outline-none focus:border-[var(--brand-primary)] transition-all"
             />
-
             <button
               onClick={handleFinishWorkout}
-              className="w-full py-5 bg-[var(--brand-primary)] text-black rounded-[2rem] font-black uppercase italic shadow-xl active:scale-95 transition-all"
+              className="w-full py-5 bg-[var(--brand-primary)] text-black rounded-[2rem] font-black uppercase italic shadow-2xl active:scale-95 transition-all"
             >
               Save and Exit
             </button>
@@ -367,9 +380,8 @@ export const ActiveWorkout = () => {
         </div>
       )}
 
-      {/* Rest Timer Banner */}
       {restSeconds !== null && (
-        <div className="fixed bottom-28 left-4 right-4 bg-[var(--brand-primary)] rounded-2xl p-4 flex justify-between items-center shadow-2xl animate-in slide-in-from-bottom z-50">
+        <div className="fixed bottom-28 left-4 right-4 bg-[var(--brand-primary)] rounded-2xl p-4 flex justify-between items-center shadow-2xl z-50 animate-in slide-in-from-bottom">
           <div className="flex items-center gap-4 text-black font-black italic">
             <div className="flex items-center bg-black/20 rounded-xl overflow-hidden">
               <button
@@ -378,7 +390,7 @@ export const ActiveWorkout = () => {
               >
                 <Minus size={16} />
               </button>
-              <div className="w-14 h-10 bg-black rounded-xl flex items-center justify-center text-[var(--brand-primary)] text-lg tabular-nums">
+              <div className="w-14 h-10 bg-black rounded-xl flex items-center justify-center text-[var(--brand-primary)] text-lg font-black tabular-nums">
                 {restSeconds}s
               </div>
               <button
@@ -403,8 +415,11 @@ export const ActiveWorkout = () => {
 
       <div className="fixed bottom-10 right-6 z-40">
         <button
-          onClick={() => setShowPicker(true)}
-          className="w-14 h-14 bg-white text-black rounded-full flex items-center justify-center shadow-xl active:scale-90 transition-all"
+          onClick={() => {
+            setShowPicker(true);
+            triggerHaptic(30);
+          }}
+          className="w-14 h-14 bg-white text-black rounded-full flex items-center justify-center shadow-2xl active:scale-90 transition-all"
         >
           <Plus size={28} />
         </button>
@@ -412,8 +427,6 @@ export const ActiveWorkout = () => {
     </SubPageLayout>
   );
 };
-
-// ... ExerciseTable and WorkoutLogRow remain the same as previous full version ...
 
 const ExerciseTable = ({
   exerciseId,
@@ -424,18 +437,18 @@ const ExerciseTable = ({
   onPR,
   fireConfetti,
   triggerHaptic,
+  onRemove,
 }: any) => {
   const [collapsed, setCollapsed] = useState(false);
   const exercise = useLiveQuery(() => db.exercises.get(exerciseId));
-
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex justify-between items-center relative">
+      <div className="flex justify-between items-center group">
         <div
-          className="flex items-center gap-3 flex-1 cursor-pointer"
+          className="flex items-center gap-3 cursor-pointer"
           onClick={() => setCollapsed(!collapsed)}
         >
-          <h3 className="text-sm font-black uppercase italic text-[var(--brand-primary)] leading-tight">
+          <h3 className="text-sm font-black uppercase italic text-[var(--brand-primary)]">
             {exercise?.name || "Loading..."}
           </h3>
           {collapsed ? (
@@ -444,34 +457,21 @@ const ExerciseTable = ({
             <ChevronUp size={14} className="text-slate-600" />
           )}
         </div>
+        <button
+          onClick={onRemove}
+          className="text-slate-700 hover:text-red-500 active:scale-90 transition-all p-1"
+        >
+          <Trash2 size={16} />
+        </button>
       </div>
-
       {!collapsed && (
         <div className="space-y-1">
-          <div className="grid grid-cols-[30px_1fr_1fr_55px] gap-2 px-1 mb-2 items-center text-center">
-            <span className="text-[7px] font-black text-slate-600 uppercase tracking-widest">
-              Set
-            </span>
-            {exercise?.weight && (
-              <span className="text-[7px] font-black text-slate-600 uppercase">
-                Weight
-              </span>
-            )}
-            {exercise?.reps && (
-              <span className="text-[7px] font-black text-slate-600 uppercase">
-                Reps
-              </span>
-            )}
-            {exercise?.duration && (
-              <span className="text-[7px] font-black text-slate-600 uppercase">
-                Min:Sec
-              </span>
-            )}
-            <span className="text-[7px] font-black text-slate-600 uppercase text-right mr-1">
-              Done
-            </span>
+          <div className="grid grid-cols-[30px_1fr_1fr_55px] gap-2 px-1 mb-2 text-center text-[7px] font-black text-slate-600 uppercase tracking-widest">
+            <span>Set</span>
+            <span>Weight</span>
+            <span>Reps</span>
+            <span className="text-right mr-1">Done</span>
           </div>
-
           {sets.map((set: any, i: number) => (
             <WorkoutLogRow
               key={set.id}
@@ -493,7 +493,7 @@ const ExerciseTable = ({
                 sets.length + 1,
               )
             }
-            className="w-full py-3 bg-slate-900/40 rounded-xl text-[10px] font-black uppercase text-slate-500 mt-2"
+            className="w-full py-4 bg-slate-900/40 border border-dashed border-slate-800 rounded-2xl text-[9px] font-black uppercase text-slate-500 mt-2 hover:bg-slate-900 transition-all"
           >
             + Add Set
           </button>
@@ -513,30 +513,13 @@ const WorkoutLogRow = ({
   fireConfetti,
   triggerHaptic,
 }: any) => {
-  const [touchStart, setTouchStart] = useState<number | null>(null);
-  const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-
-  const onTouchStart = (e: React.TouchEvent) => {
-    setTouchEnd(null);
-    setTouchStart(e.targetTouches[0].clientX);
-  };
-  const onTouchMove = (e: React.TouchEvent) =>
-    setTouchEnd(e.targetTouches[0].clientX);
-  const onTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
-    if (touchStart - touchEnd > 70) {
-      triggerHaptic(50);
-      setIsDeleting(true);
-      setTimeout(() => WorkoutService.deleteSet(set.id), 300);
-    }
-  };
+  const [touchX, setTouchX] = useState<number | null>(null);
 
   const handleComplete = async () => {
     const nextVal = set.completed === 1 ? 0 : 1;
     triggerHaptic(30);
     await WorkoutService.updateLog({ ...set, completed: nextVal });
-
     if (nextVal === 1) {
       onRest();
       if (exercise?.weight && set.weight > 0) {
@@ -554,173 +537,92 @@ const WorkoutLogRow = ({
     }
   };
 
-  const mins = Math.floor((set.duration || 0) / 60);
-  const secs = (set.duration || 0) % 60;
-
   return (
     <div
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onTouchEnd}
-      className={`grid grid-cols-[30px_1fr_1fr_55px] gap-2 items-center py-2.5 rounded-2xl transition-all duration-300 ${isDeleting ? "opacity-0 -translate-x-full" : "opacity-100 translate-x-0"} ${set.completed === 1 ? "bg-green-500/10" : "bg-transparent"}`}
+      onTouchStart={(e) => setTouchX(e.targetTouches[0].clientX)}
+      onTouchEnd={(e) => {
+        if (touchX && touchX - e.changedTouches[0].clientX > 70) {
+          setIsDeleting(true);
+          triggerHaptic(50);
+          setTimeout(() => WorkoutService.deleteSet(set.id), 300);
+        }
+      }}
+      className={`grid grid-cols-[30px_1fr_1fr_55px] gap-2 items-center py-2.5 rounded-2xl transition-all duration-300 ${isDeleting ? "opacity-0 -translate-x-full scale-95" : "scale-100 opacity-100"} ${set.completed === 1 ? "bg-green-500/10" : "bg-transparent"}`}
     >
-      <span className="text-[11px] font-black text-slate-500 text-center">
+      <span className="text-[11px] font-black text-slate-500 text-center italic">
         {index + 1}
       </span>
-
-      {exercise?.weight ? (
-        <div className="flex items-center bg-slate-900 rounded-xl overflow-hidden border border-slate-800 min-h-[48px]">
-          <button
-            onClick={() =>
-              WorkoutService.updateLog({
-                ...set,
-                weight: Math.max(0, (set.weight || 0) - 2.5),
-              })
-            }
-            className="px-3 h-full text-slate-500 active:bg-slate-800"
-          >
-            <Minus size={14} />
-          </button>
-          <input
-            type="number"
-            step="any"
-            inputMode="decimal"
-            value={set.weight || ""}
-            onChange={(e) =>
-              WorkoutService.updateLog({
-                ...set,
-                weight: parseFloat(e.target.value),
-              })
-            }
-            className="w-full bg-transparent text-center text-[13px] font-black text-white outline-none"
-          />
-          <button
-            onClick={() =>
-              WorkoutService.updateLog({
-                ...set,
-                weight: (set.weight || 0) + 5,
-              })
-            }
-            className="px-3 h-full text-slate-500 active:bg-slate-800"
-          >
-            <Plus size={14} />
-          </button>
-        </div>
-      ) : exercise?.distance ? (
-        <div className="flex items-center bg-slate-900 rounded-xl overflow-hidden border border-slate-800 min-h-[48px]">
-          <button
-            onClick={() =>
-              WorkoutService.updateLog({
-                ...set,
-                distance: Math.max(0, (set.distance || 0) - 0.1),
-              })
-            }
-            className="px-3 h-full text-slate-500"
-          >
-            <Minus size={14} />
-          </button>
-          <input
-            type="number"
-            step="any"
-            inputMode="decimal"
-            value={set.distance || ""}
-            onChange={(e) =>
-              WorkoutService.updateLog({
-                ...set,
-                distance: parseFloat(e.target.value),
-              })
-            }
-            className="w-full bg-transparent text-center text-[13px] font-black text-white outline-none"
-          />
-          <button
-            onClick={() =>
-              WorkoutService.updateLog({
-                ...set,
-                distance: (set.distance || 0) + 0.5,
-              })
-            }
-            className="px-3 h-full text-slate-500"
-          >
-            <Plus size={14} />
-          </button>
-        </div>
-      ) : (
-        <div />
-      )}
-
-      {exercise?.reps ? (
-        <div className="flex items-center bg-slate-900 rounded-xl overflow-hidden border border-slate-800 min-h-[48px]">
-          <button
-            onClick={() =>
-              WorkoutService.updateLog({
-                ...set,
-                reps: Math.max(0, (set.reps || 0) - 1),
-              })
-            }
-            className="px-3 h-full text-slate-500 active:bg-slate-800"
-          >
-            <Minus size={14} />
-          </button>
-          <input
-            type="number"
-            step="any"
-            inputMode="decimal"
-            value={set.reps || ""}
-            onChange={(e) =>
-              WorkoutService.updateLog({
-                ...set,
-                reps: parseFloat(e.target.value),
-              })
-            }
-            className="w-full bg-transparent text-center text-[13px] font-black text-white outline-none"
-          />
-          <button
-            onClick={() =>
-              WorkoutService.updateLog({ ...set, reps: (set.reps || 0) + 2 })
-            }
-            className="px-3 h-full text-slate-500 active:bg-slate-800"
-          >
-            <Plus size={14} />
-          </button>
-        </div>
-      ) : exercise?.duration ? (
-        <div className="flex items-center bg-slate-900 rounded-xl overflow-hidden border border-slate-800 min-h-[48px] px-1">
-          <input
-            type="number"
-            inputMode="decimal"
-            placeholder="MM"
-            value={mins || ""}
-            onChange={(e) =>
-              WorkoutService.updateLog({
-                ...set,
-                duration: (parseInt(e.target.value) || 0) * 60 + secs,
-              })
-            }
-            className="w-full bg-transparent text-center text-[13px] font-black text-white outline-none py-2"
-          />
-          <span className="text-slate-600 font-black">:</span>
-          <input
-            type="number"
-            inputMode="decimal"
-            placeholder="SS"
-            max="59"
-            value={secs || ""}
-            onChange={(e) =>
-              WorkoutService.updateLog({
-                ...set,
-                duration: mins * 60 + (parseInt(e.target.value) || 0),
-              })
-            }
-            className="w-full bg-transparent text-center text-[13px] font-black text-white outline-none py-2"
-          />
-        </div>
-      ) : (
-        <div />
-      )}
-
+      <div className="flex items-center bg-slate-900 rounded-xl border border-slate-800 min-h-[52px]">
+        <button
+          onClick={() =>
+            WorkoutService.updateLog({
+              ...set,
+              weight: Math.max(0, (set.weight || 0) - 2.5),
+            })
+          }
+          className="px-3 h-full text-slate-500"
+        >
+          <Minus size={14} />
+        </button>
+        <input
+          type="number"
+          step="any"
+          inputMode="decimal"
+          value={set.weight || ""}
+          onChange={(e) =>
+            WorkoutService.updateLog({
+              ...set,
+              weight: parseFloat(e.target.value) || 0,
+            })
+          }
+          className="w-full bg-transparent text-center text-[13px] font-black text-white outline-none"
+        />
+        <button
+          onClick={() =>
+            WorkoutService.updateLog({ ...set, weight: (set.weight || 0) + 5 })
+          }
+          className="px-3 h-full text-slate-500"
+        >
+          <Plus size={14} />
+        </button>
+      </div>
+      <div className="flex items-center bg-slate-900 rounded-xl border border-slate-800 min-h-[52px]">
+        <button
+          onClick={() =>
+            WorkoutService.updateLog({
+              ...set,
+              reps: Math.max(0, (set.reps || 0) - 1),
+            })
+          }
+          className="px-3 h-full text-slate-500"
+        >
+          <Minus size={14} />
+        </button>
+        <input
+          type="number"
+          step="any"
+          inputMode="decimal"
+          value={set.reps || ""}
+          onChange={(e) =>
+            WorkoutService.updateLog({
+              ...set,
+              reps: parseInt(e.target.value) || 0,
+            })
+          }
+          className="w-full bg-transparent text-center text-[13px] font-black text-white outline-none"
+        />
+        <button
+          onClick={() =>
+            WorkoutService.updateLog({ ...set, reps: (set.reps || 0) + 1 })
+          }
+          className="px-3 h-full text-slate-500"
+        >
+          <Plus size={14} />
+        </button>
+      </div>
       <button
         onClick={handleComplete}
-        className={`w-11 h-11 rounded-2xl flex items-center justify-center mx-auto transition-all active:scale-90 ${set.completed === 1 ? "bg-green-500 text-black shadow-[0_0_15px_rgba(34,197,94,0.3)]" : "bg-slate-800 text-slate-700"}`}
+        className={`w-11 h-11 rounded-2xl flex items-center justify-center mx-auto transition-all active:scale-90 ${set.completed === 1 ? "bg-green-500 text-black shadow-[0_0_20px_rgba(34,197,94,0.4)]" : "bg-slate-800 text-slate-700"}`}
       >
         <Check size={20} strokeWidth={4} />
       </button>
