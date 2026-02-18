@@ -25,4 +25,48 @@ export class DateUtils {
       minute: "2-digit",
     });
   }
+
+  static getDateRange(mode: string, customStart?: string, customEnd?: string) {
+    const today = new Date();
+    let startDate, endDate;
+
+    switch (mode) {
+      case "today":
+        startDate = new Date(today);
+        endDate = new Date(today);
+        break;
+
+      case "week":
+        const day = today.getDay(); // Sunday=0
+        const diffToMonday = day === 0 ? -6 : 1 - day; // Monday start
+        startDate = new Date(today);
+        startDate.setDate(today.getDate() + diffToMonday);
+
+        endDate = new Date(startDate);
+        endDate.setDate(startDate.getDate() + 6);
+        break;
+
+      case "month":
+        startDate = new Date(today.getFullYear(), today.getMonth(), 1); // 1st day
+        endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0); // last day
+        break;
+
+      case "custom":
+        if (!customStart || !customEnd)
+          throw new Error("Custom start and end dates required");
+        startDate = new Date(customStart);
+        endDate = new Date(customEnd);
+        break;
+
+      default:
+        // fallback: today
+        startDate = new Date(today);
+        endDate = new Date(today);
+        break;
+    }
+
+    const formatDate = (d) => d.toISOString().split("T")[0];
+
+    return [formatDate(startDate), formatDate(endDate)];
+  }
 }

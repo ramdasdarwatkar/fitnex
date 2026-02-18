@@ -83,7 +83,7 @@ export interface AthleteLevel {
 export interface Equipment {
   id: number;
   name: string;
-  plate: boolean;
+  steps: boolean;
 }
 
 export interface Muscle {
@@ -248,6 +248,27 @@ export interface LatestPersonalRecord {
   record_date: string; // ISO date
 }
 
+// types/weeklyStats.ts
+export interface CustomizedStats {
+  user_id: string;
+  total_sets: number;
+  workout_sessions: number;
+  total_reps: number;
+  total_volume: number;
+  total_distance: number;
+  total_duration_min: number;
+  active_days: string[];
+  rest_days: string[];
+  total_steps: number;
+  calories: number;
+  muscle_names: string;
+}
+
+export interface LocalCustomizedStats extends CustomizedStats {
+  start_date: string;
+  end_date: string;
+}
+
 /* =========================
    SUPABASE DATABASE TYPE
 ========================= */
@@ -352,6 +373,15 @@ export interface Database {
       };
       v_latest_personal_records: {
         Row: LatestPersonalRecord;
+      };
+    };
+    Functions: {
+      get_user_stats_between: {
+        Args: {
+          p_start: string;
+          p_end: string;
+        };
+        Returns: CustomizedStats;
       };
     };
   };

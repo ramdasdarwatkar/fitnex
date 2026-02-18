@@ -193,3 +193,11 @@ input[type="date"]::-webkit-date-and-time-value {
     transition: none !important;
   }
 }
+
+/* Add this to your Tailwind or Global CSS */
+.dashboard-card {
+  @apply transition-all duration-300 ease-out border-transparent;
+}
+.dashboard-card:hover {
+  @apply -translate-y-1 border-[var(--brand-primary)]/30 shadow-[0_20px_40px_rgba(0,0,0,0.4)];
+}

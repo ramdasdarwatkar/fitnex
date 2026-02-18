@@ -13,6 +13,7 @@ import type {
   LocalWorkoutLog,
   LocalWorkout,
   LatestPersonalRecord,
+  LocalCustomizedStats,
 } from "../types/database.types";
 
 export interface AppSettings {
@@ -39,6 +40,7 @@ export class FitnexDB extends Dexie {
 
   workouts!: Table<LocalWorkout, string>;
   workout_logs!: Table<LocalWorkoutLog, string>;
+  customized_stats!: Table<LocalCustomizedStats, string>;
 
   constructor() {
     super("FitnexDB");
@@ -46,6 +48,8 @@ export class FitnexDB extends Dexie {
     this.version(3).stores({
       athlete_summary: "user_id",
       latest_personal_record: "exercise_id",
+      customized_stats:
+        "[user_id+start_date+end_date], user_id, start_date, end_date",
       app_settings: "id",
       athlete_levels_lookup: "id, level_name",
       personal_records: "[user_id+exercise_id]",

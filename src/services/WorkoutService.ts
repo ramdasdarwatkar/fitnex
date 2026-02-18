@@ -244,7 +244,7 @@ export const WorkoutService = {
 
     if (!existingPR || weight > existingPR.value) {
       const now = DateUtils.getISTDate();
-      const prId = crypto.randomUUID(); // Added ID for Supabase table primary key
+      //const prId = crypto.randomUUID(); // Added ID for Supabase table primary key
 
       const newPR = {
         user_id: userId,
@@ -257,11 +257,56 @@ export const WorkoutService = {
       await db.latest_personal_record.put(newPR);
 
       // 2. Insert into history table
-      await supabase.from("personal_record").insert(newPR);
+      //await supabase.from("personal_record").insert(newPR);
 
       return true;
     }
     return false;
+  },
+
+  async logRestDay(userId: string) {
+    const now = DateUtils.getISTDate();
+
+    // 1. Create the payload for a Rest Day entry
+    // We set status to 0 (finished) and rest_day to 1
+    const payload: any = {
+      id: crypto.randomUUID(),
+      user_id: userId,
+      rest_day: 1, // Mark as rest day
+      status: 0, // Completed
+      start_time: now,
+      finish_time: now,
+      is_synced: 0, // Queue for SyncManager
+      created_at: now,
+      updated_at: now,
+      notes: "Recovery Day ☕️",
+    };
+
+    try {
+      // 2. Local Update (Instant UI feedback)
+      await db.workouts.put(payload);
+
+      // 3. Remote Push
+      const { error } = await supabase.from("workouts").insert({
+        ...payload,
+        status: false, // Supabase uses boolean for status usually
+        rest_day: true,
+        is_synced: undefined, // Don't send this internal column to Supabase
+      });
+
+      if (!error) {
+        // Mark as synced locally if Supabase confirmed
+        await db.workouts.update(payload.id, { is_synced: 1 });
+      }
+
+      // 4. Trigger Sync reconciliation
+      SyncManager.reconcile();
+
+      return payload.id;
+    } catch (err) {
+      console.error("Error logging rest day:", err);
+      // Even if remote fails, it stays in Dexie with is_synced: 0 for later
+    }
   },
 
   resetLock() {
