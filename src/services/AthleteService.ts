@@ -87,4 +87,13 @@ export const AthleteService = {
       .equals([userId, startDate, endDate])
       .first();
   },
+
+  async invalidateStatsCache() {
+    try {
+      // This removes all rows from the customized_stats table
+      await db.table("customized_stats").clear();
+    } catch (error) {
+      console.error("Failed to clear stats cache:", error);
+    }
+  },
 };

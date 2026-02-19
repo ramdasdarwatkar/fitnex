@@ -8,6 +8,7 @@ import type {
 } from "../types/database.types";
 import { SyncManager } from "./SyncManager";
 import { DateUtils } from "../util/dateUtils";
+import { AthleteService } from "./AthleteService";
 
 let isWorkoutSynced = false;
 
@@ -301,7 +302,6 @@ export const WorkoutService = {
 
       // 4. Trigger Sync reconciliation
       SyncManager.reconcile();
-
       return payload.id;
     } catch (err) {
       console.error("Error logging rest day:", err);

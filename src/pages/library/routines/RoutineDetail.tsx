@@ -7,7 +7,6 @@ import {
 } from "../../../services/LibraryService";
 import { RoutineService } from "../../../services/RoutineService";
 import {
-  Search,
   Check,
   Plus,
   Minus,
@@ -17,6 +16,7 @@ import {
   Lock,
   Globe,
 } from "lucide-react";
+import { ExercisePicker } from "../exercises/ExercisePicker";
 
 export const RoutineDetail = () => {
   const { id } = useParams();
@@ -24,11 +24,11 @@ export const RoutineDetail = () => {
 
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showPicker, setShowPicker] = useState(false);
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [isPublic, setIsPublic] = useState(false);
-  const [search, setSearch] = useState("");
   const [library, setLibrary] = useState<EnrichedExercise[]>([]);
   const [selectedExercises, setSelectedExercises] = useState<any[]>([]);
 
@@ -67,12 +67,13 @@ export const RoutineDetail = () => {
       .slice(0, 3);
   }, [selectedExercises, library]);
 
-  const addExercise = (ex: EnrichedExercise) => {
-    setSelectedExercises([
-      ...selectedExercises,
-      { ...ex, exercise_id: ex.id, target_sets: 3, target_reps: 10 },
-    ]);
-    setSearch("");
+  const handleAddExercises = (ids: string[]) => {
+    const newItems = ids.map((id) => {
+      const ex = library.find((l) => l.id === id);
+      return { ...ex, exercise_id: ex.id, target_sets: 3, target_reps: 10 };
+    });
+    setSelectedExercises([...selectedExercises, ...newItems]);
+    setShowPicker(false);
   };
 
   const updateTarget = (index: number, field: string, val: number) => {
@@ -127,13 +128,21 @@ export const RoutineDetail = () => {
           <div className="flex gap-2">
             <button
               onClick={() => setIsPublic(false)}
-              className={`flex-1 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-2 ${!isPublic ? "bg-white text-black border-white" : "border-slate-800 text-slate-500"}`}
+              className={`flex-1 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-2 ${
+                !isPublic
+                  ? "bg-white text-black border-white"
+                  : "border-slate-800 text-slate-500"
+              }`}
             >
               <Lock size={12} /> Private
             </button>
             <button
               onClick={() => setIsPublic(true)}
-              className={`flex-1 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-2 ${isPublic ? "bg-[var(--brand-primary)] text-black border-[var(--brand-primary)] shadow-lg shadow-[var(--brand-primary)]/20" : "border-slate-800 text-slate-500"}`}
+              className={`flex-1 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-2 ${
+                isPublic
+                  ? "bg-[var(--brand-primary)] text-black border-[var(--brand-primary)] shadow-lg shadow-[var(--brand-primary)]/20"
+                  : "border-slate-800 text-slate-500"
+              }`}
             >
               <Globe size={12} /> Public
             </button>
@@ -151,37 +160,16 @@ export const RoutineDetail = () => {
           </div>
         </div>
 
-        {/* 2. SEARCH BOX */}
-        <div className="relative">
-          <Search
-            size={16}
-            className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500"
-          />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="ADD TO ROUTINE..."
-            className="w-full bg-[var(--bg-surface)] border border-slate-800 rounded-2xl py-5 pl-14 text-xs font-black uppercase italic outline-none focus:border-[var(--brand-primary)]"
-          />
-          {search && (
-            <div className="absolute top-[110%] left-0 w-full bg-[var(--bg-surface)] border-2 border-slate-800 rounded-[2rem] shadow-2xl z-50 max-h-64 overflow-y-auto">
-              {library
-                .filter((ex) =>
-                  ex.name.toLowerCase().includes(search.toLowerCase()),
-                )
-                .map((ex) => (
-                  <button
-                    key={ex.id}
-                    onClick={() => addExercise(ex)}
-                    className="w-full p-5 text-left border-b border-slate-800 last:border-0 hover:bg-slate-900 font-black uppercase italic text-xs text-[var(--text-main)]"
-                  >
-                    {ex.name}
-                  </button>
-                ))}
-            </div>
-          )}
-        </div>
+        {/* 2. TRIGGER PICKER */}
+        <button
+          onClick={() => setShowPicker(true)}
+          className="w-full bg-[var(--bg-surface)] border border-slate-800 rounded-2xl py-5 px-6 flex items-center gap-4 text-slate-500 active:scale-95 transition-all"
+        >
+          <Plus size={18} className="text-[var(--brand-primary)]" />
+          <span className="text-xs font-black uppercase italic tracking-widest">
+            Add Exercises
+          </span>
+        </button>
 
         {/* 3. EXERCISE CARDS */}
         <div className="space-y-3">
@@ -263,6 +251,13 @@ export const RoutineDetail = () => {
         <div className="flex-1" />
       </div>
 
+      {showPicker && (
+        <ExercisePicker
+          onClose={() => setShowPicker(false)}
+          onAdd={handleAddExercises}
+        />
+      )}
+
       <ConfirmModal
         isOpen={showModal}
         onConfirm={() =>
@@ -274,6 +269,7 @@ export const RoutineDetail = () => {
   );
 };
 
+/* Internal UI Sub-Components */
 const Counter = ({ label, value, onDec, onInc }: any) => (
   <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 flex items-center justify-between">
     <span className="text-[8px] font-black uppercase text-slate-500">

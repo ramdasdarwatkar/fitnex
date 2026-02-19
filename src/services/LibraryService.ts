@@ -317,6 +317,26 @@ export const LibraryService = {
     await db.exercises.put(data as Exercise);
   },
 
+  /**
+   * Fetches all muscles from the DB that are top-level (orphans).
+   */
+  async getOrphanMuscles(): Promise<string[]> {
+    try {
+      const orphans = await db.muscles
+        .filter((m) => {
+          // If m.parent has ANY value (string, number, etc.), this returns false (removed)
+          // If m.parent is null, undefined, or "", this returns true (kept)
+          return !m.parent;
+        })
+        .toArray();
+
+      return orphans.map((m) => m.name.toLowerCase());
+    } catch (error) {
+      console.error("Failed to fetch orphan muscles", error);
+      return [];
+    }
+  },
+
   resetLock(): void {
     isLibrarySynced = false;
   },

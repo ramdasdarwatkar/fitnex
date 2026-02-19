@@ -1,3 +1,4 @@
+import { AthleteService } from "./AthleteService";
 import { WorkoutService } from "./WorkoutService";
 
 export const SyncManager = {
@@ -23,6 +24,8 @@ export const SyncManager = {
         await WorkoutService.pushLogsToSupabase(pendingLogs);
         console.log(`✅ Synced ${pendingLogs.length} logs.`);
       }
+
+      AthleteService.invalidateStatsCache();
     } catch (error) {
       console.error("❌ SyncManager Error:", error);
     }

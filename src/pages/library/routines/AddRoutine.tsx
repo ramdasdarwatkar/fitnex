@@ -5,17 +5,10 @@ import {
   LibraryService,
   type EnrichedExercise,
 } from "../../../services/LibraryService";
-import { RoutineService } from "../../../services/RoutineService"; // Updated Service
+import { RoutineService } from "../../../services/RoutineService";
 import { useAuth } from "../../../context/AuthContext";
-import {
-  Search,
-  Check,
-  Plus,
-  Minus,
-  MoveVertical,
-  Lock,
-  Globe,
-} from "lucide-react";
+import { Check, Plus, Minus, MoveVertical, Lock, Globe } from "lucide-react";
+import { ExercisePicker } from "../exercises/ExercisePicker";
 
 export const AddRoutine = () => {
   const navigate = useNavigate();
@@ -24,7 +17,7 @@ export const AddRoutine = () => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [isPublic, setIsPublic] = useState(false);
-  const [search, setSearch] = useState("");
+  const [showPicker, setShowPicker] = useState(false);
   const [library, setLibrary] = useState<EnrichedExercise[]>([]);
   const [selectedExercises, setSelectedExercises] = useState<any[]>([]);
 
@@ -46,12 +39,13 @@ export const AddRoutine = () => {
       .slice(0, 3);
   }, [selectedExercises]);
 
-  const addExercise = (ex: EnrichedExercise) => {
-    setSelectedExercises([
-      ...selectedExercises,
-      { ...ex, target_sets: 3, target_reps: 10 },
-    ]);
-    setSearch("");
+  const handleAddExercises = (ids: string[]) => {
+    const newItems = ids.map((id) => {
+      const ex = library.find((l) => l.id === id);
+      return { ...ex, target_sets: 3, target_reps: 10 };
+    });
+    setSelectedExercises([...selectedExercises, ...newItems]);
+    setShowPicker(false);
   };
 
   const removeExercise = (index: number) => {
@@ -71,7 +65,7 @@ export const AddRoutine = () => {
         name,
         description,
         is_public: isPublic,
-        user_id: user_id, // Ensure column name matches your DB (usually user_id or created_by)
+        user_id: user_id,
       };
       await RoutineService.addRoutine(payload, selectedExercises);
       navigate(-1);
@@ -132,37 +126,16 @@ export const AddRoutine = () => {
           )}
         </div>
 
-        {/* 2. SEARCH */}
-        <div className="relative">
-          <Search
-            size={16}
-            className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500"
-          />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="ADD EXERCISE..."
-            className="w-full bg-[var(--bg-surface)] border border-slate-800 rounded-2xl py-5 pl-14 pr-6 text-xs font-black uppercase italic outline-none focus:border-[var(--brand-primary)]"
-          />
-          {search && (
-            <div className="absolute top-[110%] left-0 w-full bg-[var(--bg-surface)] border-2 border-slate-800 rounded-[2rem] shadow-2xl z-50 max-h-64 overflow-y-auto">
-              {library
-                .filter((ex) =>
-                  ex.name.toLowerCase().includes(search.toLowerCase()),
-                )
-                .map((ex) => (
-                  <button
-                    key={ex.id}
-                    onClick={() => addExercise(ex)}
-                    className="w-full p-5 text-left border-b border-slate-800 last:border-0 hover:bg-slate-900 font-black uppercase italic text-xs text-[var(--text-main)]"
-                  >
-                    {ex.name}
-                  </button>
-                ))}
-            </div>
-          )}
-        </div>
+        {/* 2. TRIGGER PICKER */}
+        <button
+          onClick={() => setShowPicker(true)}
+          className="w-full bg-[var(--bg-surface)] border border-slate-800 rounded-2xl py-5 px-6 flex items-center gap-4 text-slate-500 active:scale-95 transition-all"
+        >
+          <Plus size={18} className="text-[var(--brand-primary)]" />
+          <span className="text-xs font-black uppercase italic tracking-widest">
+            Add Exercises
+          </span>
+        </button>
 
         {/* 3. SELECTED EXERCISES */}
         <div className="space-y-3">
@@ -227,14 +200,19 @@ export const AddRoutine = () => {
           <Check size={20} strokeWidth={4} /> CREATE TEMPLATE
         </button>
 
-        {/* THE SPRING */}
         <div className="flex-1" />
       </div>
+
+      {showPicker && (
+        <ExercisePicker
+          onClose={() => setShowPicker(false)}
+          onAdd={handleAddExercises}
+        />
+      )}
     </SubPageLayout>
   );
 };
 
-/* Internal UI Sub-Components */
 const PrivacyToggle = ({ active, label, icon, onClick, primary }: any) => (
   <button
     onClick={onClick}
