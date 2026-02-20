@@ -22,6 +22,7 @@ import { WorkoutService } from "../../../services/WorkoutService";
 import { useAuth } from "../../../context/AuthContext";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "../../../db/database";
+import { DateUtils } from "../../../util/dateUtils";
 
 /* -------------------------------------------------------------------------- */
 /* EXTRACTED EXERCISE CARD                           */
@@ -225,7 +226,7 @@ export const WorkoutHistory = () => {
       ctx.scale(2, 2);
 
       const userName = (athlete.name || "PRO ATHLETE").toUpperCase();
-      const dateStr = format(selectedDate, "EEE, MMM dd yyyy").toUpperCase();
+      const dateStr = format(selectedDate, "EEEE-dd-MM-yyyy").toUpperCase();
 
       const data = `
         <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
@@ -264,7 +265,7 @@ export const WorkoutHistory = () => {
         const res = await fetch(pngUrl);
         const blob = await res.blob();
         if (navigator.share) {
-          const file = new File([blob], userName + dateStr, {
+          const file = new File([blob], dateStr + `.png`, {
             type: "image/png",
           });
           await navigator.share({ files: [file] });
