@@ -224,7 +224,7 @@ export const WorkoutHistory = () => {
       if (!ctx) return;
       ctx.scale(2, 2);
 
-      const userName = (athlete.full_name || "PRO ATHLETE").toUpperCase();
+      const userName = (athlete.name || "PRO ATHLETE").toUpperCase();
       const dateStr = format(selectedDate, "EEE, MMM dd yyyy").toUpperCase();
 
       const data = `
@@ -264,7 +264,9 @@ export const WorkoutHistory = () => {
         const res = await fetch(pngUrl);
         const blob = await res.blob();
         if (navigator.share) {
-          const file = new File([blob], `stats.png`, { type: "image/png" });
+          const file = new File([blob], userName + dateStr, {
+            type: "image/png",
+          });
           await navigator.share({ files: [file] });
         }
       };
