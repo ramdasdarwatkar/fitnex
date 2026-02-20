@@ -7,6 +7,7 @@ import { LibraryService } from "../../services/LibraryService";
 import { WorkoutService } from "../../services/WorkoutService";
 import { RoutineService } from "../../services/RoutineService";
 import { AthleteLevelService } from "../../services/AthleteLevelService";
+import { PersonalRecordService } from "../../services/PersonalRecordService";
 
 export const CacheDataLoader = () => {
   const { user_id } = useAuth();
@@ -22,7 +23,7 @@ export const CacheDataLoader = () => {
         await Promise.all([
           LibraryService.syncLibrary(),
           WorkoutService.syncRecentWorkouts(user_id),
-          WorkoutService.syncPRs(user_id),
+          PersonalRecordService.syncPRs(user_id),
           RoutineService.syncRoutine(user_id),
           AthleteLevelService.syncMetadata(),
         ]);

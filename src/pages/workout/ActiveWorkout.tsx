@@ -24,6 +24,7 @@ import { db } from "../../db/database";
 import { WorkoutService } from "../../services/WorkoutService";
 import { ExercisePicker } from "../library/exercises/ExercisePicker";
 import { DateUtils } from "../../util/dateUtils";
+import { PersonalRecordService } from "../../services/PersonalRecordService";
 
 export const ActiveWorkout = () => {
   const navigate = useNavigate();
@@ -530,7 +531,7 @@ const WorkoutLogRow = ({
     if (nextVal === 1) {
       onRest();
       if (exercise?.weight && set.weight > 0) {
-        const isPR = await WorkoutService.checkPR(
+        const isPR = await PersonalRecordService.checkPR(
           user_id,
           exercise.id,
           set.weight,

@@ -23,6 +23,7 @@ import { RoutineDetail } from "../pages/library/routines/RoutineDetail";
 import { ActiveWorkout } from "../pages/workout/ActiveWorkout";
 import { SplashScreen } from "../components/ui/SplashScreen";
 import { WorkoutHistory } from "../pages/workout/components/WorkoutHistory";
+import { ProgressPage } from "../pages/progress/ProgressPage";
 
 export const AppRoutes = () => {
   const { user_id, athlete, loading } = useAuth();
@@ -58,6 +59,7 @@ export const AppRoutes = () => {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/profile" element={<ProfileHome />} />
             <Route path="/library" element={<Library />} />
+            <Route path="/progress" element={<ProgressPage />} />
           </Route>
 
           <Route path="/profile/details" element={<ProfileDetails />} />

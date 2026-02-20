@@ -73,9 +73,7 @@ export const Dashboard = () => {
       {/* FIX: We only render this section container if there is visible content (Rest Day Card).
           The FAB (WorkoutActionButton) is fixed, so it doesn't need a slot in the flex stack.
       */}
-      {!isRestDayToday ? (
-        <WorkoutActionButton />
-      ) : (
+      {isRestDayToday ? (
         <section className="px-2">
           <div className="w-full py-6 bg-blue-500/5 border border-blue-500/20 rounded-[2.5rem] flex flex-col items-center justify-center gap-2 animate-in fade-in zoom-in duration-500">
             <div className="flex items-center gap-3">
@@ -89,6 +87,8 @@ export const Dashboard = () => {
             </p>
           </div>
         </section>
+      ) : (
+        ""
       )}
 
       {/* SECTION 2: PERFORMANCE OVERVIEW */}

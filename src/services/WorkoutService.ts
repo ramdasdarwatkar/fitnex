@@ -318,38 +318,35 @@ export const WorkoutService = {
     });
   },
 
-  // --- PERSONAL RECORDS ---
-
-  async syncPRs(userId: string) {
-    const { data, error } = await supabase
-      .from("v_latest_personal_records")
-      .select("*")
-      .eq("user_id", userId);
-
-    if (error) return;
-    if (data) {
-      await db.transaction("rw", db.latest_personal_record, async () => {
-        await db.latest_personal_record.clear();
-        await db.latest_personal_record.bulkPut(data);
-      });
-    }
+  async deleteSet(setId: string) {
+    return await db.workout_logs.delete(setId);
   },
 
-  async checkPR(userId: string, exerciseId: string, weight: number) {
-    const existingPR = await db.latest_personal_record.get(exerciseId);
-    if (!existingPR || weight > existingPR.value) {
-      const now = DateUtils.getISTDate();
-      const newPR = {
-        user_id: userId,
-        exercise_id: exerciseId,
-        value: weight,
-        record_date: now,
-      };
-      await db.latest_personal_record.put(newPR);
-      await supabase.from("personal_record").insert(newPR);
-      return true;
-    }
-    return false;
+  async deleteExercise(workoutId: string, exerciseId: string) {
+    return await db.workout_logs
+      .where({ workout_id: workoutId, exercise_id: exerciseId })
+      .delete();
+  },
+
+  async getExerciseHistory(userId: string, exerciseId: string) {
+    const { data, error } = await supabase
+      .from("workouts")
+      .select(
+        `
+        id,
+        start_time,
+        logs:workout_logs!inner(
+          exercise_id,
+          set_number,weight,reps,distance,duration
+        )
+      `,
+      )
+      .eq("user_id", userId)
+      .eq("logs.exercise_id", exerciseId)
+      .order("start_time", { ascending: false });
+
+    if (error) throw error;
+    return data;
   },
 
   resetLock() {
