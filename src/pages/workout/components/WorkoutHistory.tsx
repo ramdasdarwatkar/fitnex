@@ -224,7 +224,7 @@ export const WorkoutHistory = () => {
       if (!ctx) return;
       ctx.scale(2, 2);
 
-      const userName = (athlete.name || "PRO ATHLETE").toUpperCase();
+      const userName = (athlete.full_name || "PRO ATHLETE").toUpperCase();
       const dateStr = format(selectedDate, "EEE, MMM dd yyyy").toUpperCase();
 
       const data = `
