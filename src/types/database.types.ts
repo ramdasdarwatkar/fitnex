@@ -113,6 +113,7 @@ export interface Exercise {
 
   added_by?: string | null;
   is_public: boolean;
+  category: string;
 }
 
 export interface ExerciseMuscle {

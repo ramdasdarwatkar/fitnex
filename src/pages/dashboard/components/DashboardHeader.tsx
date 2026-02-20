@@ -2,9 +2,11 @@ import { useMemo } from "react";
 import { Sparkles } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 import { format } from "date-fns";
+import { useNavigate } from "react-router-dom";
 
 export const DashboardHeader = () => {
   const { athlete } = useAuth();
+  const navigate = useNavigate();
 
   // 1. Time-aware greeting logic
   const greeting = useMemo(() => {
@@ -40,10 +42,7 @@ export const DashboardHeader = () => {
 
       {/* Monthly View Trigger Button */}
       <button
-        onClick={() => {
-          // Future logic to open Monthly Calendar Modal
-          console.log("Opening Monthly View...");
-        }}
+        onClick={() => navigate("/workout/history")} // Updated to navigate
         className="dashboard-card w-12 h-12 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col items-center justify-center text-slate-400 active:scale-90 transition-all hover:border-[var(--brand-primary)]/40 shadow-xl group"
       >
         <span className="text-[7px] font-black text-slate-500 group-hover:text-[var(--brand-primary)] transition-colors mb-0.5 uppercase tracking-tighter">

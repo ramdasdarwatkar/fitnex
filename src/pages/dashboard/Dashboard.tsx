@@ -70,11 +70,13 @@ export const Dashboard = () => {
     <div className="flex-1 flex flex-col bg-[var(--bg-main)] px-6 space-y-10 min-h-screen pb-10 pt-[env(safe-area-inset-top)] mt-4 max-w-6xl mx-auto w-full relative">
       <DashboardHeader />
 
-      {/* SECTION 1: ACTION OR RECOVERY STATUS */}
-      <section className="px-2">
-        {!isRestDayToday ? (
-          <WorkoutActionButton />
-        ) : (
+      {/* FIX: We only render this section container if there is visible content (Rest Day Card).
+          The FAB (WorkoutActionButton) is fixed, so it doesn't need a slot in the flex stack.
+      */}
+      {!isRestDayToday ? (
+        <WorkoutActionButton />
+      ) : (
+        <section className="px-2">
           <div className="w-full py-6 bg-blue-500/5 border border-blue-500/20 rounded-[2.5rem] flex flex-col items-center justify-center gap-2 animate-in fade-in zoom-in duration-500">
             <div className="flex items-center gap-3">
               <Coffee size={20} className="text-blue-400" />
@@ -86,8 +88,8 @@ export const Dashboard = () => {
               Rest day logged. Your body is growing today.
             </p>
           </div>
-        )}
-      </section>
+        </section>
+      )}
 
       {/* SECTION 2: PERFORMANCE OVERVIEW */}
       <section className="space-y-4">
@@ -99,7 +101,6 @@ export const Dashboard = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-          {/* 7-Day Calendar */}
           <div className="lg:col-span-7 h-full">
             <WeeklyCalendar
               activeDays={weekData.active_days || []}
@@ -107,7 +108,6 @@ export const Dashboard = () => {
             />
           </div>
 
-          {/* Muscle Map with Filtered List */}
           <div className="lg:col-span-5 h-full">
             <BodyMapCard muscleNames={weekData.muscle_names} />
           </div>
@@ -166,7 +166,6 @@ export const Dashboard = () => {
         </div>
       </section>
 
-      {/* Visual spacer for bottom navigation menu */}
       <div className="h-10" />
     </div>
   );

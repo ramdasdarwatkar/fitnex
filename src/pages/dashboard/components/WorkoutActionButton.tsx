@@ -1,6 +1,5 @@
 import { useState } from "react";
 import {
-  Play,
   RotateCcw,
   X,
   CalendarClock,
@@ -24,7 +23,21 @@ export const WorkoutActionButton = () => {
     setShowSetup(false);
 
     if (type === "REST") return await WorkoutService.logRestDay(user_id);
-    if (type === "PAST") return navigate(`/workout/active?mode=past`);
+
+    if (type === "PAST") {
+      // 1. Calculate Date Constraints (Max 21 days back, Max today)
+      const now = new Date();
+      const threeWeeksAgo = new Date();
+      threeWeeksAgo.setDate(now.getDate() - 21);
+
+      const maxDate = now.toISOString().split("T")[0];
+      const minDate = threeWeeksAgo.toISOString().split("T")[0];
+
+      // 2. Navigate with constraints to enforce in the DatePicker
+      return navigate(
+        `/workout/active?mode=past&min=${minDate}&max=${maxDate}`,
+      );
+    }
 
     await WorkoutService.startNewWorkout(user_id);
     navigate(`/workout/active?mode=live`);
@@ -35,7 +48,7 @@ export const WorkoutActionButton = () => {
       {/* Floating Action Button (FAB) */}
       <button
         onClick={() => (isOngoing ? resumeSession() : setShowSetup(true))}
-        className={`fixed bottom-[100px] right-6 z-[500] w-16 h-16 rounded-full flex items-center justify-center shadow-2xl transition-all active:scale-90 group ${
+        className={`fixed bottom-[60px] right-6 z-[500] w-16 h-16 rounded-full flex items-center justify-center shadow-2xl transition-all active:scale-90 group ${
           isOngoing
             ? "bg-[var(--brand-primary)] text-black animate-pulse"
             : "bg-white text-black hover:bg-[var(--brand-primary)]"
@@ -47,7 +60,7 @@ export const WorkoutActionButton = () => {
             className="group-hover:rotate-[-45deg] transition-transform"
           />
         ) : (
-          <Dumbbell size={28} fill="currentColor" className="ml-1" />
+          <Dumbbell size={28} className="ml-1" />
         )}
 
         {isOngoing && (
@@ -93,7 +106,7 @@ export const WorkoutActionButton = () => {
               <SetupOption
                 icon={<CalendarClock size={22} />}
                 title="Manual Log"
-                sub="Log a past workout"
+                sub="Last 21 days only"
                 color="bg-slate-700 text-white"
                 onClick={() => handleActionSelect("PAST")}
               />

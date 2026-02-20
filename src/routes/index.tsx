@@ -21,6 +21,8 @@ import { ExerciseDetail } from "../pages/library/exercises/ExerciseDetails";
 import { AddRoutine } from "../pages/library/routines/AddRoutine";
 import { RoutineDetail } from "../pages/library/routines/RoutineDetail";
 import { ActiveWorkout } from "../pages/workout/ActiveWorkout";
+import { SplashScreen } from "../components/ui/SplashScreen";
+import { WorkoutHistory } from "../pages/workout/components/WorkoutHistory";
 
 export const AppRoutes = () => {
   const { user_id, athlete, loading } = useAuth();
@@ -28,16 +30,7 @@ export const AppRoutes = () => {
   // 1. FULL SCREEN BARRIER
   // Prevents "Route Flashing" while initializing
   if (loading) {
-    return (
-      <div className="h-screen w-full bg-[var(--bg-main)] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-[var(--brand-primary)] border-t-transparent rounded-full animate-spin" />
-          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)] animate-pulse">
-            Establishing Link...
-          </p>
-        </div>
-      </div>
-    );
+    return <SplashScreen />;
   }
 
   return (
@@ -78,6 +71,7 @@ export const AppRoutes = () => {
           <Route path="/library/routines/add" element={<AddRoutine />} />
           <Route path="/library/routines/:id" element={<RoutineDetail />} />
           <Route path="/workout/active" element={<ActiveWorkout />} />
+          <Route path="/workout/history" element={<WorkoutHistory />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>
       )}

@@ -14,6 +14,7 @@ import type {
   LocalWorkout,
   LatestPersonalRecord,
   LocalCustomizedStats,
+  Workout,
 } from "../types/database.types";
 
 export interface AppSettings {
@@ -41,6 +42,7 @@ export class FitnexDB extends Dexie {
   workouts!: Table<LocalWorkout, string>;
   workout_logs!: Table<LocalWorkoutLog, string>;
   customized_stats!: Table<LocalCustomizedStats, string>;
+  workout_history!: Table<Workout, string>;
 
   constructor() {
     super("FitnexDB");
@@ -63,6 +65,7 @@ export class FitnexDB extends Dexie {
       workouts: "id, user_id, start_time, status, is_synced",
       workout_logs:
         "id, workout_id, exercise_id, exercise_order, is_synced, [workout_id+exercise_id+set_number]",
+      workout_history: "id, user_id, start_time", // Synced Vault data
     });
   }
 }

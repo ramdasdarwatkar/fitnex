@@ -1,7 +1,6 @@
-import { useState, useEffect, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
-import { format } from "date-fns";
 import confetti from "canvas-confetti";
 import {
   Timer,
@@ -158,6 +157,11 @@ export const ActiveWorkout = () => {
   };
 
   if (!activeWorkout && mode === "past") {
+    // Calculate 21 days back for the min attribute
+    const threeWeeksAgo = new Date();
+    threeWeeksAgo.setDate(threeWeeksAgo.getDate() - 21);
+    const minDate = threeWeeksAgo.toISOString().split("T")[0];
+
     return (
       <SubPageLayout title="Log Previous">
         <div className="flex-1 flex flex-col justify-center items-center py-10 px-6">
@@ -169,6 +173,9 @@ export const ActiveWorkout = () => {
               <input
                 type="date"
                 value={pastDate}
+                // STRICT CHANGE HERE: Disable future and dates > 21 days
+                min={minDate}
+                max={defaultDateFull}
                 onChange={(e) => setPastDate(e.target.value)}
                 className="w-full bg-black border border-slate-800 p-4 rounded-2xl text-white font-black outline-none"
               />
