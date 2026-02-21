@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { format, startOfWeek, addDays, isSameDay, parseISO } from "date-fns";
-import { Coffee, Zap, Target } from "lucide-react";
+import { Zap, Target } from "lucide-react";
+import { SiBuymeacoffee } from "react-icons/si";
 
 interface WeeklyCalendarProps {
   activeDays: string[];
@@ -79,7 +80,7 @@ export const WeeklyCalendar = ({
                   {isWorkout ? (
                     <Zap size={16} className="text-black fill-current" />
                   ) : isRest ? (
-                    <Coffee size={16} className="text-blue-400" />
+                    <SiBuymeacoffee size={16} className="text-blue-400" />
                   ) : (
                     <span
                       className={`text-[11px] font-black ${isToday ? "text-white" : "text-slate-700"}`}
