@@ -159,6 +159,7 @@ export interface PersonalRecord {
   user_id: string;
   exercise_id: string;
   value: number;
+  value_type: string;
   record_date: string;
   created_at: string;
 }
@@ -246,6 +247,7 @@ export interface LatestPersonalRecord {
   user_id: string;
   exercise_id: string;
   value: number;
+  value_type: string;
   record_date: string; // ISO date
 }
 

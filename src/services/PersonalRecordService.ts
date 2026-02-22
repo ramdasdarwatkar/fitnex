@@ -41,7 +41,7 @@ export const PersonalRecordService = {
   async getExercisePRs(userId: string, exerciseId: string) {
     const { data, error } = await supabase
       .from("personal_record")
-      .select("value, record_date")
+      .select("value, record_date, value_type")
       .eq("user_id", userId)
       .eq("exercise_id", exerciseId)
       .order("record_date", { ascending: true });

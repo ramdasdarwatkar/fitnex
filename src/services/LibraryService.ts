@@ -1,6 +1,7 @@
 import { db } from "../db/database";
 import { supabase } from "../lib/supabase";
 import type { Database } from "../types/database.types";
+import { v4 as uuidv4 } from "uuid";
 
 // Database Row Types
 type Muscle = Database["public"]["Tables"]["muscles"]["Row"];
@@ -213,97 +214,140 @@ export const LibraryService = {
     await db.muscles.put(data as Muscle);
   },
 
-  async addExercise(
-    payload: ExerciseInsert,
-    muscles: any[],
-    equipmentId: string | null,
-  ): Promise<Exercise> {
+  async saveExercise(formData: any, userId: string) {
+    const exerciseId = uuidv4();
+
+    // Helper to map tracking metrics to boolean values
+    const hasMetric = (val: string) => formData.tracking.includes(val);
+
+    const payload = {
+      id: exerciseId,
+      added_by: userId,
+      name: formData.name,
+      category: formData.category,
+      is_public: formData.isPublic,
+      reps: hasMetric("reps"),
+      weight: hasMetric("weight"),
+      bodyweight: hasMetric("bodyweight"),
+      distance: hasMetric("distance"),
+      duration: hasMetric("duration"),
+      updated_at: new Date().toISOString(),
+      status: true,
+    };
+
+    // 1. Save Main Exercise to Supabase
     const { data: exercise, error: exErr } = await supabase
       .from("exercises")
       .insert([payload])
       .select()
       .single();
+
     if (exErr) throw exErr;
 
-    await db.exercises.put(exercise as Exercise);
+    // Prepare Junction Data
+    const roles: ("primary" | "secondary" | "stabilizer")[] = [
+      "primary",
+      "secondary",
+      "stabilizer",
+    ];
 
-    const junctions: Promise<any>[] = [];
-    if (muscles.length > 0) {
-      const inserts: ExMuscleInsert[] = muscles.map((m) => ({
-        exercise_id: exercise.id,
-        muscle_id: m.id,
-        role: m.role,
+    const muscleLinks = roles.flatMap((role) => {
+      const fieldName = `${role}Muscles` as keyof typeof formData;
+      const muscleIds = formData[fieldName] as string[];
+      return muscleIds.map((mId: string) => ({
+        exercise_id: exerciseId,
+        muscle_id: mId,
+        role,
       }));
-      junctions.push(
-        supabase
-          .from("exercise_muscles")
-          .insert(inserts)
-          .then(() => db.exercise_muscles.bulkPut(inserts as ExMuscle[])),
+    });
+
+    const equipmentLink = formData.equipmentId
+      ? {
+          exercise_id: exerciseId,
+          equipment_id: formData.equipmentId,
+        }
+      : null;
+
+    // 2. Save Junctions to Supabase
+    const supabaseJunctions: Promise<any>[] = [];
+
+    if (muscleLinks.length > 0) {
+      supabaseJunctions.push(
+        supabase.from("exercise_muscles").insert(muscleLinks),
       );
     }
 
-    if (equipmentId) {
-      const insert: ExEquipInsert = {
-        exercise_id: exercise.id,
-        equipment_id: parseInt(equipmentId),
-      };
-      junctions.push(
-        supabase
-          .from("exercise_equipment")
-          .insert([insert])
-          .then(() => db.exercise_equipment.put(insert as ExEquip)),
+    if (equipmentLink) {
+      supabaseJunctions.push(
+        supabase.from("exercise_equipment").insert([equipmentLink]),
       );
     }
 
-    await Promise.all(junctions);
-    return exercise as Exercise;
+    await Promise.all(supabaseJunctions);
+
+    // 3. Sync to Local Dexie (using a transaction for data integrity)
+    return await db.transaction(
+      "rw",
+      [db.exercises, db.exercise_equipment, db.exercise_muscles],
+      async () => {
+        await db.exercises.add(payload);
+
+        if (equipmentLink) {
+          await db.exercise_equipment.add(equipmentLink);
+        }
+
+        if (muscleLinks.length > 0) {
+          await db.exercise_muscles.bulkAdd(muscleLinks);
+        }
+
+        return exerciseId;
+      },
+    );
   },
 
-  async updateExercise(
-    id: string,
-    payload: ExerciseUpdate,
-    muscles: { id: string; role: string }[],
-    equipmentId: string | null,
-  ): Promise<void> {
-    const { data: exercise, error: exErr } = await supabase
-      .from("exercises")
-      .update(payload)
-      .eq("id", id)
-      .select()
-      .single();
-    if (exErr) throw exErr;
-
-    await db.exercises.put(exercise as Exercise);
-
-    // Sync Junctions (Atomic Wipe & Replace)
-    await Promise.all([
-      supabase.from("exercise_muscles").delete().eq("exercise_id", id),
-      db.exercise_muscles.where("exercise_id").equals(id).delete(),
+  // services/LibraryService.ts
+  async getExerciseDetails(exerciseId: string) {
+    const [ex, equipment, muscles, allMuscles] = await Promise.all([
+      db.exercises.get(exerciseId),
+      db.exercise_equipment.where("exercise_id").equals(exerciseId).first(),
+      db.exercise_muscles.where("exercise_id").equals(exerciseId).toArray(),
+      db.muscles.toArray(),
     ]);
 
-    if (muscles.length > 0) {
-      const inserts: ExMuscleInsert[] = muscles.map((m) => ({
-        exercise_id: id,
-        muscle_id: m.id,
-        role: m.role as any,
-      }));
-      await supabase.from("exercise_muscles").insert(inserts);
-      await db.exercise_muscles.bulkPut(inserts as ExMuscle[]);
-    }
+    if (!ex) return null;
 
-    await Promise.all([
-      supabase.from("exercise_equipment").delete().eq("exercise_id", id),
-      db.exercise_equipment.where("exercise_id").equals(id).delete(),
-    ]);
+    const equipDef = await db.equipment.get(equipment?.equipment_id || "");
+    const categoryDef = await db.muscles.get(ex.category || "");
 
-    if (equipmentId) {
-      const insert: ExEquipInsert = {
-        exercise_id: id,
-        equipment_id: parseInt(equipmentId),
-      };
-      await supabase.from("exercise_equipment").insert([insert]);
-      await db.exercise_equipment.put(insert as ExEquip);
-    }
+    const mappedMuscles = muscles.map((em) => ({
+      ...allMuscles.find((m) => m.id === em.muscle_id),
+      role: em.role as "primary" | "secondary" | "stabilizer",
+    }));
+
+    return {
+      ...ex,
+      categoryName: categoryDef?.name || "General",
+      equipmentName: equipDef?.name || "None",
+      muscles: mappedMuscles,
+    };
+  },
+
+  async deleteExercise(exerciseId: string) {
+    return await db.transaction(
+      "rw",
+      [db.exercises, db.exercise_equipment, db.exercise_muscles],
+      async () => {
+        await db.exercises.delete(exerciseId);
+        await db.exercise_equipment
+          .where("exercise_id")
+          .equals(exerciseId)
+          .delete();
+        await db.exercise_muscles
+          .where("exercise_id")
+          .equals(exerciseId)
+          .delete();
+      },
+    );
   },
 
   async archiveExercise(id: string): Promise<void> {
@@ -335,6 +379,115 @@ export const LibraryService = {
       console.error("Failed to fetch orphan muscles", error);
       return [];
     }
+  },
+
+  // services/LibraryService.ts
+  async getExercisesForList() {
+    const exercises = await db.exercises.toArray();
+    const muscles = await db.muscles.toArray();
+    const equipment = await db.equipment.toArray();
+    const exEquipment = await db.exercise_equipment.toArray();
+
+    return exercises.map((ex) => {
+      const categoryMuscle = muscles.find((m) => m.id === ex.category);
+      const exEquip = exEquipment.find((e) => e.exercise_id === ex.id);
+      const equip = equipment.find((e) => e.id === exEquip?.equipment_id);
+
+      return {
+        id: ex.id,
+        name: ex.name,
+        category: ex.category,
+        categoryName: categoryMuscle ? categoryMuscle.name : "General",
+        equipmentName: equip ? equip.name : "Bodyweight",
+      };
+    });
+  },
+
+  async getExerciseForEdit(id: string) {
+    const [ex, muscles, equipment] = await Promise.all([
+      db.exercises.get(id),
+      db.exercise_muscles.where("exercise_id").equals(id).toArray(),
+      db.exercise_equipment.where("exercise_id").equals(id).first(),
+    ]);
+
+    if (!ex) return null;
+
+    return {
+      ...ex,
+      equipmentId: equipment?.equipment_id?.toString() || "",
+      primaryMuscles: muscles
+        .filter((m) => m.role === "primary")
+        .map((m) => m.muscle_id),
+      secondaryMuscles: muscles
+        .filter((m) => m.role === "secondary")
+        .map((m) => m.muscle_id),
+      stabilizerMuscles: muscles
+        .filter((m) => m.role === "stabilizer")
+        .map((m) => m.muscle_id),
+      tracking: [
+        ex.reps ? "reps" : null,
+        ex.weight ? "weight" : null,
+        ex.bodyweight ? "bodyweight" : null,
+        ex.distance ? "distance" : null,
+        ex.duration ? "duration" : null,
+      ].filter(Boolean),
+    };
+  },
+
+  async updateExercise(id: string, formData: any) {
+    const has = (val: string) => (formData.tracking.includes(val) ? 1 : 0);
+    const payload = {
+      name: formData.name,
+      category: formData.category,
+      is_public: formData.isPublic ? 1 : 0,
+      reps: has("reps"),
+      weight: has("weight"),
+      bodyweight: has("bodyweight"),
+      distance: has("distance"),
+      duration: has("duration"),
+      updated_at: new Date().toISOString(),
+    };
+
+    // 1. Supabase Update
+    const { error } = await supabase
+      .from("exercises")
+      .update(payload)
+      .eq("id", id);
+    if (error) throw error;
+
+    // 2. Local Transaction
+    return await db.transaction(
+      "rw",
+      [db.exercises, db.exercise_equipment, db.exercise_muscles],
+      async () => {
+        await db.exercises.update(id, payload);
+
+        // Refresh Equipment
+        await db.exercise_equipment.where("exercise_id").equals(id).delete();
+        if (formData.equipmentId) {
+          await db.exercise_equipment.add({
+            exercise_id: id,
+            equipment_id: parseInt(formData.equipmentId),
+          });
+        }
+
+        // Refresh Muscles
+        await db.exercise_muscles.where("exercise_id").equals(id).delete();
+        const roles: ("primary" | "secondary" | "stabilizer")[] = [
+          "primary",
+          "secondary",
+          "stabilizer",
+        ];
+        const links = roles.flatMap((role) =>
+          formData[`${role}Muscles`].map((mId: string) => ({
+            exercise_id: id,
+            muscle_id: mId,
+            role,
+          })),
+        );
+        if (links.length > 0) await db.exercise_muscles.bulkAdd(links);
+      },
+    );
   },
 
   resetLock(): void {

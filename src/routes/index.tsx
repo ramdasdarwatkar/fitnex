@@ -24,6 +24,8 @@ import { ActiveWorkout } from "../pages/workout/ActiveWorkout";
 import { SplashScreen } from "../components/ui/SplashScreen";
 import { WorkoutHistory } from "../pages/workout/components/WorkoutHistory";
 import { ProgressPage } from "../pages/progress/ProgressPage";
+import { EditExercise } from "../pages/library/exercises/EditExercise";
+import { ExerciseProgressPage } from "../pages/progress/ExerciseProgressPage";
 
 export const AppRoutes = () => {
   const { user_id, athlete, loading } = useAuth();
@@ -70,10 +72,18 @@ export const AppRoutes = () => {
           <Route path="/library/muscles/:id" element={<MuscleDetail />} />
           <Route path="/library/exercises/add" element={<AddExercise />} />
           <Route path="/library/exercises/:id" element={<ExerciseDetail />} />
+          <Route
+            path="/library/exercises/edit/:id"
+            element={<EditExercise />}
+          />
           <Route path="/library/routines/add" element={<AddRoutine />} />
           <Route path="/library/routines/:id" element={<RoutineDetail />} />
           <Route path="/workout/active" element={<ActiveWorkout />} />
           <Route path="/workout/history" element={<WorkoutHistory />} />
+          <Route
+            path="/progress/exercise/:id"
+            element={<ExerciseProgressPage />}
+          />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>
       )}

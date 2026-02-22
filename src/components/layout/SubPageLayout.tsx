@@ -1,11 +1,11 @@
 import { useLayoutEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft } from "lucide-react";
+import { IoIosArrowRoundBack } from "react-icons/io";
 
 interface SubPageLayoutProps {
   children: React.ReactNode;
   title: string;
-  rightElement?: React.ReactNode; // Optional: won't break other pages
+  rightElement?: React.ReactNode;
 }
 
 export const SubPageLayout = ({
@@ -15,7 +15,6 @@ export const SubPageLayout = ({
 }: SubPageLayoutProps) => {
   const navigate = useNavigate();
 
-  // Reset scroll to top on every sub-page mount
   useLayoutEffect(() => {
     window.scrollTo(0, 0);
   }, []);
@@ -23,23 +22,33 @@ export const SubPageLayout = ({
   return (
     <div className="flex-1 flex flex-col bg-[var(--bg-main)] min-h-screen pt-[env(safe-area-inset-top)] pb-32">
       {/* HEADER */}
-      <header className="px-6 py-6 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
+      <header className="px-6 py-6 flex items-center justify-between relative min-h-[80px]">
+        {/* LEFT: BACK BUTTON */}
+        <div className="relative z-10">
           <button
             onClick={() => navigate(-1)}
-            className="w-10 h-10 rounded-xl bg-[var(--bg-surface)] border border-slate-800 flex items-center justify-center text-[var(--text-main)] active:scale-90 transition-all"
+            className="w-10 h-10 flex items-center justify-center text-[var(--text-main)] active:scale-90 transition-all"
           >
-            <ChevronLeft size={20} />
+            <IoIosArrowRoundBack size={40} />
           </button>
-          <h1 className="text-2xl font-black uppercase italic tracking-tighter text-[var(--text-main)]">
+        </div>
+
+        {/* CENTER: TITLE (Absolute Positioned for perfect centering) */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <h1 className="text-xl font-black text-[var(--text-main)] pointer-events-auto truncate px-16 text-center">
             {title}
           </h1>
         </div>
 
-        {/* Slot for Finish/Discard buttons */}
-        {rightElement && (
-          <div className="flex items-center gap-3">{rightElement}</div>
-        )}
+        {/* RIGHT: ACTION SLOT */}
+        <div className="relative z-10">
+          {rightElement ? (
+            <div className="flex items-center gap-3">{rightElement}</div>
+          ) : (
+            /* Spacer to maintain layout balance if rightElement is null */
+            <div className="w-10" />
+          )}
+        </div>
       </header>
 
       {/* CONTENT */}

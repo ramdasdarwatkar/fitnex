@@ -33,4 +33,18 @@ export const BodyMetricsService = {
     }
     return true;
   },
+
+  async getMetricHistory(userId: string, columns: string[]) {
+    const filter = columns.map((c) => `${c}.not.is.null`).join(",");
+
+    const { data, error } = await supabase
+      .from("body_metrics")
+      .select(`logdate, ${columns.join(",")}`)
+      .eq("user_id", userId)
+      .or(filter)
+      .order("logdate", { ascending: true });
+
+    if (error) throw error;
+    return data;
+  },
 };

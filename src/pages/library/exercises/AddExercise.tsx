@@ -1,265 +1,347 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { SubPageLayout } from "../../../components/layout/SubPageLayout";
-import { LibraryService } from "../../../services/LibraryService";
-import { useAuth } from "../../../context/AuthContext";
 import {
+  Save,
   Search,
+  X,
   Globe,
   Lock,
-  Check,
-  Weight,
-  Repeat,
-  Move,
-  Timer,
-  Zap,
-  Box,
-  ChevronDown,
-  Minus,
+  ChevronRight,
+  Loader2,
 } from "lucide-react";
-
-type MuscleRole = "primary" | "secondary" | "stabilizer";
+import { SubPageLayout } from "../../../components/layout/SubPageLayout";
+import { useAuth } from "../../../context/AuthContext"; // Import Auth
+import { db } from "../../../db/database";
+import { LibraryService } from "../../../services/LibraryService";
 
 export const AddExercise = () => {
   const navigate = useNavigate();
-  const { user_id } = useAuth();
+  const { user_id } = useAuth(); // Retrieve current user ID
+  const [muscles, setMuscles] = useState<any[]>([]);
+  const [equipment, setEquipment] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
-  const [data, setData] = useState<{ muscles: any[]; equipment: any[] }>({
-    muscles: [],
-    equipment: [],
-  });
-  const [muscleSearch, setMuscleSearch] = useState("");
-  const [name, setName] = useState("");
-  const [isPublic, setIsPublic] = useState(false);
-  const [equipmentId, setEquipmentId] = useState("");
-  const [selectedMuscles, setSelectedMuscles] = useState<
-    { id: string; name: string; role: MuscleRole }[]
-  >([]);
-  const [metrics, setMetrics] = useState({
-    reps: true,
-    weight: true,
-    bodyweight: false,
-    distance: false,
-    duration: false,
+  const [form, setForm] = useState({
+    name: "",
+    isPublic: false,
+    equipmentId: "",
+    category: "",
+    tracking: [] as string[],
+    primaryMuscles: [] as string[],
+    secondaryMuscles: [] as string[],
+    stabilizerMuscles: [] as string[],
   });
 
   useEffect(() => {
-    // We assume data is already synced by the parent Library component
-    const loadFromCache = async () => {
-      const [m, e] = await Promise.all([
-        LibraryService.getActiveMuscles(),
-        LibraryService.getAllEquipment(),
-      ]);
-      setData({ muscles: m, equipment: e });
-    };
-    loadFromCache();
+    db.muscles.toArray().then(setMuscles);
+    db.equipment.toArray().then(setEquipment);
   }, []);
 
-  const toggleMuscle = (muscle: any, role: MuscleRole) => {
-    setSelectedMuscles((prev) => {
-      const exists = prev.find((m) => m.id === muscle.id);
-      if (exists && exists.role === role)
-        return prev.filter((m) => m.id !== muscle.id);
-      if (exists)
-        return prev.map((m) => (m.id === muscle.id ? { ...m, role } : m));
-      return [...prev, { id: muscle.id, name: muscle.name, role }];
-    });
-    setMuscleSearch("");
-  };
+  const handleSave = async () => {
+    if (!form.name || !form.category || !user_id) return;
 
-  const onSave = async () => {
-    if (!name || !user_id) return;
+    setIsSaving(true);
     try {
-      const payload = {
-        name,
-        ...metrics,
-        is_public: isPublic,
-        added_by: user_id,
-      };
-      await LibraryService.addExercise(
-        payload,
-        selectedMuscles,
-        equipmentId || null,
-      );
-      navigate(-1);
-    } catch (err) {
-      alert("Error saving exercise.");
+      await LibraryService.saveExercise(form, user_id);
+      navigate("/library");
+    } catch (error) {
+      console.error("Failed to save exercise:", error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
+  const addMuscle = (id: string, role: string) => {
+    const key = `${role}Muscles` as keyof typeof form;
+    if (!(form[key] as string[]).includes(id)) {
+      setForm({ ...form, [key]: [...(form[key] as string[]), id] });
+    }
+    setSearchQuery("");
+  };
+
   return (
-    <SubPageLayout title="New Exercise">
-      <div className="flex flex-col gap-6 pb-24">
-        {/* UI REMAINS THE SAME - Trendy Bento Style */}
-        <div className="bg-[var(--bg-surface)] border border-[var(--border-color)] p-6 rounded-[2.2rem] space-y-6 shadow-sm">
-          <input
-            autoFocus
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="EXERCISE NAME"
-            className="w-full bg-transparent text-2xl font-black italic text-[var(--text-main)] outline-none uppercase tracking-tighter placeholder:opacity-10"
+    <SubPageLayout title="Create Exercise">
+      <div className="flex flex-col gap-10 pb-40 px-2">
+        {/* VISIBILITY SELECTOR */}
+        <div className="bg-slate-100 dark:bg-slate-900 p-1.5 rounded-[2rem] flex relative border border-slate-200 dark:border-slate-800">
+          <div
+            className={`absolute top-1.5 bottom-1.5 w-[calc(50%-6px)] bg-white dark:bg-slate-800 rounded-[1.8rem] shadow-xl transition-all duration-300 ${form.isPublic ? "translate-x-[100%]" : "translate-x-0"}`}
           />
-          <div className="flex gap-2">
-            <button
-              onClick={() => setIsPublic(false)}
-              className={`flex-1 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-2 ${!isPublic ? "bg-[var(--text-main)] text-[var(--bg-main)]" : "text-[var(--text-muted)] border-[var(--border-color)]"}`}
-            >
-              <Lock size={12} /> Private
-            </button>
-            <button
-              onClick={() => setIsPublic(true)}
-              className={`flex-1 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-2 ${isPublic ? "bg-[var(--brand-primary)] text-[var(--bg-main)] shadow-lg" : "text-[var(--text-muted)] border-[var(--border-color)]"}`}
-            >
-              <Globe size={12} /> Public
-            </button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-5 gap-2">
-          {[
-            { id: "reps", icon: <Repeat size={16} /> },
-            { id: "weight", icon: <Weight size={16} /> },
-            { id: "bodyweight", icon: <Zap size={16} /> },
-            { id: "distance", icon: <Move size={16} /> },
-            { id: "duration", icon: <Timer size={16} /> },
-          ].map((m) => (
-            <button
-              key={m.id}
-              onClick={() =>
-                setMetrics({
-                  ...metrics,
-                  [m.id as keyof typeof metrics]:
-                    !metrics[m.id as keyof typeof metrics],
-                })
-              }
-              className={`flex flex-col items-center justify-center py-5 rounded-[1.4rem] border-2 transition-all gap-2 ${metrics[m.id as keyof typeof metrics] ? "border-[var(--brand-primary)] bg-[var(--brand-primary)]/5 text-[var(--brand-primary)]" : "border-[var(--border-color)] bg-[var(--bg-surface)] text-[var(--text-muted)]"}`}
-            >
-              {m.icon}
-              <span className="text-[7px] font-black uppercase">{m.id}</span>
-            </button>
-          ))}
-        </div>
-
-        <div className="bg-[var(--bg-surface)] border border-[var(--border-color)] p-6 rounded-[2.2rem] space-y-4">
-          <label className="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] flex items-center gap-2">
-            <Box size={12} /> Equipment
-          </label>
-          <div className="relative">
-            <select
-              value={equipmentId}
-              onChange={(e) => setEquipmentId(e.target.value)}
-              className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-2xl py-4.5 px-5 text-xs font-black uppercase italic text-[var(--text-main)] outline-none appearance-none"
-            >
-              <option value="">— NO EQUIPMENT —</option>
-              <option value="bodyweight_id">BODYWEIGHT ONLY</option>
-              {data.equipment.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {e.name}
-                </option>
-              ))}
-            </select>
-            <ChevronDown
-              size={16}
-              className="absolute right-5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none"
-            />
-          </div>
-        </div>
-
-        <div className="bg-[var(--bg-surface)] border border-[var(--border-color)] p-6 rounded-[2.2rem] space-y-5">
-          <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">
-            Muscle Targets
-          </p>
-          <div className="relative">
-            <Search
+          <button
+            onClick={() => setForm({ ...form, isPublic: false })}
+            className="flex-1 py-4 z-10 flex items-center justify-center gap-2 text-[10px] font-black uppercase italic tracking-widest transition-colors"
+          >
+            <Lock
               size={14}
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
+              className={
+                !form.isPublic ? "text-black dark:text-white" : "text-slate-400"
+              }
             />
-            <input
-              type="text"
-              value={muscleSearch}
-              onChange={(e) => setMuscleSearch(e.target.value)}
-              placeholder="SEARCH..."
-              className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-2xl py-4 pl-12 text-xs font-bold outline-none focus:border-[var(--brand-primary)]"
+            <span
+              className={
+                !form.isPublic ? "text-black dark:text-white" : "text-slate-400"
+              }
+            >
+              Private
+            </span>
+          </button>
+          <button
+            onClick={() => setForm({ ...form, isPublic: true })}
+            className="flex-1 py-4 z-10 flex items-center justify-center gap-2 text-[10px] font-black uppercase italic tracking-widest transition-colors"
+          >
+            <Globe
+              size={14}
+              className={form.isPublic ? "text-emerald-500" : "text-slate-400"}
             />
-            {muscleSearch && (
-              <div className="absolute top-[110%] left-0 w-full bg-[var(--bg-surface)] border-2 border-[var(--border-color)] rounded-[2rem] shadow-2xl z-50 overflow-hidden max-h-72 overflow-y-auto backdrop-blur-xl">
-                {data.muscles
-                  .filter((m) =>
-                    m.name.toLowerCase().includes(muscleSearch.toLowerCase()),
-                  )
-                  .map((m) => (
-                    <div
-                      key={m.id}
-                      className="p-5 border-b border-[var(--border-color)] last:border-0 hover:bg-[var(--bg-main)] space-y-4"
-                    >
-                      <span className="text-[12px] font-black uppercase italic text-[var(--text-main)] block">
-                        {m.name}
-                      </span>
-                      <div className="grid grid-cols-3 gap-2">
-                        <button
-                          onClick={() => toggleMuscle(m, "primary")}
-                          className="py-3 rounded-xl text-[8px] font-black uppercase bg-orange-500/10 text-orange-500 border border-orange-500/20 active:scale-90 transition-all"
-                        >
-                          Primary
-                        </button>
-                        <button
-                          onClick={() => toggleMuscle(m, "secondary")}
-                          className="py-3 rounded-xl text-[8px] font-black uppercase bg-blue-500/10 text-blue-500 border border-blue-500/20 active:scale-90 transition-all"
-                        >
-                          Secondary
-                        </button>
-                        <button
-                          onClick={() => toggleMuscle(m, "stabilizer")}
-                          className="py-3 rounded-xl text-[8px] font-black uppercase bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 active:scale-90 transition-all"
-                        >
-                          Stabilizer
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-              </div>
+            <span
+              className={
+                form.isPublic ? "text-black dark:text-white" : "text-slate-400"
+              }
+            >
+              Public
+            </span>
+          </button>
+        </div>
+
+        {/* EXERCISE NAME */}
+        <div className="space-y-2">
+          <label className="text-[10px] font-black uppercase text-slate-400 ml-4 tracking-[0.2em]">
+            Exercise Name
+          </label>
+          <input
+            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-[2.5rem] text-black dark:text-white font-black uppercase italic outline-none focus:ring-2 ring-[var(--brand-primary)] transition-all"
+            placeholder="E.G. ZOTTMAN CURLS"
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+          />
+        </div>
+
+        {/* SELECTS */}
+        <div className="grid grid-cols-1 gap-6">
+          <CustomSelect
+            label="Main Category"
+            value={form.category}
+            options={muscles.filter((m) => !m.parent_id)}
+            onChange={(val) => setForm({ ...form, category: val })}
+          />
+          <CustomSelect
+            label="Equipment Used"
+            value={form.equipmentId}
+            options={equipment}
+            onChange={(val) => setForm({ ...form, equipmentId: val })}
+          />
+        </div>
+
+        {/* TRACKING OPTIONS */}
+        <div className="space-y-4">
+          <label className="text-[10px] font-black uppercase text-slate-400 ml-4 tracking-[0.2em]">
+            What to track
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {["reps", "weight", "bodyweight", "distance", "duration"].map(
+              (opt) => (
+                <button
+                  key={opt}
+                  onClick={() =>
+                    setForm({
+                      ...form,
+                      tracking: form.tracking.includes(opt)
+                        ? form.tracking.filter((t) => t !== opt)
+                        : [...form.tracking, opt],
+                    })
+                  }
+                  className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase italic border transition-all ${form.tracking.includes(opt) ? "bg-[var(--brand-primary)] border-transparent text-black" : "bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500"}`}
+                >
+                  {opt}
+                </button>
+              ),
             )}
           </div>
+        </div>
 
+        {/* MUSCLE SEARCH */}
+        <div className="space-y-6">
           <div className="space-y-2">
-            {selectedMuscles.map((sm) => (
-              <div
-                key={sm.id}
-                className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${sm.role === "primary" ? "border-orange-500/20 bg-orange-500/[0.03]" : sm.role === "secondary" ? "border-blue-500/20 bg-blue-500/[0.03]" : "border-emerald-500/20 bg-emerald-500/[0.03]"}`}
-              >
-                <div className="flex flex-col">
-                  <span className="text-[11px] font-black uppercase italic text-[var(--text-main)]">
-                    {sm.name}
-                  </span>
-                  <span
-                    className={`text-[8px] font-black uppercase tracking-[0.2em] mt-0.5 opacity-60 ${sm.role === "primary" ? "text-orange-500" : sm.role === "secondary" ? "text-blue-500" : "text-emerald-500"}`}
-                  >
-                    {sm.role}
-                  </span>
-                </div>
-                <button
-                  onClick={() =>
-                    setSelectedMuscles((prev) =>
-                      prev.filter((x) => x.id !== sm.id),
+            <label className="text-[10px] font-black uppercase text-slate-400 ml-4 tracking-[0.2em]">
+              Muscle Mapping
+            </label>
+            <div className="relative">
+              <Search
+                className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400"
+                size={18}
+              />
+              <input
+                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 pl-16 rounded-[2.5rem] text-sm text-black dark:text-white outline-none shadow-sm focus:border-slate-400 transition-all"
+                placeholder="Find muscle..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              {searchQuery.length > 1 && (
+                <div className="absolute top-[110%] left-0 right-0 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2rem] z-50 shadow-2xl overflow-hidden border-t-0">
+                  {muscles
+                    .filter((m) =>
+                      m.name.toLowerCase().includes(searchQuery.toLowerCase()),
                     )
-                  }
-                  className="w-8 h-8 rounded-full bg-[var(--bg-main)] border border-[var(--border-color)] flex items-center justify-center text-[var(--text-muted)]"
-                >
-                  <Minus size={14} />
-                </button>
-              </div>
-            ))}
+                    .slice(0, 5)
+                    .map((m) => (
+                      <div
+                        key={m.id}
+                        className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-slate-800 last:border-0"
+                      >
+                        <span className="text-xs font-black uppercase italic dark:text-white">
+                          {m.name}
+                        </span>
+                        <div className="flex gap-2">
+                          <QuickAddBtn
+                            label="Pri"
+                            className="bg-orange-500"
+                            onClick={() => addMuscle(m.id, "primary")}
+                          />
+                          <QuickAddBtn
+                            label="Sec"
+                            className="bg-blue-500"
+                            onClick={() => addMuscle(m.id, "secondary")}
+                          />
+                          <QuickAddBtn
+                            label="Stb"
+                            className="bg-emerald-500"
+                            onClick={() => addMuscle(m.id, "stabilizer")}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-5">
+            <MuscleTagRow
+              label="Primary Focus"
+              items={form.primaryMuscles}
+              muscles={muscles}
+              onRemove={(id) =>
+                setForm({
+                  ...form,
+                  primaryMuscles: form.primaryMuscles.filter((m) => m !== id),
+                })
+              }
+              colorClass="text-orange-500"
+            />
+            <MuscleTagRow
+              label="Secondary Support"
+              items={form.secondaryMuscles}
+              muscles={muscles}
+              onRemove={(id) =>
+                setForm({
+                  ...form,
+                  secondaryMuscles: form.secondaryMuscles.filter(
+                    (m) => m !== id,
+                  ),
+                })
+              }
+              colorClass="text-blue-500"
+            />
+            <MuscleTagRow
+              label="Stabilizers"
+              items={form.stabilizerMuscles}
+              muscles={muscles}
+              onRemove={(id) =>
+                setForm({
+                  ...form,
+                  stabilizerMuscles: form.stabilizerMuscles.filter(
+                    (m) => m !== id,
+                  ),
+                })
+              }
+              colorClass="text-emerald-500"
+            />
           </div>
         </div>
 
-        <button
-          onClick={onSave}
-          className="w-full py-5 bg-[var(--brand-primary)] text-[var(--bg-main)] font-black uppercase italic rounded-3xl shadow-xl shadow-[var(--brand-primary)]/20 active:scale-[0.97] transition-all flex items-center justify-center gap-3 tracking-widest"
-        >
-          <Check size={20} strokeWidth={4} /> CONFIRM EXERCISE
-        </button>
+        {/* FLOATING ACTION BUTTON */}
+        <div className="fixed bottom-10 left-6 right-6 z-[60]">
+          <button
+            disabled={isSaving || !form.name || !form.category}
+            onClick={handleSave}
+            className="w-full py-6 bg-black dark:bg-[var(--brand-primary)] text-white dark:text-black rounded-[2.5rem] font-black uppercase italic tracking-widest shadow-2xl flex items-center justify-center gap-3 active:scale-95 transition-all disabled:opacity-50 disabled:active:scale-100"
+          >
+            {isSaving ? (
+              <Loader2 className="animate-spin" size={20} />
+            ) : (
+              <Save size={20} />
+            )}
+            {isSaving ? "Saving..." : "Create Exercise"}
+          </button>
+        </div>
       </div>
     </SubPageLayout>
+  );
+};
+
+// HELPER COMPONENTS
+const CustomSelect = ({ label, value, options, onChange }: any) => (
+  <div className="space-y-2">
+    <label className="text-[10px] font-black uppercase text-slate-400 ml-4 tracking-[0.2em]">
+      {label}
+    </label>
+    <div className="relative">
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-[2.5rem] text-[12px] font-black uppercase italic text-black dark:text-white appearance-none outline-none focus:border-slate-400 transition-all"
+      >
+        <option value="">Choose {label}</option>
+        {options.map((o: any) => (
+          <option key={o.id} value={o.id}>
+            {o.name}
+          </option>
+        ))}
+      </select>
+      <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none">
+        <ChevronRight size={16} className="rotate-90 text-slate-400" />
+      </div>
+    </div>
+  </div>
+);
+
+const QuickAddBtn = ({ label, className, onClick }: any) => (
+  <button
+    onClick={onClick}
+    className={`${className} text-[8px] font-black uppercase px-3 py-1.5 rounded-lg text-white shadow-lg active:scale-90 transition-transform`}
+  >
+    {label}
+  </button>
+);
+
+const MuscleTagRow = ({ label, items, muscles, onRemove, colorClass }: any) => {
+  if (items.length === 0) return null;
+  return (
+    <div className="space-y-2">
+      <p
+        className={`text-[9px] font-black uppercase tracking-[0.2em] italic ml-2 ${colorClass}`}
+      >
+        {label}
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {items.map((id: string) => (
+          <div
+            key={id}
+            className="flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 px-4 py-2.5 rounded-2xl shadow-sm group"
+          >
+            <span className="text-[11px] font-black uppercase italic dark:text-white">
+              {muscles.find((m: any) => m.id === id)?.name}
+            </span>
+            <button
+              onClick={() => onRemove(id)}
+              className="text-slate-400 hover:text-red-500 transition-colors"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 };
