@@ -1,99 +1,30 @@
-// services/AthleteService.ts
-
 import { supabase } from "../lib/supabase";
 import { db } from "../db/database";
-import type {
-  AthleteSummary,
-  LocalCustomizedStats,
-} from "../types/database.types";
+import type { AthleteSummary } from "../types/database.types";
 
 export const AthleteService = {
+  /**
+   * Syncs the high-level dashboard summary (BMI, Levels, etc.)
+   */
   async syncSummary(uid: string): Promise<AthleteSummary | null> {
-    const { data, error } = await supabase
-      .from("v_user_dashboard")
-      .select("*")
-      .eq("user_id", uid)
-      .maybeSingle();
-
-    if (error) throw error;
-
-    if (data) {
-      await db.athlete_summary.put(data);
-      return data;
-    }
-
-    return null;
-  },
-
-  async syncCustomizedStats(
-    userId: string,
-    startDate: string,
-    endDate: string,
-  ): Promise<LocalCustomizedStats | null> {
-    // Cache first
-    const cached = await db.customized_stats
-      .where("[user_id+start_date+end_date]")
-      .equals([userId, startDate, endDate])
-      .first();
-
-    if (cached) return cached;
-
-    // Supabase RPC
-    const { data, error } = await supabase.rpc("get_user_stats_between", {
-      p_start: startDate,
-      p_end: endDate,
-    });
-
-    if (error) throw error;
-
-    const row = data?.[0];
-    if (!row) return null;
-
-    const localRow: LocalCustomizedStats = {
-      ...row,
-      user_id: userId,
-      start_date: startDate,
-      end_date: endDate,
-    };
-
-    await db.customized_stats.put(localRow);
-
-    return localRow;
-  },
-
-  /* READ helpers */
-
-  async getSmartCustomizedStats(
-    userId: string,
-    startDate: string,
-    endDate: string,
-  ) {
-    // 1. Try to find local data first
-    const localData = await db.customized_stats
-      .where("[user_id+start_date+end_date]")
-      .equals([userId, startDate, endDate])
-      .first();
-
-    // 2. If data exists, return it immediately for the LiveQuery
-    if (localData) return localData;
-
-    // 3. If no data, perform the network sync
-    console.log("No local stats found. Syncing from network...");
-    await this.syncCustomizedStats(userId, startDate, endDate);
-
-    // 4. Return the newly synced data (LiveQuery will also catch this automatically)
-    return db.customized_stats
-      .where("[user_id+start_date+end_date]")
-      .equals([userId, startDate, endDate])
-      .first();
-  },
-
-  async invalidateStatsCache() {
     try {
-      // This removes all rows from the customized_stats table
-      await db.table("customized_stats").clear();
-    } catch (error) {
-      console.error("Failed to clear stats cache:", error);
+      const { data, error } = await supabase
+        .from("v_user_dashboard")
+        .select("*")
+        .eq("user_id", uid)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (data) {
+        await db.athlete_summary.put(data);
+        return data;
+      }
+      return null;
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Summary sync failed";
+      console.error("AthleteService Sync Error:", msg);
+      throw new Error(msg);
     }
   },
 };

@@ -3,25 +3,24 @@
 
 @theme {
   --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
-  /* Brand color is now handled by CSS variables below to allow dynamic changes */
+  --color-brand-primary: var(--brand-primary);
+  --color-bg-main: var(--bg-main);
+  --color-bg-surface: var(--bg-surface);
 }
 
 /* ============================================= */
 /* THEME & BRAND COLOR VARIABLES */
 /* ============================================= */
 :root {
-  /* Dynamic Brand Color */
   --brand-primary: #ff7f50;
-
-  /* Dark Mode (Default) */
   --bg-main: #000000;
-  --bg-surface: #0f172a; /* Slate 900 */
-  --bg-surface-soft: #1e293b; /* Slate 800 - for roadmap rows */
+  --bg-surface: #0f172a;
+  --bg-surface-soft: #1e293b;
   --text-main: #ffffff;
-  --text-muted: #94a3b8; /* Slate 400 */
-  --text-dim: #64748b; /* Slate 500 */
-  --border-color: #1e293b; /* Slate 800 */
-  --divider-color: #0f172a; /* Slate 900 divider */
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+  --border-color: #1e293b;
+  --divider-color: #0f172a;
 }
 
 .light-theme {
@@ -55,23 +54,16 @@ html,
 body {
   margin: 0;
   padding: 0;
-  height: 100%;
+  height: var(--app-height, 100%); 
   background: var(--bg-main);
   color: var(--text-main);
   font-family: "Poppins", sans-serif;
-
-  /* Kill the browser-level rubber bounce */
   overscroll-behavior: none;
-
-  /* Block horizontal swipes (prevents browser 'back' gesture) */
   touch-action: pan-y;
-
-  /* Prevent blue highlight on tap */
   -webkit-tap-highlight-color: transparent;
   -webkit-touch-callout: none;
 }
 
-/* =webkit scrollbar removal for all elements */
 * {
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -95,52 +87,32 @@ body {
   flex: 1;
   min-height: 100%;
   animation: page-enter 250ms ease-out;
-  /* Ensure padding for bottom nav so content isn't cut off */
   padding-bottom: 20px;
 }
 
 @keyframes page-enter {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* ============================================= */
 /* BRAND UTILITIES */
 /* ============================================= */
-.text-brand {
-  color: var(--brand-primary);
-}
-.bg-brand {
-  background-color: var(--brand-primary);
-}
-.border-brand {
-  border-color: var(--brand-primary);
-}
+.text-brand { color: var(--brand-primary); }
+.bg-brand { background-color: var(--brand-primary); }
+.border-brand { border-color: var(--brand-primary); }
 
 /* ============================================= */
 /* MOBILE & DEVICE FIXES */
 /* ============================================= */
-
-/* iOS Safe Areas */
 @media (pointer: coarse) {
-  .safe-ios-top {
-    padding-top: env(safe-area-inset-top);
-  }
+  .safe-ios-top { padding-top: env(safe-area-inset-top); }
 }
 
 @supports (-webkit-touch-callout: none) {
-  .ios-no-top {
-    padding-top: 0 !important;
-  }
+  .ios-no-top { padding-top: 0 !important; }
 }
 
-/* Samsung Internet & Global Smooth Scroll */
 .samsung-scroll {
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none !important;
@@ -152,7 +124,6 @@ body {
   background: transparent !important;
 }
 
-/* iOS Date Input Fix */
 input[type="date"] {
   display: block;
   appearance: none;
@@ -169,35 +140,57 @@ input[type="date"]::-webkit-date-and-time-value {
   margin: 0;
 }
 
-/* ============================================= */
-/* ANIMATIONS */
-/* ============================================= */
 .animate-login {
   animation: loginFade 350ms ease-out;
 }
 
 @keyframes loginFade {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  * {
-    animation: none !important;
-    transition: none !important;
-  }
+  * { animation: none !important; transition: none !important; }
 }
 
-/* Add this to your Tailwind or Global CSS */
 .dashboard-card {
   @apply transition-all duration-300 ease-out border-transparent;
 }
 .dashboard-card:hover {
   @apply -translate-y-1 border-[var(--brand-primary)]/30 shadow-[0_20px_40px_rgba(0,0,0,0.4)];
+}
+
+/* ============================================= */
+/* LAB UTILITIES (FIXED FOR TAILWIND V4) */
+/* ============================================= */
+@layer components {
+  .lab-card {
+    @apply bg-slate-900 border border-white/5 rounded-[2.5rem] shadow-2xl overflow-hidden backdrop-blur-md;
+  }
+
+  /* FIXED: Use ! prefix instead of !important utility */
+  .no-focus-ring svg, 
+  .no-focus-ring .recharts-surface, 
+  .no-focus-ring .recharts-wrapper {
+    @apply !outline-none !border-none !ring-0;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .btn-scale {
+    @apply active:scale-95 transition-all duration-200 cursor-pointer;
+  }
+
+  .chart-glow-primary {
+    filter: drop-shadow(0px 0px 6px var(--brand-primary));
+  }
+}
+
+@keyframes progress-loading {
+  0% { transform: translateX(-100%); }
+  50% { transform: translateX(0%); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-progress-loading {
+  animation: progress-loading 1.5s infinite ease-in-out;
 }

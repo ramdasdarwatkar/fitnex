@@ -1,51 +1,69 @@
-import { useLayoutEffect, useRef } from "react";
+import { useLayoutEffect, useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
-import { UIProvider, useUI } from "../../context/UIContext";
 import { BottomNav } from "../nav/BottomNav";
 import { Sidebar } from "../nav/Sidebar";
+import { useUI } from "../../hooks/useUI";
+import { UIProvider } from "../../context/UIProvider";
 
 const NAV_HEIGHT = 80;
 
 const LayoutContent = () => {
   const { isSidebarOpen, closeSidebar } = useUI();
   const location = useLocation();
-  const scrollRef = useRef<HTMLElement | null>(null);
 
+  // 1. Scroll-to-Top on Route Change
   useLayoutEffect(() => {
-    // Scroll to top on every route change
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
+  // 2. Body Scroll Lock (Enhancement)
+  // Prevents background scrolling when mobile menu is active
+  useEffect(() => {
+    if (isSidebarOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+  }, [isSidebarOpen]);
+
   return (
-    /* We remove overflow-hidden to let the page backgrounds flow naturally */
-    <div className="relative min-h-screen text-[var(--text-main)] bg-[var(--bg-main)]">
+    <div className="relative min-h-screen text-text-main bg-bg-main selection:bg-brand-primary/30">
       <div className="flex min-h-screen">
-        {/* Desktop Sidebar */}
-        <div className="hidden lg:block w-72 border-r border-[var(--border-color)]">
+        {/* Desktop Sidebar (Left Rail) */}
+        <aside className="hidden lg:block w-72 border-r border-border-color shrink-0">
           <Sidebar isOpen={true} onClose={() => {}} isStatic />
-        </div>
+        </aside>
 
-        {/* Mobile Sidebar */}
-        <div className="lg:hidden">
+        {/* Mobile Sidebar (Overlay Drawer) */}
+        <aside className="lg:hidden">
           <Sidebar isOpen={isSidebarOpen} onClose={closeSidebar} />
-        </div>
+        </aside>
 
-        {/* MAIN CONTAINER 
-            No overflow-y-auto here; we let the body/document handle the scroll 
-            to ensure the background is never interrupted.
-        */}
-        <main className="flex-1 flex flex-col w-full">
-          <Outlet />
+        {/* MAIN VIEWPORT */}
+        <main className="flex-1 flex flex-col min-w-0 relative">
+          {/* The 'page-enter' class from our index.css adds 
+            the subtle fade-in we defined earlier.
+          */}
+          <div className="flex-1 page-container">
+            <Outlet />
+          </div>
         </main>
       </div>
 
-      {/* FIXED BOTTOM NAV */}
-      <div
-        className="fixed bottom-0 left-0 right-0 z-50 lg:hidden pointer-events-none"
-        style={{ height: NAV_HEIGHT }}
+      {/* MOBILE BOTTOM NAV */}
+      {/* Safe area padding-bottom ensures it stays above 
+        the iOS home indicator.
+      */}
+      <nav
+        className="fixed bottom-0 left-0 right-0 z-50 lg:hidden pointer-events-none pb-[env(safe-area-inset-bottom)]"
+        style={{
+          height: `calc(${NAV_HEIGHT}px + env(safe-area-inset-bottom))`,
+        }}
       >
-        <BottomNav />
-      </div>
+        <div className="pointer-events-auto h-full">
+          <BottomNav />
+        </div>
+      </nav>
     </div>
   );
 };

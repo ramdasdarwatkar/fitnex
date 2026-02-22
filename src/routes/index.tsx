@@ -1,5 +1,4 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
 
 import { LoginPage } from "../pages/auth/LoginPage";
 import { OnboardingPage } from "../pages/onboarding/OnboardingPage";
@@ -26,6 +25,7 @@ import { WorkoutHistory } from "../pages/workout/components/WorkoutHistory";
 import { ProgressPage } from "../pages/progress/ProgressPage";
 import { EditExercise } from "../pages/library/exercises/EditExercise";
 import { ExerciseProgressPage } from "../pages/progress/ExerciseProgressPage";
+import { useAuth } from "../hooks/useAuth";
 
 export const AppRoutes = () => {
   const { user_id, athlete, loading } = useAuth();

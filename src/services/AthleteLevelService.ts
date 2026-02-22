@@ -1,6 +1,6 @@
 import { db } from "../db/database";
 import { supabase } from "../lib/supabase";
-import type { Database } from "../types/database.types";
+import type { AthleteLevel, Database } from "../types/database.types";
 
 /**
  * STRICT TYPES
@@ -65,5 +65,25 @@ export const AthleteLevelService = {
    */
   resetLock() {
     isMetadataSynced = false;
+  },
+
+  /**
+   * Saves the initial or updated level state to Dexie.
+   */
+  async saveLocalLevel(level: AthleteLevel) {
+    return await db.athlete_level.put({
+      ...level,
+      is_synced: 0,
+    });
+  },
+
+  /**
+   * Retrieves the current level metadata from the lookup table.
+   */
+  async getLevelMetadata(levelName: string) {
+    return await db.athlete_levels_lookup
+      .where("level_name")
+      .equals(levelName)
+      .first();
   },
 };

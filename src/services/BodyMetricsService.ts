@@ -1,3 +1,4 @@
+import { db } from "../db/database";
 import { supabase } from "../lib/supabase";
 import type { Database } from "../types/database.types";
 
@@ -46,5 +47,28 @@ export const BodyMetricsService = {
 
     if (error) throw error;
     return data;
+  },
+
+  /**
+   * Saves metrics to Dexie.
+   * Uses 'put' to handle the composite key [user_id+logdate].
+   */
+  async saveLocalMetrics(metrics: BodyMetrics) {
+    return await db.body_metrics.put({
+      ...metrics,
+      is_synced: 0,
+    });
+  },
+
+  /**
+   * Gets the latest logged metric for a user locally.
+   */
+  async getLatestLocal(user_id: string) {
+    return await db.body_metrics
+      .where("user_id")
+      .equals(user_id)
+      .reverse()
+      .sortBy("logdate")
+      .then((list) => list[0]);
   },
 };

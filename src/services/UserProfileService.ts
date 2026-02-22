@@ -1,5 +1,6 @@
+import { db } from "../db/database";
 import { supabase } from "../lib/supabase";
-import type { Database } from "../types/database.types";
+import type { Database, UserProfile } from "../types/database.types";
 
 type ProfileRow = Database["public"]["Tables"]["user_profile"]["Row"];
 type ProfileInsert = Database["public"]["Tables"]["user_profile"]["Insert"];
@@ -40,5 +41,23 @@ export const UserProfileService = {
     }
 
     return data;
+  },
+
+  /**
+   * Saves the profile to Dexie and marks for sync.
+   * Supabase Table: user_profile
+   */
+  async saveLocalProfile(profile: UserProfile) {
+    return await db.user_profile.put({
+      ...profile,
+      is_synced: 0,
+    });
+  },
+
+  /**
+   * Helper to get the local profile
+   */
+  async getLocalProfile(user_id: string) {
+    return await db.user_profile.get(user_id);
   },
 };
