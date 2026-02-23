@@ -6,25 +6,33 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 export const Input = ({ label, error, ...props }: InputProps) => (
-  <div className="mb-4 w-full">
-    {/* Label using our text-text-muted token */}
-    <label className="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-1.5 ml-1">
+  <div className="mb-6 w-full group">
+    {/* Label: Upscaled to 11px for better legibility, increased tracking */}
+    <label className="block text-[11px] font-black uppercase tracking-[0.2em] text-text-muted mb-2 ml-1">
       {label}
     </label>
 
     <input
       {...props}
       className={`
-        w-full h-12 bg-bg-surface border rounded-xl px-4 
-        text-text-main placeholder:text-text-muted/30
-        focus:outline-none focus:ring-2 focus:ring-brand-primary/50 transition-all
-        ${error ? "border-red-500/50" : "border-border-color"}
+        w-full h-14 bg-bg-surface px-5 rounded-2xl
+        text-text-main text-[15px] font-medium 
+        placeholder:text-text-dim/40
+        transition-all duration-200
+        outline-none ring-0
+        /* BORDER LOGIC: Transparent by default, only shows on hover/focus */
+        border-2
+        ${
+          error
+            ? "border-rose-500/50 bg-rose-500/5"
+            : "border-transparent hover:border-border-color focus:border-brand-primary"
+        }
       `}
     />
 
-    {/* Optional Error Message */}
+    {/* Optional Error Message: Semantic color */}
     {error && (
-      <p className="mt-1 ml-1 text-[10px] font-bold text-red-400 uppercase tracking-tight">
+      <p className="mt-2 ml-1 text-[11px] font-black text-rose-500 uppercase tracking-widest italic">
         {error}
       </p>
     )}

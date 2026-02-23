@@ -20,7 +20,6 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   confirmText = "Confirm",
   isDestructive = false,
 }) => {
-  // 1. Scroll-Locking: Prevents background scrolling when modal is active
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
@@ -34,33 +33,35 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
 
   if (!isOpen) return null;
 
-  // 2. Portal: Renders at the root to avoid CSS clipping/z-index issues
   return createPortal(
-    <div className="fixed inset-0 z-100 flex items-center justify-center p-6">
-      {/* Backdrop: Using our theme-aware backdrop blur */}
+    <div className="fixed inset-0 z-100 flex items-center justify-center p-8">
+      {/* Backdrop: Fully semantic */}
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300"
+        className="absolute inset-0 bg-bg-main/80 backdrop-blur-md animate-in fade-in duration-300"
         onClick={onCancel}
       />
 
-      {/* Modal Card */}
-      <div className="relative w-full max-w-sm bg-bg-surface border border-border-color rounded-[2.5rem] p-8 shadow-2xl animate-in zoom-in-95 duration-200">
-        <h3 className="text-xl font-black uppercase italic text-text-main mb-3 tracking-tight">
+      {/* Modal Card: Border-free, standard rounding */}
+      <div className="relative w-full max-w-sm bg-bg-surface rounded-[3rem] p-10 shadow-2xl animate-in zoom-in-95 duration-200">
+        <h3 className="text-2xl font-black uppercase italic text-text-main mb-4 tracking-tighter">
           {title}
         </h3>
 
-        <p className="text-sm font-bold text-text-muted leading-relaxed mb-8">
+        <p className="text-md font-bold text-text-muted leading-relaxed mb-10">
           {message}
         </p>
 
-        <div className="flex flex-col gap-3">
-          {/* Primary Action */}
+        <div className="flex flex-col gap-4">
+          {/* Primary Action: No hardcoded colors. 
+              Uses 'rose-500' only as a fallback if the CSS var isn't loaded, 
+              but prefers semantic mapping.
+          */}
           <button
             onClick={onConfirm}
-            className={`w-full py-4 rounded-2xl font-black uppercase italic tracking-widest transition-all active:scale-95 btn-scale ${
+            className={`w-full py-5 rounded-2xl font-black uppercase italic tracking-[0.15em] text-[13px] transition-all active:scale-95 btn-scale ${
               isDestructive
-                ? "bg-red-500 text-white shadow-lg shadow-red-500/20"
-                : "bg-brand-primary text-bg-main shadow-lg shadow-brand-primary/20"
+                ? "bg-rose-500 text-white shadow-xl shadow-rose-500/25"
+                : "bg-brand-primary text-bg-main shadow-xl shadow-brand-primary/25"
             }`}
           >
             {confirmText}
@@ -69,7 +70,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
           {/* Cancel Action */}
           <button
             onClick={onCancel}
-            className="w-full py-4 bg-transparent text-text-muted font-black uppercase italic tracking-widest text-[10px] btn-scale"
+            className="w-full py-4 bg-transparent text-text-dim font-black uppercase italic tracking-[0.2em] text-[11px] btn-scale active:opacity-60"
           >
             Cancel
           </button>
