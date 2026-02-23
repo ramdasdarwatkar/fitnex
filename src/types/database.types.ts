@@ -128,6 +128,25 @@ export interface ExerciseEquipment {
   equipment_id: number;
 }
 
+export interface AppSettings {
+  user_id: string; // Maps to auth.uid()
+  theme: "dark" | "light" | "system";
+  accent_color: string; // The hex or tailwind-key for branding
+
+  // High-level Toggle
+  unit_system: "metric" | "imperial";
+
+  // Specific Unit Overrides
+  weight_unit: "kg" | "lb";
+  height_unit: "cm" | "in";
+  distance_unit: "km" | "mi";
+  body_measure_unit: "cm" | "in";
+
+  // System Tracking
+  is_synced: number; // 0 or 1
+  updated_at: string; // ISO Timestamp
+}
+
 /* =========================
    WORKOUTS & ROUTINES
 ========================= */
@@ -233,6 +252,11 @@ export interface LocalWorkout extends Workout {
 }
 
 export interface LocalWorkoutLog extends WorkoutLog {
+  completed: number;
+  is_synced: number;
+}
+
+export interface LocalAppSettings extends AppSettings {
   is_synced: number;
 }
 
@@ -263,6 +287,7 @@ export interface AthleteSummary {
   goal_completion_percent: number | null;
   estimated_goal_date: string | null;
   projected_next_level_date: string | null;
+  created_at: string;
 }
 
 /** v_latest_personal_records */
@@ -356,11 +381,19 @@ export interface Database {
         Insert: WorkoutLog;
         Update: Partial<WorkoutLog>;
       };
+      app_settings: {
+        Row: AppSettings;
+        Insert: AppSettings;
+        Update: Partial<AppSettings>;
+      };
     };
     Views: {
       v_user_dashboard: { Row: AthleteSummary };
       v_latest_body_metrics: { Row: BodyMetrics };
       v_latest_personal_records: { Row: LatestPersonalRecord };
+      v_latest_athlete_level: {
+        Row: AthleteLevel;
+      };
     };
     Functions: {
       get_user_stats_between: {

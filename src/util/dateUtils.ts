@@ -78,4 +78,13 @@ export class DateUtils {
 
     return [formatDate(startDate), formatDate(endDate)];
   }
+
+  /**
+   * Returns local start and end of day strings for queries.
+   * Example: ["2026-02-23T00:00:00.000", "2026-02-23T23:59:59.999"]
+   */
+  static getTodayWindow(): [string, string] {
+    const today = new Date().toISOString().split("T")[0];
+    return [`${today}T00:00:00.000`, `${today}T23:59:59.999`];
+  }
 }

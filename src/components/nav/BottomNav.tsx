@@ -17,9 +17,10 @@ import {
 import { WorkoutService } from "../../services/WorkoutService";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "../../db/database";
-import { format, startOfDay, endOfDay } from "date-fns";
+import { format } from "date-fns";
 import { useAuth } from "../../hooks/useAuth";
 import { useWorkout } from "../../hooks/useWorkout";
+import { DateUtils } from "../../util/dateUtils";
 
 export const BottomNav = () => {
   const navigate = useNavigate();
@@ -30,16 +31,21 @@ export const BottomNav = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [confirmRecovery, setConfirmRecovery] = useState(false);
 
-  // OPTIMIZED: Indexed query for Rest Day status
   const isRestDay = useLiveQuery(async () => {
-    const today = new Date();
+    if (!user_id) return false;
+    const [start, end] = DateUtils.getTodayWindow();
+
+    const count = await db.workouts.count();
+    if (count === 0) return false;
+
     const entry = await db.workouts
       .where("start_time")
-      .between(startOfDay(today).toISOString(), endOfDay(today).toISOString())
-      .filter((w) => Number(w.rest_day) === 1)
+      .between(start, end, true, true)
+      .filter((w) => w.user_id === user_id && Number(w.rest_day) === 1)
       .first();
+
     return !!entry;
-  }, []);
+  }, [user_id]);
 
   const handleActionSelect = async (type: "LIVE" | "PAST" | "REST") => {
     if (!user_id) return;
@@ -85,10 +91,10 @@ export const BottomNav = () => {
 
   return (
     <>
-      {/* SHIELD BACKDROP */}
+      {/* SEMANTIC BACKDROP */}
       {(isOpen || confirmRecovery) && (
         <div
-          className="fixed inset-0 bg-black/70 backdrop-blur-md animate-in fade-in duration-300 pointer-events-auto z-9998"
+          className="fixed inset-0 bg-bg-main/80 backdrop-blur-md animate-in fade-in duration-300 pointer-events-auto z-[9998]"
           onClick={() => {
             setIsOpen(false);
             setConfirmRecovery(false);
@@ -96,9 +102,8 @@ export const BottomNav = () => {
         />
       )}
 
-      {/* NAV WRAPPER */}
-      <div className="fixed bottom-0 left-0 w-full flex flex-col items-center pointer-events-none z-9999">
-        {/* ACTION MENU (Floating Above Nav) */}
+      <div className="fixed bottom-0 left-0 w-full flex flex-col items-center pointer-events-none z-[9999]">
+        {/* DYNAMIC ACTION MENU */}
         {isOpen && (
           <div className="mb-8 flex gap-8 animate-in slide-in-from-bottom-8 duration-300 pointer-events-auto">
             <QuickOption
@@ -121,8 +126,8 @@ export const BottomNav = () => {
           </div>
         )}
 
-        <nav className="w-full bg-slate-900/95 backdrop-blur-2xl border-t border-white/5 shadow-2xl pointer-events-auto">
-          <div className="flex items-center h-24 px-4 max-w-2xl mx-auto pb-[env(safe-area-inset-bottom)]">
+        <nav className="w-full bg-bg-surface/95 backdrop-blur-2xl border-t border-border-color/30 shadow-2xl pointer-events-auto">
+          <div className="flex items-center h-24 px-4 max-w-2xl mx-auto pb-safe">
             <div className="flex flex-1 justify-evenly items-center">
               {navItems.slice(0, 2).map((item) => (
                 <NavButton
@@ -135,21 +140,19 @@ export const BottomNav = () => {
               ))}
             </div>
 
-            {/* CENTER ACTION BUTTON */}
+            {/* THEMED CENTER BUTTON */}
             <div className="flex flex-1 flex-col items-center justify-center gap-2">
               <button
                 onClick={handleCenterClick}
                 className={`w-14 h-14 rounded-[1.25rem] flex items-center justify-center transition-all duration-300 active:scale-90 btn-scale ${
                   isOpen || confirmRecovery
-                    ? "bg-white text-black"
-                    : "bg-brand-primary text-white shadow-xl shadow-brand-primary/20"
+                    ? "bg-text-main text-bg-main"
+                    : "bg-brand-primary text-bg-main shadow-xl shadow-brand-primary/20"
                 }`}
               >
                 {isOpen ? (
                   <X size={24} strokeWidth={2.5} />
-                ) : confirmRecovery ? (
-                  <Play size={24} fill="black" />
-                ) : isOngoing ? (
+                ) : confirmRecovery || isOngoing ? (
                   <Play size={24} fill="currentColor" />
                 ) : isRestDay ? (
                   <CupSoda size={24} />
@@ -161,9 +164,9 @@ export const BottomNav = () => {
               <span
                 className={`text-[10px] font-black uppercase tracking-tighter text-center transition-all duration-500 ${
                   confirmRecovery
-                    ? "text-red-400"
+                    ? "text-brand-primary brightness-125"
                     : isOpen
-                      ? "text-white"
+                      ? "text-text-main"
                       : "text-brand-primary"
                 }`}
               >
@@ -172,7 +175,7 @@ export const BottomNav = () => {
                   : isOpen
                     ? "Close"
                     : confirmRecovery
-                      ? "Recovery Day. Train?"
+                      ? "Train?"
                       : isRestDay
                         ? "Resting"
                         : "Start"}
@@ -197,7 +200,7 @@ export const BottomNav = () => {
   );
 };
 
-/* --- SUB-COMPONENTS (Typed) --- */
+/* --- SUB-COMPONENTS --- */
 
 interface NavButtonProps {
   icon: LucideIcon;
@@ -221,18 +224,18 @@ const NavButton = ({
       onClick();
     }}
     disabled={isDisabled}
-    className={`relative flex flex-col items-center justify-center w-16 h-16 transition-all duration-700 ${
+    className={`relative flex flex-col items-center justify-center w-20 h-20 transition-all duration-700 ${
       isDisabled ? "opacity-10 grayscale pointer-events-none" : "opacity-100"
     }`}
   >
     <div
-      className={`absolute inset-0 rounded-2xl transition-all duration-700 ${isActive ? "bg-white/10" : "bg-transparent"}`}
+      className={`absolute inset-2 rounded-2xl transition-all duration-700 ${isActive ? "bg-text-main/10" : "bg-transparent"}`}
     />
     <div
-      className={`relative z-10 flex flex-col items-center gap-1.5 transition-all duration-500 ${isActive ? "text-white" : "text-slate-500 opacity-40"}`}
+      className={`relative z-10 flex flex-col items-center gap-1.5 transition-all duration-500 ${isActive ? "text-text-main" : "text-text-muted opacity-40"}`}
     >
-      <Icon size={22} strokeWidth={1.5} />
-      <span className="text-[8px] font-black uppercase tracking-widest">
+      <Icon size={24} strokeWidth={1.5} />
+      <span className="text-[9px] font-black uppercase tracking-widest leading-none">
         {label}
       </span>
     </div>
@@ -248,11 +251,14 @@ const QuickOption = ({
   label: string;
   onClick: () => void;
 }) => (
-  <button onClick={onClick} className="flex flex-col items-center gap-2 group">
-    <div className="w-14 h-14 bg-slate-800 border border-white/10 rounded-2xl flex items-center justify-center text-brand-primary shadow-2xl active:scale-90 transition-all btn-scale">
-      <Icon size={24} strokeWidth={1.5} />
+  <button
+    onClick={onClick}
+    className="flex flex-col items-center gap-2 group pointer-events-auto"
+  >
+    <div className="w-16 h-16 bg-bg-surface border border-border-color/50 rounded-2xl flex items-center justify-center text-brand-primary shadow-2xl active:scale-90 transition-all">
+      <Icon size={28} strokeWidth={1.5} />
     </div>
-    <span className="text-[10px] font-black text-white uppercase tracking-widest">
+    <span className="text-[10px] font-black text-text-main uppercase tracking-widest">
       {label}
     </span>
   </button>

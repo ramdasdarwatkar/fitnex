@@ -1,147 +1,122 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Outlet } from "react-router-dom";
 import { SplashScreen } from "./SplashScreen";
 import { db } from "../../db/database";
 import { supabase } from "../../lib/supabase";
-import { SyncManager } from "../../services/SyncManager";
 import { useAuth } from "../../hooks/useAuth";
+import { AnalyticsService } from "../../services/AnalyticsService";
+import { startOfWeek, endOfWeek, format } from "date-fns";
+import type { AppSettings } from "../../types/database.types";
 
 export const CacheDataLoader = () => {
   const { user_id } = useAuth();
   const [isReady, setIsReady] = useState(false);
   const syncStarted = useRef(false);
 
-  /**
-   * PULL ENGINE: Fetching and Hydrating Dexie
-   * Maps exactly to your database structure requirements.
-   */
+  const applySettingsToDOM = (settings: AppSettings | null): void => {
+    const root = document.documentElement;
+    const theme = settings?.theme || "dark";
+    const accentName = settings?.accent_color || "orange";
+
+    root.setAttribute("data-theme", theme);
+    if (theme === "light") {
+      root.classList.add("light-theme");
+    } else {
+      root.classList.remove("light-theme");
+    }
+
+    root.setAttribute("data-accent", accentName);
+
+    root.setAttribute("data-unit-system", settings?.unit_system || "metric");
+    root.setAttribute("data-unit-weight", settings?.weight_unit || "kg");
+    root.setAttribute("data-unit-distance", settings?.distance_unit || "km");
+    root.setAttribute("data-unit-height", settings?.height_unit || "cm");
+    root.setAttribute("data-unit-body", settings?.body_measure_unit || "cm");
+
+    console.log(`🚀 UI Sync: Mode=${theme}, Accent=${accentName}`);
+  };
+
   useEffect(() => {
     if (!user_id || syncStarted.current) return;
     syncStarted.current = true;
 
-    const hydrateData = async () => {
+    const hydrateData = async (): Promise<void> => {
       try {
-        await Promise.all([
-          // 1. READ-ONLY STATICS (Fetched once)
-          fetchTable("muscles", "muscles"),
-          fetchTable("equipment", "equipment"),
-          fetchTable("athlete_levels_lookup", "athlete_levels_lookup"),
+        const now = new Date();
+        const start = format(
+          startOfWeek(now, { weekStartsOn: 1 }),
+          "yyyy-MM-dd",
+        );
+        const end = format(endOfWeek(now, { weekStartsOn: 1 }), "yyyy-MM-dd");
+        const todayStr = format(now, "yyyy-MM-dd");
 
-          // 2. SNAPSHOTS (Latest Views - one row per user or latest per exercise)
+        // STEP 1: Priority Hydration (Settings & Theme)
+        await ensureTableLoaded("app_settings", "app_settings", { user_id });
+        const settings = await db.app_settings.get(user_id);
+        applySettingsToDOM(settings || null);
+
+        // STEP 2: Parallel Hydration
+        await Promise.all([
+          // Hydrate both Weekly and Daily stats for the Dashboard
+          AnalyticsService.getSmartCustomizedStats(user_id, start, end),
+          AnalyticsService.getSmartCustomizedStats(user_id, todayStr, todayStr),
+
           fetchTable("v_user_dashboard", "athlete_summary"),
+          fetchTable("user_profile", "user_profile"),
+          fetchTable("v_latest_athlete_level", "athlete_level"),
           fetchTable("v_latest_body_metrics", "body_metrics"),
           fetchTable("v_latest_personal_records", "personal_records"),
 
-          // 3. WRITABLE USER CONTENT (Pulling existing cloud data to local)
-          fetchTable("exercises", "exercises", { user_id }),
-          fetchTable("routines", "routines", { user_id }),
-          fetchTable("workouts", "workouts", { user_id }),
+          ensureTableLoaded("muscles", "muscles"),
+          ensureTableLoaded("equipment", "equipment"),
+          ensureTableLoaded("athlete_levels_lookup", "athlete_levels_lookup"),
+          ensureTableLoaded("exercises", "exercises"),
+          ensureTableLoaded("routines", "routines"),
+          ensureTableLoaded("exercise_muscles", "exercise_muscles"),
+          ensureTableLoaded("exercise_equipment", "exercise_equipment"),
+          ensureTableLoaded("routine_exercises", "routine_exercises"),
 
-          // 4. MAPPINGS & LOGS (Relational Data)
-          fetchTable("exercise_muscles", "exercise_muscles"),
-          fetchTable("exercise_equipment", "exercise_equipment"),
-          fetchTable("routine_exercises", "routine_exercises"),
-          fetchTable("workout_logs", "workout_logs"),
+          fetchTable("workouts", "workouts", { user_id }),
         ]);
       } catch (err) {
-        console.error("❌ Hydration Failed:", err);
+        console.error("❌ Cache DataLoader Failure:", err);
       } finally {
-        // Subtle timeout to let SplashScreen finish its fade-in/out cycle
-        setTimeout(() => setIsReady(true), 300);
+        setIsReady(true);
       }
     };
 
     hydrateData();
   }, [user_id]);
 
-  /**
-   * PURGE SAFETY ENGINE (The "Wipe" Logic)
-   * Strictly checks all writable tables for is_synced: 0 before allowing a clear.
-   */
-  const safePurgeCache = useCallback(async () => {
-    try {
-      // 1. Attempt a final reconciliation push
-      await SyncManager.reconcile();
-
-      // 2. List all tables where user can write data
-      const writableTables = [
-        "body_metrics",
-        "exercises",
-        "exercise_muscles",
-        "exercise_equipment",
-        "routines",
-        "routine_exercises",
-        "workouts",
-        "workout_logs",
-        "muscles",
-      ];
-
-      // 3. Check for any 'is_synced' === 0 (Number type as per your types)
-      const pendingResults = await Promise.all(
-        writableTables.map(async (table) => {
-          const count = await db
-            .table(table)
-            .where("is_synced")
-            .equals(0)
-            .count();
-          return { table, count };
-        }),
-      );
-
-      const totalPending = pendingResults.reduce(
-        (acc, curr) => acc + curr.count,
-        0,
-      );
-
-      if (totalPending > 0) {
-        const tableList = pendingResults
-          .filter((r) => r.count > 0)
-          .map((r) => r.table)
-          .join(", ");
-        throw new Error(
-          `CRITICAL: Cannot clear cache. ${totalPending} items unsynced in: [${tableList}].`,
-        );
-      }
-
-      // 4. If perfectly clean, wipe all tables
-      await Promise.all(db.tables.map((table) => table.clear()));
-      console.log("🧹 Cache wiped safely.");
-      window.location.reload();
-    } catch (err: any) {
-      console.error("Safety Stop:", err.message);
-      // In production, trigger your ConfirmModal or a Toast here
-      alert(err.message);
-    }
-  }, []);
-
   if (!isReady) return <SplashScreen />;
 
-  return <Outlet context={{ safePurgeCache }} />;
+  return <Outlet />;
 };
 
-/**
- * UTILITY: fetchTable
- * Syncs Supabase data to Dexie and marks it as already synced (is_synced: 1).
- */
+async function ensureTableLoaded(
+  supabaseTable: string,
+  dexieTable: string,
+  filter?: object,
+): Promise<void> {
+  const localCount = await db.table(dexieTable).count();
+  if (localCount > 0) return;
+  return fetchTable(supabaseTable, dexieTable, filter);
+}
+
 async function fetchTable(
   supabaseTable: string,
   dexieTable: string,
   filter?: object,
-) {
+): Promise<void> {
   let query = supabase.from(supabaseTable).select("*");
-
   if (filter) {
     Object.entries(filter).forEach(([key, val]) => {
       query = query.eq(key, val);
     });
   }
-
   const { data, error } = await query;
   if (error) throw error;
-
   if (data && data.length > 0) {
-    // We add the is_synced: 1 flag so the SyncManager doesn't try to push back
-    // data we just pulled from the cloud.
     const hydratedData = data.map((row) => ({ ...row, is_synced: 1 }));
     await db.table(dexieTable).bulkPut(hydratedData);
   }

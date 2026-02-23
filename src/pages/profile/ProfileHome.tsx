@@ -1,4 +1,4 @@
-import { useAuth } from "../../context/AuthContext";
+import { type ReactNode } from "react";
 import {
   ChevronRight,
   Trophy,
@@ -12,6 +12,21 @@ import {
   Palette,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../hooks/useAuth";
+
+// 1. Strict Interfaces
+interface TinyCardProps {
+  label: string;
+  value: string | number;
+  icon: ReactNode;
+}
+
+interface MenuButtonProps {
+  label: string;
+  sub: string;
+  icon: ReactNode;
+  onClick: () => void;
+}
 
 export const ProfileHome = () => {
   const { athlete, signOut } = useAuth();
@@ -20,26 +35,24 @@ export const ProfileHome = () => {
   if (!athlete) return null;
 
   return (
-    /* 1. pt-[env(safe-area-inset-top)] skips the notch.
-       2. min-h-screen keeps background flush to bottom.
-       3. pb-32 provides clearance for floating BottomNav.
-    */
-    <div className="flex-1 flex flex-col bg-[var(--bg-main)] min-h-screen px-6 pb-32 pt-[env(safe-area-inset-top)]">
+    <div className="flex-1 flex flex-col bg-bg-main min-h-screen px-6 pb-32 pt-safe animate-in fade-in duration-500">
+      {/* HEADER - LOGOUT */}
       <header className="flex justify-end pt-6 pb-2">
         <button
           onClick={() => signOut()}
-          className="p-3 bg-red-500/10 border border-red-500/15 rounded-2xl text-red-500 active:scale-90 transition-all"
+          className="p-3 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-500 active:scale-90 transition-all hover:bg-red-500/20"
         >
           <LogOut size={18} />
         </button>
       </header>
 
+      {/* HERO SECTION */}
       <section className="flex flex-col items-center mb-10">
         <div className="relative mb-6">
-          <div className="absolute inset-0 bg-[var(--brand-primary)] opacity-10 blur-2xl rounded-full" />
-          <div className="relative w-28 h-28 rounded-full bg-gradient-to-tr from-[var(--brand-primary)] to-orange-500 p-[3px]">
-            <div className="w-full h-full rounded-full bg-[var(--bg-main)] border-[4px] border-[var(--bg-main)] flex items-center justify-center overflow-hidden">
-              <span className="text-4xl font-black text-[var(--text-main)] italic tracking-tighter">
+          <div className="absolute inset-0 bg-brand-primary opacity-20 blur-3xl rounded-full" />
+          <div className="relative w-28 h-28 rounded-full bg-linear-to-tr from-brand-primary to-orange-500 p-0.75 shadow-2xl shadow-brand-primary/20">
+            <div className="w-full h-full rounded-full bg-bg-main border-4 border-bg-main flex items-center justify-center overflow-hidden">
+              <span className="text-4xl font-black text-text-main italic tracking-tighter uppercase">
                 {athlete.name?.charAt(0)}
               </span>
             </div>
@@ -47,20 +60,21 @@ export const ProfileHome = () => {
         </div>
 
         <div className="text-center">
-          <h1 className="text-3xl font-black tracking-tight uppercase italic text-[var(--text-main)] leading-none">
+          <h1 className="text-3xl font-black tracking-tight uppercase italic text-text-main leading-none">
             {athlete.name}
           </h1>
-          <div className="mt-3 flex items-center justify-center gap-2">
-            <span className="h-[1px] w-6 bg-slate-800" />
-            <p className="text-[11px] font-black uppercase tracking-[0.4em] text-[var(--brand-primary)] italic">
+          <div className="mt-4 flex items-center justify-center gap-3">
+            <span className="h-px w-6 bg-border-color" />
+            <p className="text-[11px] font-black uppercase tracking-[0.4em] text-brand-primary italic">
               Level — {athlete.current_level}
             </p>
-            <span className="h-[1px] w-6 bg-slate-800" />
+            <span className="h-px w-6 bg-border-color" />
           </div>
         </div>
       </section>
 
-      <div className="grid grid-cols-2 gap-2.5 mb-8">
+      {/* METRIC GRID */}
+      <div className="grid grid-cols-2 gap-3 mb-10">
         <TinyCard
           label="BMI"
           value={athlete.bmi || "0.0"}
@@ -72,22 +86,23 @@ export const ProfileHome = () => {
           icon={<Percent size={12} />}
         />
         <TinyCard
-          label="Lost"
+          label="Weight Lost"
           value={`${athlete.weight_lost || "0"}kg`}
           icon={<Flame size={12} />}
         />
         <TinyCard
-          label="Goal"
+          label="Goal Weight"
           value={athlete.target_weight ? `${athlete.target_weight}kg` : "—"}
           icon={<Target size={12} />}
         />
       </div>
 
-      <div className="flex items-center gap-4 mb-6">
-        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 whitespace-nowrap">
+      {/* ACCOUNT SETTINGS SECTION */}
+      <div className="flex items-center gap-4 mb-6 px-1">
+        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-text-muted whitespace-nowrap italic">
           Account Settings
         </p>
-        <div className="h-[1px] w-full bg-slate-800/50" />
+        <div className="h-px w-full bg-border-color/50" />
       </div>
 
       <nav className="space-y-3">
@@ -117,49 +132,50 @@ export const ProfileHome = () => {
         />
       </nav>
 
-      {/* THE SPRING: Pushes everything up but keeps the background solid */}
       <div className="flex-1" />
     </div>
   );
 };
 
-const TinyCard = ({ label, value, icon }: any) => (
-  <div className="bg-[var(--bg-surface)] border border-slate-800 p-3 rounded-[1.2rem] flex items-center gap-3">
-    <div className="w-7 h-7 rounded-lg bg-[var(--bg-main)] border border-slate-800 flex items-center justify-center text-[var(--brand-primary)]">
+/* --- SUB-COMPONENTS --- */
+
+const TinyCard = ({ label, value, icon }: TinyCardProps) => (
+  <div className="bg-bg-surface border border-border-color p-4 rounded-3xl flex items-center gap-4 shadow-sm">
+    <div className="w-8 h-8 rounded-xl bg-bg-main border border-border-color flex items-center justify-center text-brand-primary">
       {icon}
     </div>
     <div>
-      <p className="text-sm font-black italic text-[var(--text-main)] leading-none">
+      <p className="text-sm font-black italic text-text-main leading-none">
         {value}
       </p>
-      <p className="text-[8px] font-bold text-slate-500 uppercase tracking-tight mt-0.5">
+      <p className="text-[8px] font-bold text-text-muted uppercase tracking-tight mt-1.5">
         {label}
       </p>
     </div>
   </div>
 );
 
-const MenuButton = ({ label, sub, icon, onClick }: any) => (
+const MenuButton = ({ label, sub, icon, onClick }: MenuButtonProps) => (
   <button
     onClick={onClick}
-    className="w-full flex items-center justify-between p-4 bg-[var(--bg-surface)] border border-slate-800 rounded-[1.8rem] active:opacity-70 transition-all group"
+    className="w-full flex items-center justify-between p-5 bg-bg-surface border border-border-color rounded-[2.2rem] active:scale-[0.98] transition-all group hover:border-brand-primary/30"
   >
-    <div className="flex items-center gap-4">
-      <div className="w-10 h-10 rounded-2xl bg-[var(--bg-main)] border border-slate-800 flex items-center justify-center text-slate-500 group-active:text-[var(--brand-primary)]">
+    <div className="flex items-center gap-5">
+      <div className="w-11 h-11 rounded-2xl bg-bg-main border border-border-color flex items-center justify-center text-text-muted group-hover:text-brand-primary group-hover:border-brand-primary/20 transition-all">
         {icon}
       </div>
       <div className="text-left">
-        <p className="text-[11px] font-black uppercase italic tracking-wider text-[var(--text-main)]">
+        <p className="text-[12px] font-black uppercase italic tracking-wider text-text-main leading-tight">
           {label}
         </p>
-        <p className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">
+        <p className="text-[9px] font-bold text-text-muted uppercase tracking-tighter mt-1">
           {sub}
         </p>
       </div>
     </div>
     <ChevronRight
-      size={16}
-      className="text-slate-600 group-active:text-[var(--brand-primary)]"
+      size={18}
+      className="text-text-muted opacity-30 group-hover:opacity-100 group-hover:translate-x-1 transition-all"
     />
   </button>
 );

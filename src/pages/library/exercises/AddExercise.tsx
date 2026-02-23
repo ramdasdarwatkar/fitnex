@@ -10,32 +10,49 @@ import {
   Loader2,
 } from "lucide-react";
 import { SubPageLayout } from "../../../components/layout/SubPageLayout";
-import { useAuth } from "../../../context/AuthContext"; // Import Auth
+import { useAuth } from "../../../hooks/useAuth";
 import { db } from "../../../db/database";
 import { LibraryService } from "../../../services/LibraryService";
+import { type Equipment, type Muscle } from "../../../types/database.types";
+
+// --- 1. STRICT INTERFACES ---
+
+interface ExerciseForm {
+  name: string;
+  isPublic: boolean;
+  equipmentId: string;
+  category: string;
+  tracking: string[];
+  primaryMuscles: string[];
+  secondaryMuscles: string[];
+  stabilizerMuscles: string[];
+}
+
+// --- 2. MAIN COMPONENT ---
 
 export const AddExercise = () => {
   const navigate = useNavigate();
-  const { user_id } = useAuth(); // Retrieve current user ID
-  const [muscles, setMuscles] = useState<any[]>([]);
-  const [equipment, setEquipment] = useState<any[]>([]);
+  const { user_id } = useAuth();
+
+  const [muscles, setMuscles] = useState<Muscle[]>([]);
+  const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<ExerciseForm>({
     name: "",
     isPublic: false,
     equipmentId: "",
     category: "",
-    tracking: [] as string[],
-    primaryMuscles: [] as string[],
-    secondaryMuscles: [] as string[],
-    stabilizerMuscles: [] as string[],
+    tracking: [],
+    primaryMuscles: [],
+    secondaryMuscles: [],
+    stabilizerMuscles: [],
   });
 
   useEffect(() => {
-    db.muscles.toArray().then(setMuscles);
-    db.equipment.toArray().then(setEquipment);
+    db.muscles.toArray().then((data) => setMuscles(data));
+    db.equipment.toArray().then((data) => setEquipment(data));
   }, []);
 
   const handleSave = async () => {
@@ -52,21 +69,28 @@ export const AddExercise = () => {
     }
   };
 
-  const addMuscle = (id: string, role: string) => {
-    const key = `${role}Muscles` as keyof typeof form;
-    if (!(form[key] as string[]).includes(id)) {
-      setForm({ ...form, [key]: [...(form[key] as string[]), id] });
+  const addMuscle = (
+    id: string,
+    role: "primary" | "secondary" | "stabilizer",
+  ) => {
+    const key = `${role}Muscles` as keyof ExerciseForm;
+    const currentList = form[key] as string[];
+
+    if (!currentList.includes(id)) {
+      setForm({ ...form, [key]: [...currentList, id] });
     }
     setSearchQuery("");
   };
 
   return (
     <SubPageLayout title="Create Exercise">
-      <div className="flex flex-col gap-10 pb-40 px-2">
+      <div className="flex flex-col gap-10 pb-48 px-2 animate-in fade-in duration-500">
         {/* VISIBILITY SELECTOR */}
-        <div className="bg-slate-100 dark:bg-slate-900 p-1.5 rounded-[2rem] flex relative border border-slate-200 dark:border-slate-800">
+        <div className="bg-bg-surface p-1.5 rounded-[2.5rem] flex relative border border-border-color shadow-inner">
           <div
-            className={`absolute top-1.5 bottom-1.5 w-[calc(50%-6px)] bg-white dark:bg-slate-800 rounded-[1.8rem] shadow-xl transition-all duration-300 ${form.isPublic ? "translate-x-[100%]" : "translate-x-0"}`}
+            className={`absolute top-1.5 bottom-1.5 w-[calc(50%-6px)] bg-bg-main rounded-[2.2rem] shadow-xl transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) ${
+              form.isPublic ? "translate-x-full" : "translate-x-0"
+            }`}
           />
           <button
             onClick={() => setForm({ ...form, isPublic: false })}
@@ -74,14 +98,10 @@ export const AddExercise = () => {
           >
             <Lock
               size={14}
-              className={
-                !form.isPublic ? "text-black dark:text-white" : "text-slate-400"
-              }
+              className={!form.isPublic ? "text-text-main" : "text-text-muted"}
             />
             <span
-              className={
-                !form.isPublic ? "text-black dark:text-white" : "text-slate-400"
-              }
+              className={!form.isPublic ? "text-text-main" : "text-text-muted"}
             >
               Private
             </span>
@@ -92,12 +112,12 @@ export const AddExercise = () => {
           >
             <Globe
               size={14}
-              className={form.isPublic ? "text-emerald-500" : "text-slate-400"}
+              className={
+                form.isPublic ? "text-brand-success" : "text-text-muted"
+              }
             />
             <span
-              className={
-                form.isPublic ? "text-black dark:text-white" : "text-slate-400"
-              }
+              className={form.isPublic ? "text-text-main" : "text-text-muted"}
             >
               Public
             </span>
@@ -105,12 +125,12 @@ export const AddExercise = () => {
         </div>
 
         {/* EXERCISE NAME */}
-        <div className="space-y-2">
-          <label className="text-[10px] font-black uppercase text-slate-400 ml-4 tracking-[0.2em]">
-            Exercise Name
+        <div className="space-y-3">
+          <label className="text-[10px] font-black uppercase text-text-muted ml-6 tracking-[0.3em]">
+            Identity
           </label>
           <input
-            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-[2.5rem] text-black dark:text-white font-black uppercase italic outline-none focus:ring-2 ring-[var(--brand-primary)] transition-all"
+            className="w-full bg-bg-surface border border-border-color p-7 rounded-[3rem] text-text-main font-black uppercase italic outline-none focus:ring-2 ring-brand-primary transition-all placeholder:opacity-20 shadow-sm"
             placeholder="E.G. ZOTTMAN CURLS"
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -118,11 +138,11 @@ export const AddExercise = () => {
         </div>
 
         {/* SELECTS */}
-        <div className="grid grid-cols-1 gap-6">
+        <div className="grid grid-cols-1 gap-8">
           <CustomSelect
             label="Main Category"
             value={form.category}
-            options={muscles.filter((m) => !m.parent_id)}
+            options={muscles.filter((m) => !m.parent)}
             onChange={(val) => setForm({ ...form, category: val })}
           />
           <CustomSelect
@@ -134,51 +154,58 @@ export const AddExercise = () => {
         </div>
 
         {/* TRACKING OPTIONS */}
-        <div className="space-y-4">
-          <label className="text-[10px] font-black uppercase text-slate-400 ml-4 tracking-[0.2em]">
-            What to track
+        <div className="space-y-5">
+          <label className="text-[10px] font-black uppercase text-text-muted ml-6 tracking-[0.3em]">
+            Metrics
           </label>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2.5 px-2">
             {["reps", "weight", "bodyweight", "distance", "duration"].map(
-              (opt) => (
-                <button
-                  key={opt}
-                  onClick={() =>
-                    setForm({
-                      ...form,
-                      tracking: form.tracking.includes(opt)
-                        ? form.tracking.filter((t) => t !== opt)
-                        : [...form.tracking, opt],
-                    })
-                  }
-                  className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase italic border transition-all ${form.tracking.includes(opt) ? "bg-[var(--brand-primary)] border-transparent text-black" : "bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500"}`}
-                >
-                  {opt}
-                </button>
-              ),
+              (opt) => {
+                const isActive = form.tracking.includes(opt);
+                return (
+                  <button
+                    key={opt}
+                    onClick={() =>
+                      setForm({
+                        ...form,
+                        tracking: isActive
+                          ? form.tracking.filter((t) => t !== opt)
+                          : [...form.tracking, opt],
+                      })
+                    }
+                    className={`px-7 py-3.5 rounded-4xl text-[10px] font-black uppercase italic border transition-all duration-300 ${
+                      isActive
+                        ? "bg-brand-primary border-transparent text-bg-main shadow-lg shadow-brand-primary/20 scale-105"
+                        : "bg-bg-surface border-border-color text-text-muted hover:border-text-muted"
+                    }`}
+                  >
+                    {opt}
+                  </button>
+                );
+              },
             )}
           </div>
         </div>
 
         {/* MUSCLE SEARCH */}
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase text-slate-400 ml-4 tracking-[0.2em]">
-              Muscle Mapping
+        <div className="space-y-8">
+          <div className="space-y-3">
+            <label className="text-[10px] font-black uppercase text-text-muted ml-6 tracking-[0.3em]">
+              Biomechanics
             </label>
             <div className="relative">
               <Search
-                className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400"
-                size={18}
+                className="absolute left-7 top-1/2 -translate-y-1/2 text-text-muted opacity-50"
+                size={20}
               />
               <input
-                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 pl-16 rounded-[2.5rem] text-sm text-black dark:text-white outline-none shadow-sm focus:border-slate-400 transition-all"
-                placeholder="Find muscle..."
+                className="w-full bg-bg-surface border border-border-color p-7 pl-16 rounded-[3rem] text-sm text-text-main outline-none shadow-inner focus:border-text-muted transition-all"
+                placeholder="Find target muscle..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
               {searchQuery.length > 1 && (
-                <div className="absolute top-[110%] left-0 right-0 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2rem] z-50 shadow-2xl overflow-hidden border-t-0">
+                <div className="absolute top-[110%] left-0 right-0 bg-bg-surface border border-border-color rounded-[2.5rem] z-50 shadow-2xl overflow-hidden animate-in slide-in-from-top-2 duration-300">
                   {muscles
                     .filter((m) =>
                       m.name.toLowerCase().includes(searchQuery.toLowerCase()),
@@ -187,15 +214,15 @@ export const AddExercise = () => {
                     .map((m) => (
                       <div
                         key={m.id}
-                        className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-slate-800 last:border-0"
+                        className="flex items-center justify-between p-6 border-b border-border-color/50 last:border-0 hover:bg-bg-main/50 transition-colors"
                       >
-                        <span className="text-xs font-black uppercase italic dark:text-white">
+                        <span className="text-xs font-black uppercase italic text-text-main">
                           {m.name}
                         </span>
                         <div className="flex gap-2">
                           <QuickAddBtn
                             label="Pri"
-                            className="bg-orange-500"
+                            className="bg-brand-primary"
                             onClick={() => addMuscle(m.id, "primary")}
                           />
                           <QuickAddBtn
@@ -205,7 +232,7 @@ export const AddExercise = () => {
                           />
                           <QuickAddBtn
                             label="Stb"
-                            className="bg-emerald-500"
+                            className="bg-brand-success"
                             onClick={() => addMuscle(m.id, "stabilizer")}
                           />
                         </div>
@@ -216,7 +243,7 @@ export const AddExercise = () => {
             </div>
           </div>
 
-          <div className="space-y-5">
+          <div className="space-y-6">
             <MuscleTagRow
               label="Primary Focus"
               items={form.primaryMuscles}
@@ -227,7 +254,7 @@ export const AddExercise = () => {
                   primaryMuscles: form.primaryMuscles.filter((m) => m !== id),
                 })
               }
-              colorClass="text-orange-500"
+              colorClass="text-brand-primary"
             />
             <MuscleTagRow
               label="Secondary Support"
@@ -255,24 +282,24 @@ export const AddExercise = () => {
                   ),
                 })
               }
-              colorClass="text-emerald-500"
+              colorClass="text-brand-success"
             />
           </div>
         </div>
 
-        {/* FLOATING ACTION BUTTON */}
-        <div className="fixed bottom-10 left-6 right-6 z-[60]">
+        {/* ACTION BUTTON */}
+        <div className="fixed bottom-10 left-6 right-6 z-60">
           <button
             disabled={isSaving || !form.name || !form.category}
             onClick={handleSave}
-            className="w-full py-6 bg-black dark:bg-[var(--brand-primary)] text-white dark:text-black rounded-[2.5rem] font-black uppercase italic tracking-widest shadow-2xl flex items-center justify-center gap-3 active:scale-95 transition-all disabled:opacity-50 disabled:active:scale-100"
+            className="w-full py-7 bg-text-main text-bg-main rounded-[3rem] font-black uppercase italic tracking-[0.2em] shadow-2xl flex items-center justify-center gap-3 active:scale-95 transition-all disabled:opacity-30 disabled:grayscale"
           >
             {isSaving ? (
-              <Loader2 className="animate-spin" size={20} />
+              <Loader2 className="animate-spin" size={22} />
             ) : (
-              <Save size={20} />
+              <Save size={22} />
             )}
-            {isSaving ? "Saving..." : "Create Exercise"}
+            {isSaving ? "Finalizing..." : "Initialize Exercise"}
           </button>
         </div>
       </div>
@@ -280,64 +307,94 @@ export const AddExercise = () => {
   );
 };
 
-// HELPER COMPONENTS
-const CustomSelect = ({ label, value, options, onChange }: any) => (
-  <div className="space-y-2">
-    <label className="text-[10px] font-black uppercase text-slate-400 ml-4 tracking-[0.2em]">
+// --- HELPER COMPONENTS ---
+
+interface SelectProps {
+  label: string;
+  value: string | number;
+  options: { id: string | number; name: string }[];
+  onChange: (val: string) => void;
+}
+
+const CustomSelect = ({ label, value, options, onChange }: SelectProps) => (
+  <div className="space-y-3">
+    <label className="text-[10px] font-black uppercase text-text-muted ml-6 tracking-[0.3em]">
       {label}
     </label>
     <div className="relative">
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-[2.5rem] text-[12px] font-black uppercase italic text-black dark:text-white appearance-none outline-none focus:border-slate-400 transition-all"
+        className="w-full bg-bg-surface border border-border-color p-7 rounded-[3rem] text-[13px] font-black uppercase italic text-text-main appearance-none outline-none focus:border-text-muted transition-all shadow-sm"
       >
-        <option value="">Choose {label}</option>
-        {options.map((o: any) => (
-          <option key={o.id} value={o.id}>
+        <option value="">Select {label}</option>
+        {options.map((o) => (
+          <option key={o.id} value={o.id.toString()}>
             {o.name}
           </option>
         ))}
       </select>
-      <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none">
-        <ChevronRight size={16} className="rotate-90 text-slate-400" />
+      <div className="absolute right-8 top-1/2 -translate-y-1/2 pointer-events-none opacity-30">
+        <ChevronRight size={18} className="rotate-90 text-text-main" />
       </div>
     </div>
   </div>
 );
 
-const QuickAddBtn = ({ label, className, onClick }: any) => (
+const QuickAddBtn = ({
+  label,
+  className,
+  onClick,
+}: {
+  label: string;
+  className: string;
+  onClick: () => void;
+}) => (
   <button
     onClick={onClick}
-    className={`${className} text-[8px] font-black uppercase px-3 py-1.5 rounded-lg text-white shadow-lg active:scale-90 transition-transform`}
+    className={`${className} text-[9px] font-black uppercase px-4 py-2 rounded-xl text-bg-main shadow-lg active:scale-90 transition-all`}
   >
     {label}
   </button>
 );
 
-const MuscleTagRow = ({ label, items, muscles, onRemove, colorClass }: any) => {
+interface TagRowProps {
+  label: string;
+  items: string[];
+  muscles: Muscle[];
+  onRemove: (id: string) => void;
+  colorClass: string;
+}
+
+const MuscleTagRow = ({
+  label,
+  items,
+  muscles,
+  onRemove,
+  colorClass,
+}: TagRowProps) => {
   if (items.length === 0) return null;
   return (
-    <div className="space-y-2">
+    <div className="space-y-3 animate-in slide-in-from-left-2 duration-300">
       <p
-        className={`text-[9px] font-black uppercase tracking-[0.2em] italic ml-2 ${colorClass}`}
+        className={`text-[10px] font-black uppercase tracking-[0.2em] italic ml-4 ${colorClass}`}
       >
         {label}
       </p>
-      <div className="flex flex-wrap gap-2">
-        {items.map((id: string) => (
+      <div className="flex flex-wrap gap-2.5">
+        {items.map((id) => (
           <div
             key={id}
-            className="flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 px-4 py-2.5 rounded-2xl shadow-sm group"
+            className="flex items-center gap-3 bg-bg-surface border border-border-color px-5 py-3 rounded-2xl shadow-sm hover:border-text-muted transition-colors"
           >
-            <span className="text-[11px] font-black uppercase italic dark:text-white">
-              {muscles.find((m: any) => m.id === id)?.name}
+            <span className="text-[12px] font-black uppercase italic text-text-main">
+              {muscles.find((m) => m.id === id)?.name}
             </span>
             <button
               onClick={() => onRemove(id)}
-              className="text-slate-400 hover:text-red-500 transition-colors"
+              className="text-text-muted hover:text-brand-danger transition-colors"
             >
-              <X size={14} />
+              <X size={16} />
             </button>
           </div>
         ))}

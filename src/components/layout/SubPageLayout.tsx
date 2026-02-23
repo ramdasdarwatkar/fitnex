@@ -30,7 +30,7 @@ export const SubPageLayout = ({
 
   return (
     /* Using safe-area-inset-top for notched phones */
-    <div className="flex-1 flex flex-col bg-bg-main min-h-screen pt-[env(safe-area-inset-top)] pb-32">
+    <div className="flex-1 flex flex-col bg-bg-main min-h-screen pt-safe-half pb-32">
       {/* HEADER: Sticky header feels more 'native' on long pages */}
       <header className="px-6 py-6 flex items-center justify-between sticky top-0 bg-bg-main/80 backdrop-blur-md z-40 min-h-[80px]">
         {/* LEFT: BACK BUTTON */}

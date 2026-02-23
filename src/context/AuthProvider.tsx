@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "../lib/supabase";
-import { db } from "../db/database";
 import { SyncManager } from "../services/SyncManager";
+import { AthleteService } from "../services/AthleteService";
 import { AuthContext } from "./AuthTypes";
 import type { AthleteSummary } from "../types/database.types";
 
@@ -12,87 +12,104 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [athlete, setAthlete] = useState<AthleteSummary | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Initial Session + State Sync
+  /**
+   * ATOMIC HYDRATION
+   * Ensures User ID and Profile are resolved before the Splash Screen clears.
+   */
+  const hydrate = useCallback(async (uid: string) => {
+    // 1. Service handles the Dexie vs Supabase priority logic
+    let profile = await AthleteService.getLocalSummary(uid);
+
+    if (!profile && window.navigator.onLine) {
+      profile = await AthleteService.syncSummary(uid);
+    }
+
+    // 2. We set both states. React batches these updates into one render cycle.
+    setUserId(uid);
+    setAthlete(profile);
+  }, []);
+
   useEffect(() => {
     const initAuth = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      const id = session?.user?.id || null;
-      setUserId(id);
+      setLoading(true);
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        const id = session?.user?.id || null;
 
-      if (id) {
-        const localAthlete = await db.athlete_summary.get(id);
-        if (localAthlete) setAthlete(localAthlete);
+        if (id) {
+          await hydrate(id);
+        } else {
+          setUserId(null);
+          setAthlete(null);
+        }
+      } catch (err) {
+        console.error("Auth Initialization Error:", err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     initAuth();
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUserId(session?.user?.id || null);
-      if (!session) setAthlete(null);
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const id = session?.user?.id || null;
+
+      if (!session) {
+        setUserId(null);
+        setAthlete(null);
+        setLoading(false);
+      } else {
+        await hydrate(id!);
+        setLoading(false);
+      }
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [hydrate]);
 
-  // Safe Sign Out Logic
+  /**
+   * SAFE SIGN OUT
+   * Prevents data loss by checking SyncManager before purging local DB.
+   */
   const signOut = useCallback(async () => {
     try {
-      // 1. Attempt final sync if online
-      if (window.navigator.onLine) {
-        await SyncManager.reconcile();
-      }
-
-      // 2. Safety Check for Unsynced Data
-      const writableTables = [
-        "body_metrics",
-        "workouts",
-        "workout_logs",
-        "exercises",
-        "routines",
-        "exercise_muscles",
-        "exercise_equipment",
-        "routine_exercises",
-      ];
-      const counts = await Promise.all(
-        writableTables.map((t) =>
-          db.table(t).where("is_synced").equals(0).count(),
-        ),
-      );
-
-      const totalPending = counts.reduce((a, b) => a + b, 0);
-      if (
-        totalPending > 0 &&
-        !window.confirm(
-          `Warning: ${totalPending} items are unsynced. Logout anyway?`,
-        )
-      ) {
+      if (!window.navigator.onLine) {
+        alert(
+          "Authentication Error: You must be online to sync and logout safely.",
+        );
         return;
       }
 
-      // 3. Clear Local Storage & Sign Out
-      await Promise.all(db.tables.map((table) => table.clear()));
+      // 1. Attempt a final sync push
+      await SyncManager.reconcile();
+
+      // 2. Check for "Dirty" (Unsynced) rows
+      const status = await SyncManager.getSyncStatus();
+
+      if (!status.isClean) {
+        const force = window.confirm(
+          `Sync Warning: ${status.total} items failed to reach the cloud. Logout and lose changes?\n\nDetails: ${status.details.join(", ")}`,
+        );
+        if (!force) return;
+      }
+
+      // 3. Clear data via Manager and sign out from Supabase
+      await SyncManager.clearLocalDatabase();
       await supabase.auth.signOut();
 
       setUserId(null);
       setAthlete(null);
     } catch (error) {
-      console.error("Logout error:", error);
+      console.error("Logout process failed:", error);
     }
   }, []);
 
   const value = useMemo(
-    () => ({
-      user_id,
-      athlete,
-      loading,
-      signOut,
-    }),
+    () => ({ user_id, athlete, loading, signOut }),
     [user_id, athlete, loading, signOut],
   );
 

@@ -3,31 +3,45 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "../../../db/database";
 import { X, Search, Check, Dumbbell } from "lucide-react";
 
+// --- 1. STRICT INTERFACES ---
+
 interface ExercisePickerProps {
   onClose: () => void;
   onAdd: (ids: string[]) => void;
 }
 
+interface ExerciseMeta {
+  topLevel: string;
+  equipmentNames: string[];
+  searchTerms: string[];
+}
+
+// --- 2. MAIN COMPONENT ---
+
 export const ExercisePicker = ({ onClose, onAdd }: ExercisePickerProps) => {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
 
-  // 1. Fetch all required tables
-  const exercises = useLiveQuery(() => db.exercises.toArray()) || [];
-  const exMuscles = useLiveQuery(() => db.exercise_muscles.toArray()) || [];
-  const muscles = useLiveQuery(() => db.muscles.toArray()) || [];
-  const exEquipment = useLiveQuery(() => db.exercise_equipment.toArray()) || [];
-  const equipment = useLiveQuery(() => db.equipment.toArray()) || [];
+  // 1. Fetch tables from Dexie
+  const liveExercises = useLiveQuery(() => db.exercises.toArray());
+  const liveExMuscles = useLiveQuery(() => db.exercise_muscles.toArray());
+  const liveMuscles = useLiveQuery(() => db.muscles.toArray());
+  const liveExEquipment = useLiveQuery(() => db.exercise_equipment.toArray());
+  const liveEquipment = useLiveQuery(() => db.equipment.toArray());
 
-  // 2. Pre-process Metadata (Muscles + Equipment) for Search and UI
+  // 2. STABILIZATION: Move the logical OR inside useMemo to keep references stable
+  const exercises = useMemo(() => liveExercises || [], [liveExercises]);
+  const exMuscles = useMemo(() => liveExMuscles || [], [liveExMuscles]);
+  const muscles = useMemo(() => liveMuscles || [], [liveMuscles]);
+  const exEquipment = useMemo(() => liveExEquipment || [], [liveExEquipment]);
+  const equipment = useMemo(() => liveEquipment || [], [liveEquipment]);
+
+  // 3. Pre-process Relational Metadata for Search
   const exerciseMetadata = useMemo(() => {
-    const map: Record<
-      string,
-      { topLevel: string; equipmentNames: string[]; searchTerms: string[] }
-    > = {};
+    const map: Record<string, ExerciseMeta> = {};
 
     exercises.forEach((ex) => {
-      // Resolve Muscles
+      // Primary Muscle Resolution
       const muscleLink = exMuscles.find(
         (em) => em.exercise_id === ex.id && em.role === "primary",
       );
@@ -45,7 +59,7 @@ export const ExercisePicker = ({ onClose, onAdd }: ExercisePickerProps) => {
         safety++;
       }
 
-      // Resolve Equipment from join table
+      // Equipment Resolution
       const equipLinks = exEquipment.filter((ee) => ee.exercise_id === ex.id);
       const equipNames = equipLinks
         .map(
@@ -67,15 +81,16 @@ export const ExercisePicker = ({ onClose, onAdd }: ExercisePickerProps) => {
     return map;
   }, [exercises, exMuscles, muscles, exEquipment, equipment]);
 
-  // 3. Filter and Grouping
+  // 4. Grouping & Filtering
   const groupedExercises = useMemo(() => {
-    const query = search.toLowerCase();
+    const query = search.toLowerCase().trim();
+
     const filtered = exercises.filter((ex) => {
       const meta = exerciseMetadata[ex.id];
       return !query || meta?.searchTerms.some((term) => term.includes(query));
     });
 
-    const groups: Record<string, any[]> = {};
+    const groups: Record<string, typeof exercises> = {};
     filtered.forEach((ex) => {
       const groupName = exerciseMetadata[ex.id]?.topLevel || "Other";
       if (!groups[groupName]) groups[groupName] = [];
@@ -89,69 +104,72 @@ export const ExercisePicker = ({ onClose, onAdd }: ExercisePickerProps) => {
           acc[key] = groups[key];
           return acc;
         },
-        {} as Record<string, any[]>,
+        {} as Record<string, typeof exercises>,
       );
   }, [exercises, search, exerciseMetadata]);
 
   return (
-    <div className="fixed inset-0 z-[600] bg-black flex flex-col animate-in slide-in-from-bottom duration-500">
-      {/* Header with Notch & Search */}
-      <div className="pt-[env(safe-area-inset-top)] bg-black/90 backdrop-blur-2xl border-b border-slate-900 sticky top-0 z-20">
+    <div className="fixed inset-0 z-600 bg-bg-main flex flex-col animate-in slide-in-from-bottom duration-500 ease-out">
+      {/* HEADER SECTION */}
+      <div className="pt-[env(safe-area-inset-top)] bg-bg-main/90 backdrop-blur-2xl border-b border-border-color sticky top-0 z-20 shadow-xl">
         <div className="p-6 flex items-center justify-between">
           <button
             onClick={onClose}
-            className="text-slate-500 p-2 active:scale-75 transition-all"
+            className="text-text-muted p-2 active:scale-75 transition-all"
           >
             <X size={24} />
           </button>
-          <h2 className="text-[10px] font-black uppercase italic text-white tracking-[0.4em]">
-            Exercise Library
+          <h2 className="text-[10px] font-black uppercase italic text-text-main tracking-[0.4em]">
+            EXERCISE VAULT
           </h2>
           <button
             onClick={() => onAdd(selected)}
             disabled={selected.length === 0}
-            className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase italic transition-all ${
+            className={`px-7 py-2.5 rounded-2xl text-[10px] font-black uppercase italic transition-all active:scale-95 ${
               selected.length > 0
-                ? "bg-[var(--brand-primary)] text-black"
-                : "bg-slate-800 text-slate-500 opacity-50"
+                ? "bg-brand-primary text-bg-main shadow-lg shadow-brand-primary/20"
+                : "bg-bg-surface text-text-muted opacity-40 grayscale pointer-events-none"
             }`}
           >
-            Add ({selected.length})
+            Deploy ({selected.length})
           </button>
         </div>
 
         <div className="px-6 pb-6">
           <div className="relative">
             <Search
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"
+              className="absolute left-5 top-1/2 -translate-y-1/2 text-text-muted opacity-50"
               size={18}
             />
             <input
               type="text"
-              placeholder="Search exercise, muscle, or equipment..."
+              placeholder="Search muscle, gear, or exercise..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-slate-900/50 border border-slate-800 rounded-2xl py-4 pl-12 pr-4 text-white font-bold outline-none focus:border-[var(--brand-primary)] transition-all"
+              className="w-full bg-bg-surface border border-border-color rounded-4xl py-5 pl-14 pr-6 text-text-main font-bold outline-none focus:ring-2 ring-brand-primary/20 transition-all placeholder:opacity-20 shadow-inner"
             />
           </div>
         </div>
       </div>
 
-      {/* List */}
+      {/* EXERCISE LIST */}
       <div className="flex-1 overflow-y-auto px-6 pb-40 pt-6 space-y-12">
         {Object.entries(groupedExercises).map(([group, list]) => (
-          <div key={group} className="space-y-4">
-            <h3 className="text-[11px] font-black text-[var(--brand-primary)] uppercase tracking-[0.3em] italic sticky top-0 bg-black py-2 z-10">
-              {group}
-            </h3>
+          <div key={group} className="space-y-5">
+            <div className="flex items-center gap-4 sticky top-0 bg-bg-main py-3 z-10">
+              <h3 className="text-[11px] font-black text-brand-primary uppercase tracking-[0.4em] italic whitespace-nowrap">
+                {group}
+              </h3>
+              <div className="h-px w-full bg-border-color/30" />
+            </div>
 
-            <div className="grid grid-cols-1 gap-3">
+            <div className="grid grid-cols-1 gap-3.5">
               {list.map((ex) => {
                 const isSelected = selected.includes(ex.id);
                 const meta = exerciseMetadata[ex.id];
 
                 return (
-                  <div
+                  <button
                     key={ex.id}
                     onClick={() =>
                       setSelected((prev) =>
@@ -160,60 +178,57 @@ export const ExercisePicker = ({ onClose, onAdd }: ExercisePickerProps) => {
                           : [...prev, ex.id],
                       )
                     }
-                    className={`flex items-center justify-between p-5 rounded-[2.2rem] border transition-all active:scale-[0.98] ${
+                    className={`flex items-center justify-between p-6 rounded-[2.5rem] border transition-all active:scale-[0.97] text-left ${
                       isSelected
-                        ? "bg-[var(--brand-primary)]/10 border-[var(--brand-primary)]/50"
-                        : "bg-slate-900/40 border-slate-800/60"
+                        ? "bg-brand-primary/5 border-brand-primary shadow-lg shadow-brand-primary/5"
+                        : "bg-bg-surface border-border-color/50 hover:border-text-muted"
                     }`}
                   >
-                    <div className="flex items-center gap-5">
+                    <div className="flex items-center gap-6">
                       <div
-                        className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${
+                        className={`w-7 h-7 rounded-xl border-2 flex items-center justify-center transition-all ${
                           isSelected
-                            ? "bg-[var(--brand-primary)] border-[var(--brand-primary)]"
-                            : "border-slate-700 bg-black/20"
+                            ? "bg-brand-primary border-brand-primary shadow-lg"
+                            : "border-border-color bg-bg-main"
                         }`}
                       >
                         {isSelected && (
                           <Check
-                            size={14}
+                            size={16}
                             strokeWidth={4}
-                            className="text-black"
+                            className="text-bg-main"
                           />
                         )}
                       </div>
 
                       <div className="space-y-2">
                         <span
-                          className={`text-[14px] font-black uppercase italic block ${isSelected ? "text-white" : "text-slate-200"}`}
+                          className={`text-[15px] font-black uppercase italic block tracking-tight ${
+                            isSelected ? "text-text-main" : "text-text-main/80"
+                          }`}
                         >
                           {ex.name}
                         </span>
 
-                        <div className="flex flex-wrap items-center gap-2">
-                          {/* Equipment Badges from join table */}
+                        <div className="flex flex-wrap items-center gap-2.5">
                           {meta?.equipmentNames.map((name) => (
                             <div
                               key={name}
-                              className="flex items-center gap-1 bg-slate-800/80 px-2 py-0.5 rounded-md border border-slate-700/50"
+                              className="flex items-center gap-1.5 bg-bg-main px-3 py-1 rounded-lg border border-border-color shadow-sm"
                             >
                               <Dumbbell
-                                size={10}
-                                className="text-[var(--brand-primary)]"
+                                size={11}
+                                className="text-brand-primary opacity-70"
                               />
-                              <span className="text-[8px] font-black uppercase text-slate-300">
+                              <span className="text-[9px] font-black uppercase text-text-muted italic">
                                 {name}
                               </span>
                             </div>
                           ))}
-
-                          <span className="text-[8px] font-bold text-slate-600 uppercase tracking-widest ml-1">
-                            {ex.force} • {ex.mechanic}
-                          </span>
                         </div>
                       </div>
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>

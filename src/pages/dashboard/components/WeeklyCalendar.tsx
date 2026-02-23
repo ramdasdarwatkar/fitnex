@@ -11,35 +11,41 @@ export const WeeklyCalendar = ({
   activeDays = [],
   restDays = [],
 }: WeeklyCalendarProps) => {
-  const today = new Date();
+  // 1. Move the 'today' reference inside useMemo or keep it external
+  // The compiler prefers that stable dates are calculated inside the memo block
+  const { weekDays, today } = useMemo(() => {
+    const now = new Date();
+    const start = startOfWeek(now, { weekStartsOn: 1 });
+    const days = Array.from({ length: 7 }).map((_, i) => addDays(start, i));
 
-  const weekDays = useMemo(() => {
-    const start = startOfWeek(today, { weekStartsOn: 1 });
-    return Array.from({ length: 7 }).map((_, i) => addDays(start, i));
+    return { weekDays: days, today: now };
   }, []);
 
+  // 2. Parse ISO strings into Date objects for comparison
   const activeDateObjects = useMemo(
-    () => activeDays?.map((d) => parseISO(d)) ?? [],
+    () => activeDays.map((d) => parseISO(d)),
     [activeDays],
   );
+
   const restDateObjects = useMemo(
-    () => restDays?.map((d) => parseISO(d)) ?? [],
+    () => restDays.map((d) => parseISO(d)),
     [restDays],
   );
 
+  // 3. Calculation Logic
   const workoutCount = activeDateObjects.length;
   const weeklyTarget = 5;
   const progressPercent = Math.min((workoutCount / weeklyTarget) * 100, 100);
 
   return (
-    <section className="dashboard-card bg-slate-900 border border-slate-800 p-6 rounded-[2.5rem] shadow-xl h-full flex flex-col justify-between">
+    <section className="bg-bg-surface border border-border-color p-6 rounded-[2.5rem] shadow-xl h-full flex flex-col justify-between">
       <div>
         <div className="flex justify-between items-center mb-6">
           <div className="space-y-1">
-            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted">
               Weekly Consistency
             </h3>
-            <p className="text-[var(--brand-primary)] text-[9px] font-black uppercase italic">
+            <p className="text-brand-primary text-[9px] font-black uppercase italic">
               {workoutCount}/7 Sessions Finished
             </p>
           </div>
@@ -54,12 +60,12 @@ export const WeeklyCalendar = ({
 
             return (
               <div
-                key={day.toString()}
+                key={day.toISOString()}
                 className="flex flex-col items-center gap-3"
               >
                 <span
                   className={`text-[9px] font-black uppercase tracking-tighter ${
-                    isToday ? "text-[var(--brand-primary)]" : "text-slate-600"
+                    isToday ? "text-brand-primary" : "text-text-muted"
                   }`}
                 >
                   {format(day, "EEE")}
@@ -68,12 +74,12 @@ export const WeeklyCalendar = ({
                 <div
                   className={`w-10 h-10 rounded-2xl border-2 flex items-center justify-center transition-all duration-500 ${
                     isWorkout
-                      ? "border-[var(--brand-primary)] bg-[var(--brand-primary)] shadow-[0_0_20px_rgba(204,255,0,0.2)]"
+                      ? "border-brand-primary bg-brand-primary shadow-[0_0_20px_rgba(var(--brand-primary-rgb),0.2)]"
                       : isRest
                         ? "border-blue-500/40 bg-blue-500/10"
                         : isToday
-                          ? "border-slate-500 bg-slate-800"
-                          : "border-slate-800 bg-black/40"
+                          ? "border-text-muted bg-bg-surface-soft"
+                          : "border-border-color bg-bg-main/40"
                   }`}
                 >
                   {isWorkout ? (
@@ -82,7 +88,7 @@ export const WeeklyCalendar = ({
                     <CupSoda size={16} className="text-blue-400" />
                   ) : (
                     <span
-                      className={`text-[11px] font-black ${isToday ? "text-white" : "text-slate-700"}`}
+                      className={`text-[11px] font-black ${isToday ? "text-text-main" : "text-text-muted/40"}`}
                     >
                       {format(day, "d")}
                     </span>
@@ -94,21 +100,21 @@ export const WeeklyCalendar = ({
         </div>
 
         {/* WEEKLY TARGET BAR */}
-        <div className="bg-black/40 border border-slate-800/50 rounded-2xl p-4">
+        <div className="bg-bg-main/40 border border-border-color/50 rounded-2xl p-4">
           <div className="flex justify-between items-center mb-2">
             <div className="flex items-center gap-2">
-              <Target size={12} className="text-slate-500" />
-              <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">
+              <Target size={12} className="text-text-muted" />
+              <span className="text-[8px] font-black uppercase tracking-widest text-text-muted">
                 Weekly Goal
               </span>
             </div>
-            <span className="text-[10px] font-black italic text-white">
+            <span className="text-10 font-black italic text-text-main">
               {workoutCount} / {weeklyTarget}
             </span>
           </div>
-          <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+          <div className="h-1.5 w-full bg-bg-surface-soft rounded-full overflow-hidden">
             <div
-              className="h-full bg-[var(--brand-primary)] transition-all duration-1000 ease-out shadow-[0_0_10px_var(--brand-primary)]"
+              className="h-full bg-brand-primary transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(var(--brand-primary-rgb),0.5)]"
               style={{ width: `${progressPercent}%` }}
             />
           </div>

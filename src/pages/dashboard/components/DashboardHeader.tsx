@@ -1,14 +1,14 @@
 import { useMemo } from "react";
 import { Sparkles } from "lucide-react";
-import { useAuth } from "../../../context/AuthContext";
-import { format } from "date-fns";
+import { format } from "date-fns"; // Fixes 'Cannot find name format'
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../../hooks/useAuth";
 
 export const DashboardHeader = () => {
   const { athlete } = useAuth();
   const navigate = useNavigate();
 
-  // 1. Time-aware greeting logic
+  // 1. Time-aware greeting (Stable)
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
     if (hour < 12) return "Good morning";
@@ -16,39 +16,46 @@ export const DashboardHeader = () => {
     return "Good evening";
   }, []);
 
-  // 2. Extract First Name & Proper Case
-  const firstName = useMemo(() => {
-    if (!athlete?.name) return "Athlete";
-    const namePart = athlete.name.trim().split(" ")[0];
-    return namePart.charAt(0).toUpperCase() + namePart.slice(1).toLowerCase();
-  }, [athlete?.name]);
+  // 2. Extract First Name (Optimized for Compiler)
+  // We extract the specific property outside to ensure dependency alignment
+  const athleteName = athlete?.name;
 
-  // 3. Current Date for the Button
-  const today = new Date();
-  const monthName = format(today, "MMM");
-  const dayNumber = format(today, "dd");
+  const firstName = useMemo(() => {
+    if (!athleteName) return "Athlete";
+    const namePart = athleteName.trim().split(" ")[0];
+    return namePart.charAt(0).toUpperCase() + namePart.slice(1).toLowerCase();
+  }, [athleteName]);
+
+  // 3. Current Date Logic (Stabilized)
+  const { monthName, dayNumber } = useMemo(() => {
+    const today = new Date();
+    return {
+      monthName: format(today, "MMM"),
+      dayNumber: format(today, "dd"),
+    };
+  }, []);
 
   return (
-    <header className="pt-4 pb-2 flex justify-between items-center ios-no-top">
+    <header className="pt-4 pb-2 flex justify-between items-center">
       <div className="space-y-1">
-        <p className="flex items-center gap-2 text-[var(--brand-primary)] font-black italic text-[10px] uppercase tracking-[0.2em]">
+        <p className="flex items-center gap-2 text-brand-primary font-black italic text-[10px] uppercase tracking-[0.2em]">
           <Sparkles size={12} strokeWidth={3} fill="currentColor" />
           {greeting},
         </p>
-        <h1 className="text-3xl font-black text-white tracking-tighter uppercase italic leading-none">
+        <h1 className="text-3xl font-black text-text-main tracking-tighter uppercase italic leading-none">
           {firstName}!
         </h1>
       </div>
 
       {/* Monthly View Trigger Button */}
       <button
-        onClick={() => navigate("/workout/history")} // Updated to navigate
-        className="dashboard-card w-12 h-12 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col items-center justify-center text-slate-400 active:scale-90 transition-all hover:border-[var(--brand-primary)]/40 shadow-xl group"
+        onClick={() => navigate("/workout/history")}
+        className="w-12 h-12 rounded-2xl bg-bg-surface border border-border-color flex flex-col items-center justify-center text-text-muted active:scale-90 transition-all hover:border-brand-primary/40 shadow-xl group"
       >
-        <span className="text-[7px] font-black text-slate-500 group-hover:text-[var(--brand-primary)] transition-colors mb-0.5 uppercase tracking-tighter">
+        <span className="text-[7px] font-black text-text-muted group-hover:text-brand-primary transition-colors mb-0.5 uppercase tracking-tighter">
           {monthName}
         </span>
-        <span className="text-sm font-black text-white leading-none tabular-nums">
+        <span className="text-sm font-black text-text-main leading-none tabular-nums">
           {dayNumber}
         </span>
       </button>

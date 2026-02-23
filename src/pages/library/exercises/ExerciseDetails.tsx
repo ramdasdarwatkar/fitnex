@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { SubPageLayout } from "../../../components/layout/SubPageLayout";
 import { LibraryService } from "../../../services/LibraryService";
@@ -15,42 +15,76 @@ import {
   Move,
   Timer,
   AlertCircle,
-  ChevronLeft,
+  type LucideIcon,
 } from "lucide-react";
 
-/**
- * TRENDY CONFIRM MODAL
- * Used for high-stakes actions like Archiving.
- */
-const ConfirmModal = ({ isOpen, onConfirm, onCancel }: any) => {
+// --- 1. STRICT INTERFACES ---
+
+interface MuscleLink {
+  id: string;
+  name: string;
+  role: "primary" | "secondary" | "stabilizer";
+}
+
+interface ExerciseDetailData {
+  id: string;
+  name: string;
+  status: boolean;
+  categoryName: string;
+  equipmentName: string;
+  reps: boolean;
+  weight: boolean;
+  bodyweight: boolean;
+  distance: boolean;
+  duration: boolean;
+  muscles: MuscleLink[];
+}
+
+interface MetricConfig {
+  id: keyof ExerciseDetailData;
+  icon: LucideIcon;
+  label: string;
+}
+
+// --- 2. COMPONENTS ---
+
+const ConfirmModal = ({
+  isOpen,
+  onConfirm,
+  onCancel,
+}: {
+  isOpen: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) => {
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+    <div className="fixed inset-0 z-100 flex items-center justify-center p-6">
       <div
-        className="absolute inset-0 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300"
+        className="absolute inset-0 bg-bg-main/90 backdrop-blur-md animate-in fade-in duration-300"
         onClick={onCancel}
       />
-      <div className="relative w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] p-8 shadow-2xl animate-in zoom-in-95 duration-200">
-        <div className="w-14 h-14 rounded-2xl bg-red-500/10 flex items-center justify-center text-red-500 mb-6 mx-auto">
+      <div className="relative w-full max-w-sm bg-bg-surface border border-border-color rounded-[3rem] p-10 shadow-2xl animate-in zoom-in-95 duration-200">
+        <div className="w-16 h-16 rounded-3xl bg-brand-danger/10 flex items-center justify-center text-brand-danger mb-8 mx-auto">
           <AlertCircle size={32} />
         </div>
-        <h3 className="text-xl font-black uppercase italic text-black dark:text-white mb-2 tracking-tight text-center">
+        <h3 className="text-xl font-black uppercase italic text-text-main mb-3 tracking-tighter text-center leading-none">
           Archive Exercise?
         </h3>
-        <p className="text-sm font-bold text-slate-500 leading-relaxed mb-8 text-center px-4">
-          This will hide the exercise from your active library. All past workout
-          data and history will be preserved.
+        <p className="text-xs font-bold text-text-muted leading-relaxed mb-10 text-center px-2 opacity-60">
+          This will hide the entry from your active library. All past
+          performance data remains protected.
         </p>
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-4">
           <button
             onClick={onConfirm}
-            className="w-full py-5 bg-red-500 text-white rounded-2xl font-black uppercase italic tracking-widest active:scale-95 shadow-lg shadow-red-500/20 transition-all"
+            className="w-full py-6 bg-brand-danger text-white rounded-2xl font-black uppercase italic tracking-widest active:scale-95 shadow-xl shadow-brand-danger/20 transition-all"
           >
-            Archive Now
+            Archive Entry
           </button>
           <button
             onClick={onCancel}
-            className="w-full py-3 text-slate-400 font-black uppercase italic text-[10px] tracking-widest hover:text-black dark:hover:text-white transition-colors"
+            className="w-full py-2 text-text-muted font-black uppercase italic text-[10px] tracking-widest hover:text-text-main transition-colors"
           >
             Cancel Action
           </button>
@@ -61,78 +95,80 @@ const ConfirmModal = ({ isOpen, onConfirm, onCancel }: any) => {
 };
 
 export const ExerciseDetail = () => {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<ExerciseDetailData | null>(null);
   const [showArchiveModal, setShowArchiveModal] = useState(false);
 
   useEffect(() => {
     if (id) {
       LibraryService.getExerciseDetails(id).then((res) => {
-        if (res) setData(res);
+        if (res) setData(res as ExerciseDetailData);
       });
     }
   }, [id]);
 
-  if (!data) return null;
-
   const handleArchive = async () => {
+    if (!id) return;
     try {
-      await LibraryService.archiveExercise(id!);
+      await LibraryService.archiveExercise(id);
       navigate("/library");
     } catch (err) {
       console.error("Archive failed", err);
     }
   };
 
-  // Metric Mapping Configuration
-  const metrics = [
-    { id: "reps", icon: Repeat, label: "Reps" },
-    { id: "weight", icon: Weight, label: "Weight" },
-    { id: "bodyweight", icon: Zap, label: "Bodyweight" },
-    { id: "distance", icon: Move, label: "Distance" },
-    { id: "duration", icon: Timer, label: "Duration" },
-  ];
+  const metrics: MetricConfig[] = useMemo(
+    () => [
+      { id: "reps", icon: Repeat, label: "Reps" },
+      { id: "weight", icon: Weight, label: "Weight" },
+      { id: "bodyweight", icon: Zap, label: "Bodyweight" },
+      { id: "distance", icon: Move, label: "Distance" },
+      { id: "duration", icon: Timer, label: "Duration" },
+    ],
+    [],
+  );
+
+  if (!data) return null;
 
   return (
     <SubPageLayout title="Exercise Details">
-      <div className="flex flex-col gap-8 pb-32 px-1">
+      <div className="flex flex-col gap-10 pb-40 px-1 animate-in fade-in slide-in-from-bottom-4 duration-700">
         {/* 1. TYPOGRAPHY HEADER */}
-        <div className="space-y-4 pt-4">
-          <div className="flex items-center gap-2 mb-1">
+        <div className="space-y-5 pt-6">
+          <div className="flex items-center gap-3 mb-2">
             <div
-              className={`w-2 h-2 rounded-full ${data.status ? "bg-green-500" : "bg-orange-500"}`}
+              className={`w-2 h-2 rounded-full ${data.status ? "bg-brand-success" : "bg-brand-primary"}`}
             />
-            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 italic">
+            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-text-muted italic opacity-60">
               {data.status ? "Active Library" : "Archived Entry"}
             </span>
           </div>
-          <h1 className="text-5xl font-black uppercase italic tracking-tighter leading-[0.85] text-black dark:text-white">
+          <h1 className="text-6xl font-black uppercase italic tracking-tighter leading-[0.8] text-text-main">
             {data.name}
           </h1>
         </div>
 
-        {/* 2. METRICS TRACKING GRID (Data-Driven Selection) */}
-        <div className="space-y-3">
-          <label className="text-[9px] font-black uppercase text-slate-400 ml-2 tracking-widest">
-            Tracked Metrics
+        {/* 2. METRICS TRACKING GRID */}
+        <div className="space-y-4">
+          <label className="text-[10px] font-black uppercase text-text-muted ml-4 tracking-[0.3em] opacity-40 italic">
+            Telemetry Tracked
           </label>
-          <div className="grid grid-cols-5 gap-2">
+          <div className="grid grid-cols-5 gap-3">
             {metrics.map((m) => {
-              // Validates against DB values (supports both boolean and 1/0)
-              const isActive = data[m.id] === 1 || data[m.id] === true;
+              const isActive = data[m.id] === true;
               return (
                 <div
                   key={m.id}
-                  className={`flex flex-col items-center justify-center py-5 rounded-[1.5rem] border transition-all gap-2 
+                  className={`flex flex-col items-center justify-center aspect-square rounded-3xl border transition-all gap-2.5 
                     ${
                       isActive
-                        ? "bg-[var(--brand-primary)] border-transparent text-black shadow-lg shadow-[var(--brand-primary)]/20"
-                        : "bg-slate-50 dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-300 dark:text-slate-700"
+                        ? "bg-brand-primary border-transparent text-bg-main shadow-xl shadow-brand-primary/20 scale-105 z-10"
+                        : "bg-bg-surface border-border-color/30 text-text-muted opacity-40"
                     }`}
                 >
-                  <m.icon size={18} strokeWidth={isActive ? 3 : 2} />
-                  <span className="text-[7px] font-black uppercase tracking-tight">
+                  <m.icon size={20} strokeWidth={isActive ? 3 : 2} />
+                  <span className="text-[8px] font-black uppercase tracking-tighter">
                     {m.label}
                   </span>
                 </div>
@@ -142,90 +178,94 @@ export const ExerciseDetail = () => {
         </div>
 
         {/* 3. INFO CARDS */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-slate-50 dark:bg-slate-900 p-6 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 flex flex-col gap-1 shadow-sm">
-            <span className="text-[8px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-1.5">
-              <Layers size={10} /> Category
+        <div className="grid grid-cols-2 gap-4">
+          <div className="bg-bg-surface p-7 rounded-[2.5rem] border border-border-color shadow-sm flex flex-col gap-2">
+            <span className="text-[9px] font-black uppercase text-text-muted tracking-[0.2em] flex items-center gap-2 italic">
+              <Layers size={12} className="text-brand-primary" /> Category
             </span>
-            <p className="text-sm font-black uppercase italic text-black dark:text-white truncate">
+            <p className="text-sm font-black uppercase italic text-text-main truncate">
               {data.categoryName}
             </p>
           </div>
-          <div className="bg-slate-50 dark:bg-slate-900 p-6 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 flex flex-col gap-1 shadow-sm">
-            <span className="text-[8px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-1.5">
-              <Box size={10} /> Equipment
+          <div className="bg-bg-surface p-7 rounded-[2.5rem] border border-border-color shadow-sm flex flex-col gap-2">
+            <span className="text-[9px] font-black uppercase text-text-muted tracking-[0.2em] flex items-center gap-2 italic">
+              <Box size={12} className="text-brand-primary" /> Equipment
             </span>
-            <p className="text-sm font-black uppercase italic text-black dark:text-white truncate">
+            <p className="text-sm font-black uppercase italic text-text-main truncate">
               {data.equipmentName}
             </p>
           </div>
         </div>
 
         {/* 4. MUSCLE INFLUENCE */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-8 rounded-[3rem] space-y-8 shadow-sm">
-          <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 italic">
-            <Target size={14} className="text-[var(--brand-primary)]" /> Muscle
-            Mapping
+        <div className="bg-bg-surface border border-border-color p-10 rounded-[3rem] space-y-10 shadow-xl">
+          <div className="flex items-center gap-3 text-[11px] font-black uppercase tracking-[0.3em] text-text-muted italic">
+            <Target size={16} className="text-brand-primary" />
+            Biomechanics
           </div>
+          [Image of the muscular system showing primary and secondary muscles]
+          <div className="space-y-10">
+            {["primary", "secondary", "stabilizer"].map((role) => {
+              const list = data.muscles.filter((m) => m.role === role);
+              if (list.length === 0) return null;
 
-          {["primary", "secondary", "stabilizer"].map((role) => {
-            const list = data.muscles.filter((m: any) => m.role === role);
-            if (list.length === 0) return null;
-            return (
-              <div key={role} className="space-y-3">
-                <p
-                  className={`text-[9px] font-black uppercase tracking-widest italic ${
-                    role === "primary"
-                      ? "text-orange-500"
-                      : role === "secondary"
-                        ? "text-blue-500"
-                        : "text-emerald-500"
-                  }`}
-                >
-                  {role}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {list.map((m: any) => (
-                    <span
-                      key={m.id}
-                      className="px-5 py-2.5 bg-slate-50 dark:bg-slate-800 rounded-2xl text-[11px] font-black uppercase italic text-black dark:text-white border border-slate-100 dark:border-slate-700/50"
-                    >
-                      {m.name}
-                    </span>
-                  ))}
+              const roleColor =
+                role === "primary"
+                  ? "text-brand-primary"
+                  : role === "secondary"
+                    ? "text-blue-500"
+                    : "text-brand-success";
+
+              return (
+                <div key={role} className="space-y-4">
+                  <p
+                    className={`text-[10px] font-black uppercase tracking-widest italic flex items-center gap-2 ${roleColor}`}
+                  >
+                    <div className={`w-1 h-1 rounded-full bg-current`} />
+                    {role} Focus
+                  </p>
+                  <div className="flex flex-wrap gap-3">
+                    {list.map((m) => (
+                      <span
+                        key={m.id}
+                        className="px-6 py-3 bg-bg-main rounded-2xl text-[12px] font-black uppercase italic text-text-main border border-border-color/50 shadow-inner"
+                      >
+                        {m.name}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
 
         {/* 5. PRODUCTION ACTIONS */}
-        <div className="flex flex-col gap-3 mt-4">
+        <div className="flex flex-col gap-4 mt-6">
           <button
             onClick={() => navigate(`/progress/exercise/${id}`)}
-            className="w-full py-6 bg-[var(--brand-primary)] text-black rounded-[2rem] font-black uppercase italic text-xs flex items-center justify-center gap-3 shadow-2xl active:scale-[0.98] transition-all"
+            className="w-full py-7 bg-brand-primary text-bg-main rounded-[2.5rem] font-black uppercase italic text-sm flex items-center justify-center gap-4 shadow-2xl active:scale-[0.97] transition-all"
           >
-            <BarChart2 size={20} strokeWidth={3} /> See Progress Analytics
+            <BarChart2 size={24} strokeWidth={3} /> Telemetry Analytics
           </button>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-4">
             <button
               onClick={() => navigate(`/library/exercises/edit/${id}`)}
-              className="py-5 bg-black dark:bg-white text-white dark:text-black rounded-[2rem] font-black uppercase italic text-[10px] flex items-center justify-center gap-2 active:scale-[0.98] transition-all shadow-lg"
+              className="py-6 bg-text-main text-bg-main rounded-[2.5rem] font-black uppercase italic text-[11px] flex items-center justify-center gap-3 active:scale-[0.97] transition-all shadow-xl"
             >
-              <Edit3 size={16} /> Edit Details
+              <Edit3 size={18} /> Modify
             </button>
             <button
               onClick={() => setShowArchiveModal(true)}
-              className="py-5 bg-red-500/10 text-red-500 rounded-[2rem] font-black uppercase italic text-[10px] border border-red-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+              className="py-6 bg-brand-danger/10 text-brand-danger rounded-[2.5rem] font-black uppercase italic text-[11px] border border-brand-danger/20 active:scale-[0.97] transition-all flex items-center justify-center gap-3"
             >
-              <Trash2 size={16} /> Archive
+              <Trash2 size={18} /> Archive
             </button>
           </div>
         </div>
       </div>
 
-      {/* CONFIRMATION OVERLAY */}
       <ConfirmModal
         isOpen={showArchiveModal}
         onConfirm={handleArchive}

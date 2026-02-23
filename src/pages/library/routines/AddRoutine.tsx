@@ -1,4 +1,10 @@
-import { useEffect, useState, useMemo } from "react";
+import {
+  useEffect,
+  useState,
+  useMemo,
+  type ChangeEvent,
+  type ReactNode,
+} from "react";
 import { useNavigate } from "react-router-dom";
 import { SubPageLayout } from "../../../components/layout/SubPageLayout";
 import {
@@ -6,9 +12,41 @@ import {
   type EnrichedExercise,
 } from "../../../services/LibraryService";
 import { RoutineService } from "../../../services/RoutineService";
-import { useAuth } from "../../../context/AuthContext";
-import { Check, Plus, Minus, MoveVertical, Lock, Globe } from "lucide-react";
+import {
+  Check,
+  Plus,
+  Minus,
+  MoveVertical,
+  Lock,
+  Globe,
+  Loader2,
+} from "lucide-react";
 import { ExercisePicker } from "../exercises/ExercisePicker";
+
+// 1. Strict Interfaces
+import type { Routine } from "../../../types/database.types";
+import { useAuth } from "../../../hooks/useAuth";
+
+export interface SelectedExercise extends EnrichedExercise {
+  target_sets: number;
+  target_reps: number;
+}
+
+// Sub-Component Interfaces
+interface PrivacyToggleProps {
+  active: boolean;
+  label: string;
+  icon: ReactNode;
+  onClick: () => void;
+  primary?: boolean;
+}
+
+interface CounterProps {
+  label: string;
+  value: number;
+  onDec: () => void;
+  onInc: () => void;
+}
 
 export const AddRoutine = () => {
   const navigate = useNavigate();
@@ -18,19 +56,28 @@ export const AddRoutine = () => {
   const [description, setDescription] = useState("");
   const [isPublic, setIsPublic] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [library, setLibrary] = useState<EnrichedExercise[]>([]);
-  const [selectedExercises, setSelectedExercises] = useState<any[]>([]);
+  const [selectedExercises, setSelectedExercises] = useState<
+    SelectedExercise[]
+  >([]);
 
   useEffect(() => {
-    LibraryService.getExercisesWithMeta().then(setLibrary);
+    let isMounted = true;
+    LibraryService.getExercisesWithMeta().then((data) => {
+      if (isMounted) setLibrary(data);
+    });
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const muscleFocus = useMemo(() => {
     const counts: Record<string, number> = {};
     selectedExercises.forEach((ex) => {
       ex.all_muscles
-        ?.filter((m: any) => m.role === "primary")
-        .forEach((m: any) => {
+        ?.filter((m) => m.role === "primary")
+        .forEach((m) => {
           counts[m.name] = (counts[m.name] || 0) + 1;
         });
     });
@@ -40,11 +87,15 @@ export const AddRoutine = () => {
   }, [selectedExercises]);
 
   const handleAddExercises = (ids: string[]) => {
-    const newItems = ids.map((id) => {
+    const newItems: SelectedExercise[] = ids.map((id) => {
       const ex = library.find((l) => l.id === id);
-      return { ...ex, target_sets: 3, target_reps: 10 };
+      return {
+        ...(ex || ({} as EnrichedExercise)),
+        target_sets: 3,
+        target_reps: 10,
+      } as SelectedExercise;
     });
-    setSelectedExercises([...selectedExercises, ...newItems]);
+    setSelectedExercises((prev) => [...prev, ...newItems]);
     setShowPicker(false);
   };
 
@@ -52,48 +103,66 @@ export const AddRoutine = () => {
     setSelectedExercises((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const updateTarget = (index: number, field: string, val: number) => {
+  const updateTarget = (
+    index: number,
+    field: "target_sets" | "target_reps",
+    val: number,
+  ) => {
     setSelectedExercises((prev) =>
       prev.map((ex, i) => (i === index ? { ...ex, [field]: val } : ex)),
     );
   };
 
   const onSave = async () => {
-    if (!name || !user_id || selectedExercises.length === 0) return;
+    if (!name.trim() || !user_id || selectedExercises.length === 0 || loading)
+      return;
+
+    setLoading(true);
     try {
-      const payload = {
-        name,
-        description,
+      const now = new Date().toISOString();
+
+      const routinePayload: Routine = {
+        id: crypto.randomUUID(),
+        name: name.trim(),
+        description: description.trim(),
         is_public: isPublic,
-        user_id: user_id,
+        created_by: user_id,
+        status: true,
+        updated_at: now,
       };
-      await RoutineService.addRoutine(payload, selectedExercises);
+
+      await RoutineService.addRoutine(routinePayload, selectedExercises);
       navigate(-1);
-    } catch (err) {
-      console.error(err);
+    } catch (err: unknown) {
+      console.error("Save Routine Error:", err);
       alert("Error saving routine.");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <SubPageLayout title="New Routine">
-      <div className="flex-1 flex flex-col gap-6 pb-32">
-        {/* 1. NAME & PRIVACY */}
-        <div className="bg-[var(--bg-surface)] border border-slate-800 p-6 rounded-[2.2rem] space-y-6">
+      <div className="flex-1 flex flex-col gap-6 pb-32 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="bg-bg-surface border border-border-color p-6 rounded-[2.2rem] space-y-6 shadow-xl">
           <input
             autoFocus
             type="text"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e: ChangeEvent<HTMLInputElement>) =>
+              setName(e.target.value)
+            }
             placeholder="ROUTINE NAME"
-            className="w-full bg-transparent text-2xl font-black italic text-[var(--text-main)] outline-none uppercase tracking-tighter"
+            className="w-full bg-transparent text-2xl font-black italic text-text-main outline-none uppercase tracking-tighter"
           />
 
           <textarea
             value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
+              setDescription(e.target.value)
+            }
             placeholder="DESCRIPTION (OPTIONAL)"
-            className="w-full bg-[var(--bg-main)] border border-slate-800 rounded-2xl p-4 text-xs font-bold text-[var(--text-main)] outline-none resize-none h-24 placeholder:text-slate-700"
+            className="w-full bg-bg-main border border-border-color rounded-2xl p-4 text-xs font-bold text-text-main outline-none resize-none h-24"
           />
 
           <div className="flex gap-2">
@@ -117,7 +186,7 @@ export const AddRoutine = () => {
               {muscleFocus.map(([mName]) => (
                 <span
                   key={mName}
-                  className="text-[8px] font-black uppercase px-3 py-1.5 bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] rounded-full border border-[var(--brand-primary)]/20"
+                  className="text-[8px] font-black uppercase px-3 py-1.5 bg-brand-primary/10 text-brand-primary rounded-full border border-brand-primary/20"
                 >
                   {mName}
                 </span>
@@ -126,36 +195,36 @@ export const AddRoutine = () => {
           )}
         </div>
 
-        {/* 2. TRIGGER PICKER */}
         <button
           onClick={() => setShowPicker(true)}
-          className="w-full bg-[var(--bg-surface)] border border-slate-800 rounded-2xl py-5 px-6 flex items-center gap-4 text-slate-500 active:scale-95 transition-all"
+          className="w-full bg-bg-surface border border-border-color rounded-2xl py-6 px-6 flex items-center gap-4 text-text-muted active:scale-[0.98] transition-all group"
         >
-          <Plus size={18} className="text-[var(--brand-primary)]" />
+          <div className="w-8 h-8 rounded-full bg-bg-main flex items-center justify-center border border-border-color group-hover:border-brand-primary/40">
+            <Plus size={18} className="text-brand-primary" />
+          </div>
           <span className="text-xs font-black uppercase italic tracking-widest">
             Add Exercises
           </span>
         </button>
 
-        {/* 3. SELECTED EXERCISES */}
         <div className="space-y-3">
           {selectedExercises.map((ex, idx) => (
             <div
               key={`${ex.id}-${idx}`}
-              className="bg-[var(--bg-surface)] border border-slate-800 rounded-[1.8rem] p-5 flex flex-col gap-4"
+              className="bg-bg-surface border border-border-color rounded-4xl p-5 flex flex-col gap-5 shadow-sm"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <MoveVertical size={16} className="text-slate-700" />
-                  <span className="text-xs font-black uppercase italic text-[var(--text-main)]">
+                  <MoveVertical size={16} className="text-text-muted/40" />
+                  <span className="text-sm font-black uppercase italic text-text-main">
                     {ex.name}
                   </span>
                 </div>
                 <button
                   onClick={() => removeExercise(idx)}
-                  className="w-8 h-8 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-500 hover:text-red-500 transition-all"
+                  className="w-9 h-9 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500"
                 >
-                  <Minus size={14} strokeWidth={3} />
+                  <Minus size={16} strokeWidth={3} />
                 </button>
               </div>
 
@@ -195,12 +264,16 @@ export const AddRoutine = () => {
 
         <button
           onClick={onSave}
-          className="w-full py-5 bg-[var(--brand-primary)] text-black font-black uppercase italic rounded-3xl shadow-xl shadow-[var(--brand-primary)]/20 active:scale-[0.97] transition-all flex items-center justify-center gap-3 tracking-widest mt-4"
+          disabled={loading || !name || selectedExercises.length === 0}
+          className="w-full py-6 bg-brand-primary text-black font-black uppercase italic rounded-4xl shadow-xl shadow-brand-primary/20 active:scale-[0.98] transition-all flex items-center justify-center gap-3 tracking-widest mt-4 disabled:opacity-30"
         >
-          <Check size={20} strokeWidth={4} /> CREATE TEMPLATE
+          {loading ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Check size={24} strokeWidth={4} />
+          )}
+          <span>{loading ? "Creating..." : "Create Template"}</span>
         </button>
-
-        <div className="flex-1" />
       </div>
 
       {showPicker && (
@@ -213,41 +286,52 @@ export const AddRoutine = () => {
   );
 };
 
-const PrivacyToggle = ({ active, label, icon, onClick, primary }: any) => (
+/** SUB-COMPONENTS **/
+
+const PrivacyToggle = ({
+  active,
+  label,
+  icon,
+  onClick,
+  primary,
+}: PrivacyToggleProps) => (
   <button
+    type="button"
     onClick={onClick}
-    className={`flex-1 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-2 ${
+    className={`flex-1 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-2 ${
       active
         ? primary
-          ? "bg-[var(--brand-primary)] text-black border-[var(--brand-primary)]"
-          : "bg-white text-black border-white"
-        : "border-slate-800 text-slate-500"
+          ? "bg-brand-primary text-black border-brand-primary"
+          : "bg-text-main text-bg-main border-text-main"
+        : "border-border-color text-text-muted"
     }`}
   >
     {icon} {label}
   </button>
 );
 
-const Counter = ({ label, value, onDec, onInc }: any) => (
-  <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 flex items-center justify-between">
-    <span className="text-[8px] font-black uppercase text-slate-500">
+const Counter = ({ label, value, onDec, onInc }: CounterProps) => (
+  <div className="bg-bg-main/50 border border-border-color rounded-2xl p-3 flex items-center justify-between">
+    <span className="text-[9px] font-black uppercase text-text-muted">
       {label}
     </span>
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-3 bg-bg-surface p-1 rounded-xl border border-border-color/50">
       <button
+        type="button"
         onClick={onDec}
-        className="w-6 h-6 bg-[var(--bg-surface)] rounded-md flex items-center justify-center border border-slate-800 text-[var(--text-main)]"
+        className="w-8 h-8 rounded-lg flex items-center justify-center text-text-main active:bg-bg-main transition-colors"
       >
-        <Minus size={10} />
+        <Minus size={14} />
       </button>
-      <span className="text-xs font-black text-[var(--text-main)]">
+      <span className="text-sm font-black text-text-main tabular-nums min-w-6 text-center">
         {value}
       </span>
       <button
+        type="button"
         onClick={onInc}
-        className="w-6 h-6 bg-[var(--bg-surface)] rounded-md flex items-center justify-center border border-slate-800 text-[var(--text-main)]"
+        className="w-8 h-8 rounded-lg flex items-center justify-center text-text-main active:bg-bg-main transition-colors"
       >
-        <Plus size={10} />
+        <Plus size={14} />
       </button>
     </div>
   </div>

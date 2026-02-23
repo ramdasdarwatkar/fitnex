@@ -1,20 +1,19 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode, type ChangeEvent } from "react";
 import { SubPageLayout } from "../../components/layout/SubPageLayout";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../hooks/useAuth";
 import { BodyMetricsService } from "../../services/BodyMetricsService";
-import type { Database } from "../../types/database.types";
+import type { BodyMetrics } from "../../types/database.types";
 import {
   Scale,
   Ruler,
   Activity,
   Dumbbell,
   Save,
-  RefreshCcw,
   GitCompare,
+  Loader2,
 } from "lucide-react";
 
-type BodyMetricsInsert = Database["public"]["Tables"]["body_metrics"]["Insert"];
-
+// 1. Define Strict State Interface
 interface MetricsState {
   weight: string;
   height: string;
@@ -32,7 +31,7 @@ interface MetricsState {
   left_calf: string;
   right_thigh: string;
   left_thigh: string;
-  [key: string]: string;
+  [key: string]: string; // Necessary for dynamic mapping
 }
 
 const INITIAL_METRICS: MetricsState = {
@@ -54,31 +53,60 @@ const INITIAL_METRICS: MetricsState = {
   left_thigh: "",
 };
 
+// 2. Sub-Component Interfaces
+interface InputProps {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  unit?: string;
+  icon?: ReactNode;
+}
+
+interface SymmetryRowProps {
+  label: string;
+  leftKey: string;
+  rightKey: string;
+  metrics: MetricsState;
+  onUpdate: (k: string, v: string) => void;
+}
+
 export const ProfileMetrics = () => {
-  const { user_id, refreshAthlete } = useAuth();
+  const { user_id } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [metrics, setMetrics] = useState<MetricsState>(INITIAL_METRICS);
+  const [rawLatest, setRawLatest] = useState<BodyMetrics | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
     const loadData = async () => {
       try {
         const data = await BodyMetricsService.getLatestMetrics();
-        if (data) {
+        if (isMounted && data) {
+          setRawLatest(data);
           const formatted: MetricsState = { ...INITIAL_METRICS };
+
+          // Typed Mapping: avoid 'any' by casting to Record
+          const rawData = data as unknown as Record<
+            string,
+            string | number | null
+          >;
           Object.keys(INITIAL_METRICS).forEach((key) => {
-            const val = (data as any)[key];
+            const val = rawData[key];
             formatted[key] = val != null ? val.toString() : "";
           });
           setMetrics(formatted);
         }
-      } catch (err) {
-        console.error(err);
+      } catch (err: unknown) {
+        console.error("Failed to load metrics:", err);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
     loadData();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const handleUpdate = (key: keyof MetricsState, value: string) => {
@@ -88,25 +116,49 @@ export const ProfileMetrics = () => {
   };
 
   const onSave = async () => {
-    if (!user_id) return;
+    if (!user_id || saving) return;
     setSaving(true);
 
-    const payload: BodyMetricsInsert = {
-      user_id,
-      logdate: new Date().toISOString().split("T")[0],
-      weight: parseFloat(metrics.weight) || 0,
-      height: parseFloat(metrics.height) || 0,
-    };
-
-    Object.keys(INITIAL_METRICS).forEach((key) => {
-      if (key === "weight" || key === "height") return;
-      const val = metrics[key];
-      (payload as any)[key] = val === "" ? null : parseFloat(val);
-    });
-
     try {
+      const now = new Date().toISOString();
+
+      const payload: BodyMetrics = {
+        ...(rawLatest || {}),
+        user_id,
+        logdate: now.split("T")[0],
+        updated_at: now,
+        created_at: rawLatest?.created_at || now,
+
+        weight: parseFloat(metrics.weight) || 0,
+        height: parseFloat(metrics.height) || 0,
+        belly: metrics.belly ? parseFloat(metrics.belly) : null,
+        waist: metrics.waist ? parseFloat(metrics.waist) : null,
+        hips: metrics.hips ? parseFloat(metrics.hips) : null,
+        chest: metrics.chest ? parseFloat(metrics.chest) : null,
+        shoulder: metrics.shoulder ? parseFloat(metrics.shoulder) : null,
+        neck: metrics.neck ? parseFloat(metrics.neck) : null,
+        right_bicep: metrics.right_bicep
+          ? parseFloat(metrics.right_bicep)
+          : null,
+        left_bicep: metrics.left_bicep ? parseFloat(metrics.left_bicep) : null,
+        right_forearm: metrics.right_forearm
+          ? parseFloat(metrics.right_forearm)
+          : null,
+        left_forearm: metrics.left_forearm
+          ? parseFloat(metrics.left_forearm)
+          : null,
+        right_calf: metrics.right_calf ? parseFloat(metrics.right_calf) : null,
+        left_calf: metrics.left_calf ? parseFloat(metrics.left_calf) : null,
+        right_thigh: metrics.right_thigh
+          ? parseFloat(metrics.right_thigh)
+          : null,
+        left_thigh: metrics.left_thigh ? parseFloat(metrics.left_thigh) : null,
+      } as BodyMetrics;
+
       await BodyMetricsService.updateMetrics(payload);
-      await refreshAthlete();
+    } catch (err: unknown) {
+      console.error("Save metrics error:", err);
+      alert("Failed to save measurements.");
     } finally {
       setSaving(false);
     }
@@ -114,20 +166,14 @@ export const ProfileMetrics = () => {
 
   if (loading)
     return (
-      <SubPageLayout title="Measurements">
-        <div className="flex h-60 items-center justify-center">
-          <RefreshCcw
-            className="animate-spin text-[var(--brand-primary)]"
-            size={28}
-          />
-        </div>
-      </SubPageLayout>
+      <div className="h-screen flex items-center justify-center bg-bg-main pb-40">
+        <Loader2 className="animate-spin text-brand-primary" size={32} />
+      </div>
     );
 
   return (
     <SubPageLayout title="Measurements">
-      {/* min-h-full + flex-col to force background to bottom */}
-      <div className="flex-1 flex flex-col space-y-10 bg-[var(--bg-main)]">
+      <div className="flex-1 flex flex-col space-y-10 bg-bg-main pb-32 animate-in fade-in duration-500">
         <section>
           <SectionHeader icon={<Activity size={16} />} title="Core Vitals" />
           <div className="grid grid-cols-2 gap-4">
@@ -136,14 +182,14 @@ export const ProfileMetrics = () => {
               value={metrics.weight}
               unit="kg"
               icon={<Scale size={16} />}
-              onChange={(v: string) => handleUpdate("weight", v)}
+              onChange={(v) => handleUpdate("weight", v)}
             />
             <CompactInput
               label="Height"
               value={metrics.height}
               unit="cm"
               icon={<Ruler size={16} />}
-              onChange={(v: string) => handleUpdate("height", v)}
+              onChange={(v) => handleUpdate("height", v)}
             />
           </div>
         </section>
@@ -158,7 +204,7 @@ export const ProfileMetrics = () => {
                 key={key}
                 label={key}
                 value={metrics[key]}
-                onChange={(v: string) => handleUpdate(key, v)}
+                onChange={(v) => handleUpdate(key, v)}
               />
             ))}
           </div>
@@ -182,9 +228,7 @@ export const ProfileMetrics = () => {
                 leftKey={row.l}
                 rightKey={row.r}
                 metrics={metrics}
-                onUpdate={(k: string, v: string) =>
-                  handleUpdate(k as keyof MetricsState, v)
-                }
+                onUpdate={(k, v) => handleUpdate(k as keyof MetricsState, v)}
               />
             ))}
           </div>
@@ -194,90 +238,112 @@ export const ProfileMetrics = () => {
           <button
             disabled={saving}
             onClick={onSave}
-            className="w-full py-4 bg-[var(--brand-primary)] text-black text-base font-black uppercase italic tracking-[0.1em] rounded-[1.5rem] flex items-center justify-center gap-2 active:scale-[0.97] transition-all disabled:opacity-50 shadow-lg shadow-[var(--brand-primary)]/20"
+            className="w-full py-6 bg-brand-primary text-black text-base font-black uppercase italic tracking-widest rounded-4xl flex items-center justify-center gap-3 active:scale-[0.98] transition-all disabled:opacity-30 shadow-xl shadow-brand-primary/20"
           >
             {saving ? (
-              <RefreshCcw size={22} className="animate-spin" />
+              <Loader2 size={22} className="animate-spin" />
             ) : (
               <Save size={22} />
             )}
-            {saving ? "Updating..." : "Update Athlete Data"}
+            <span>{saving ? "Updating..." : "Update Athlete Data"}</span>
           </button>
         </div>
-
-        {/* SPRING SPACER */}
-        <div className="flex-1" />
       </div>
     </SubPageLayout>
   );
 };
 
-// Internal Components
-const SectionHeader = ({ icon, title }: any) => (
-  <div className="flex items-center gap-3 mb-5 px-2 font-black uppercase tracking-[0.25em] text-[12px] text-slate-500">
-    <div className="text-[var(--brand-primary)]">{icon}</div>
+/* --- CLEANED SUB-COMPONENTS --- */
+
+const SectionHeader = ({ icon, title }: { icon: ReactNode; title: string }) => (
+  <div className="flex items-center gap-3 mb-5 px-3 font-black uppercase tracking-[0.25em] text-[10px] text-text-muted italic">
+    <div className="text-brand-primary">{icon}</div>
     {title}
   </div>
 );
 
-const CompactInput = ({ label, value, unit, icon, onChange }: any) => (
-  <div className="bg-[var(--bg-surface)] border border-slate-800 p-5 rounded-[2rem]">
-    <div className="flex justify-between items-start mb-3 text-[var(--brand-primary)]">
-      {icon}
-      <span className="text-[10px] font-black text-slate-600">{unit}</span>
+const CompactInput = ({ label, value, unit, icon, onChange }: InputProps) => (
+  <div className="bg-bg-surface border border-border-color p-5 rounded-[2.2rem] shadow-sm">
+    <div className="flex justify-between items-start mb-4 text-brand-primary">
+      <div className="p-2 bg-bg-main rounded-xl border border-border-color/50">
+        {icon}
+      </div>
+      <span className="text-[10px] font-black text-text-muted opacity-50 uppercase">
+        {unit}
+      </span>
     </div>
     <input
       type="text"
       inputMode="decimal"
       value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="bg-transparent border-none outline-none text-2xl font-black italic text-[var(--text-main)] w-full placeholder:text-slate-800"
+      onChange={(e: ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
+      className="bg-transparent border-none outline-none text-3xl font-black italic text-text-main w-full tabular-nums"
       placeholder="0.0"
     />
-    <p className="text-[11px] font-bold text-slate-500 uppercase mt-1.5">
+    <p className="text-[11px] font-bold text-text-muted uppercase mt-2 tracking-tighter">
       {label}
     </p>
   </div>
 );
 
-const MiniInput = ({ label, value, onChange }: any) => (
-  <div className="bg-[var(--bg-surface)] border border-slate-800 p-4 rounded-[1.5rem] text-center">
-    <p className="text-[9px] font-black text-slate-600 uppercase mb-2">
+const MiniInput = ({ label, value, onChange }: InputProps) => (
+  <div className="bg-bg-surface border border-border-color p-4 rounded-[1.8rem] text-center shadow-sm">
+    <p className="text-[9px] font-black text-text-muted uppercase mb-2 opacity-60">
       {label}
     </p>
     <input
       type="text"
       inputMode="decimal"
       value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="bg-transparent border-none outline-none text-base font-black italic text-[var(--text-main)] w-full text-center placeholder:text-slate-800"
+      onChange={(e: ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
+      className="bg-transparent border-none outline-none text-base font-black italic text-text-main w-full text-center tabular-nums"
       placeholder="—"
     />
   </div>
 );
 
-const SymmetryRow = ({ label, leftKey, rightKey, metrics, onUpdate }: any) => (
-  <div className="flex items-center gap-4">
-    <div className="w-20 text-[11px] font-black uppercase text-slate-500 italic">
+const SymmetryRow = ({
+  label,
+  leftKey,
+  rightKey,
+  metrics,
+  onUpdate,
+}: SymmetryRowProps) => (
+  <div className="flex items-center gap-4 px-1">
+    <div className="w-16 text-[10px] font-black uppercase text-text-muted italic opacity-80">
       {label}
     </div>
     <div className="flex-1 grid grid-cols-2 gap-3">
-      <input
-        type="text"
-        inputMode="decimal"
-        value={metrics[leftKey]}
-        onChange={(e) => onUpdate(leftKey, e.target.value)}
-        className="w-full bg-[var(--bg-surface)] border border-slate-800 p-4 rounded-2xl text-sm font-black italic text-[var(--text-main)] text-center placeholder:text-slate-800"
-        placeholder="L"
-      />
-      <input
-        type="text"
-        inputMode="decimal"
-        value={metrics[rightKey]}
-        onChange={(e) => onUpdate(rightKey, e.target.value)}
-        className="w-full bg-[var(--bg-surface)] border border-slate-800 p-4 rounded-2xl text-sm font-black italic text-[var(--text-main)] text-center placeholder:text-slate-800"
-        placeholder="R"
-      />
+      <div className="relative">
+        <input
+          type="text"
+          inputMode="decimal"
+          value={metrics[leftKey]}
+          onChange={(e: ChangeEvent<HTMLInputElement>) =>
+            onUpdate(leftKey, e.target.value)
+          }
+          className="w-full bg-bg-surface border border-border-color p-4 rounded-2xl text-sm font-black italic text-text-main text-center"
+          placeholder="0.0"
+        />
+        <span className="absolute left-3 top-1 text-[7px] font-black text-text-muted opacity-30">
+          L
+        </span>
+      </div>
+      <div className="relative">
+        <input
+          type="text"
+          inputMode="decimal"
+          value={metrics[rightKey]}
+          onChange={(e: ChangeEvent<HTMLInputElement>) =>
+            onUpdate(rightKey, e.target.value)
+          }
+          className="w-full bg-bg-surface border border-border-color p-4 rounded-2xl text-sm font-black italic text-text-main text-center"
+          placeholder="0.0"
+        />
+        <span className="absolute right-3 top-1 text-[7px] font-black text-text-muted opacity-30">
+          R
+        </span>
+      </div>
     </div>
   </div>
 );

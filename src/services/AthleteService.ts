@@ -4,7 +4,14 @@ import type { AthleteSummary } from "../types/database.types";
 
 export const AthleteService = {
   /**
-   * Syncs the high-level dashboard summary (BMI, Levels, etc.)
+   * Get summary from Local Dexie
+   */
+  async getLocalSummary(uid: string): Promise<AthleteSummary | null> {
+    return (await db.athlete_summary.get(uid)) || null;
+  },
+
+  /**
+   * Syncs from Supabase and caches locally
    */
   async syncSummary(uid: string): Promise<AthleteSummary | null> {
     try {
@@ -21,10 +28,9 @@ export const AthleteService = {
         return data;
       }
       return null;
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Summary sync failed";
-      console.error("AthleteService Sync Error:", msg);
-      throw new Error(msg);
+    } catch (err) {
+      console.error("AthleteService Sync Error:", err);
+      return null;
     }
   },
 };

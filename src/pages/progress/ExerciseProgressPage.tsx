@@ -11,20 +11,64 @@ import {
 } from "recharts";
 import { format } from "date-fns";
 import {
-  History,
+  History as HistoryIcon,
   ChevronRight,
   Loader2,
   ChevronDown,
   Dumbbell,
-  Target,
   Trophy,
 } from "lucide-react";
 import { SubPageLayout } from "../../components/layout/SubPageLayout";
 import { WorkoutService } from "../../services/WorkoutService";
 import { PersonalRecordService } from "../../services/PersonalRecordService";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../hooks/useAuth";
 import { db } from "../../db/database";
 import { ExerciseCard } from "../workout/components/ExerciseCard";
+
+// --- 1. STRICT DOMAIN INTERFACES ---
+
+interface PRRecord {
+  record_date: string;
+  value: number;
+  value_type: string;
+}
+
+interface WorkoutLog {
+  id: string;
+  weight?: number | null;
+  reps?: number | null;
+  distance?: number | null;
+  duration?: number | null;
+  set_number?: number;
+  [key: string]: string | number | null | undefined;
+}
+
+interface WorkoutHistorySession {
+  id: string;
+  workout_name: string;
+  start_time: string;
+  logs: WorkoutLog[];
+}
+
+interface ChartPoint {
+  date: string;
+  fullDate: string;
+  [key: string]: number | string;
+}
+
+interface TooltipEntry {
+  value: number;
+  name: string;
+  color: string;
+  payload: ChartPoint;
+}
+
+interface TooltipProps {
+  active?: boolean;
+  payload?: TooltipEntry[];
+}
+
+// --- 2. UTILITY LOGIC ---
 
 const getUnitData = (value: number, type: string) => {
   const t = type?.toLowerCase();
@@ -41,31 +85,31 @@ const getUnitData = (value: number, type: string) => {
   return { val: value.toString(), unit: "kg" };
 };
 
-const CustomTooltip = ({ active, payload }: any) => {
+const CustomTooltip = ({ active, payload }: TooltipProps) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-slate-900 border border-white/10 p-4 rounded-2xl shadow-2xl backdrop-blur-xl outline-none ring-0">
-        <p className="text-[10px] font-black uppercase italic text-slate-500 mb-2 tracking-widest">
+      <div className="bg-bg-surface border border-border-color p-4 rounded-2xl shadow-2xl backdrop-blur-xl ring-0">
+        <p className="text-[10px] font-black uppercase italic text-text-muted mb-3 tracking-widest">
           {payload[0].payload.fullDate}
         </p>
         <div className="space-y-3">
-          {payload.map((entry: any, idx: number) => {
+          {payload.map((entry, idx) => {
             const { val, unit } = getUnitData(entry.value, entry.name);
             return (
               <div
                 key={idx}
-                className="flex items-center justify-between gap-6"
+                className="flex items-center justify-between gap-8"
               >
                 <div className="flex items-center gap-2">
                   <div
-                    className="w-1.5 h-1.5 rounded-full"
+                    className="w-2 h-2 rounded-full"
                     style={{ backgroundColor: entry.color }}
                   />
-                  <span className="text-[9px] font-black uppercase italic text-slate-300">
+                  <span className="text-[9px] font-black uppercase italic text-text-main">
                     {entry.name}
                   </span>
                 </div>
-                <span className="text-sm font-black text-white italic">
+                <span className="text-sm font-black text-brand-primary italic">
                   {val}
                   {unit}
                 </span>
@@ -79,13 +123,17 @@ const CustomTooltip = ({ active, payload }: any) => {
   return null;
 };
 
+// --- 3. MAIN COMPONENT ---
+
 export const ExerciseProgressPage = () => {
-  const { id: exerciseId } = useParams();
+  const { id: exerciseId } = useParams<{ id: string }>();
   const { user_id } = useAuth();
 
   const [exerciseName, setExerciseName] = useState("");
-  const [rawPrs, setRawPrs] = useState<any[]>([]);
-  const [sessionHistory, setSessionHistory] = useState<any[]>([]);
+  const [rawPrs, setRawPrs] = useState<PRRecord[]>([]);
+  const [sessionHistory, setSessionHistory] = useState<WorkoutHistorySession[]>(
+    [],
+  );
   const [loading, setLoading] = useState(true);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -111,12 +159,12 @@ export const ExerciseProgressPage = () => {
   }, [exerciseId, user_id]);
 
   const handleShowHistory = async () => {
-    if (showHistory) return setShowHistory(false);
+    if (showHistory || !user_id || !exerciseId) return setShowHistory(false);
     setHistoryLoading(true);
     try {
       const history = await WorkoutService.getExerciseHistory(
-        user_id!,
-        exerciseId!,
+        user_id,
+        exerciseId,
       );
       setSessionHistory(history || []);
       setShowHistory(true);
@@ -132,8 +180,8 @@ export const ExerciseProgressPage = () => {
       new Set(rawPrs.map((p) => format(new Date(p.record_date), "yyyy-MM-dd"))),
     ).sort();
 
-    const data = allDates.map((dateStr) => {
-      const point: any = {
+    const data: ChartPoint[] = allDates.map((dateStr) => {
+      const point: ChartPoint = {
         fullDate: format(new Date(dateStr), "MMM dd, yy"),
         date: format(new Date(dateStr), "MMM dd"),
       };
@@ -161,44 +209,43 @@ export const ExerciseProgressPage = () => {
 
   if (loading)
     return (
-      <div className="flex-1 flex items-center justify-center h-screen bg-[#020617]">
-        <Loader2 className="animate-spin text-[var(--brand-primary)]" />
+      <div className="flex-1 flex items-center justify-center h-screen bg-bg-main">
+        <Loader2 className="animate-spin text-brand-primary" size={32} />
       </div>
     );
 
   return (
     <SubPageLayout title="Performance Lab">
-      {/* RESTORED GLOW FILTERS AND NUCLEAR BORDER FIX */}
       <style>{`
-        .recharts-surface, .recharts-wrapper { outline: none !important; border: none !important; -webkit-tap-highlight-color: transparent !important; }
-        .recharts-layer:focus { outline: none !important; }
+        .recharts-surface, .recharts-wrapper { outline: none !important; }
         .line-glow-primary { filter: drop-shadow(0px 0px 6px var(--brand-primary)); }
         .line-glow-secondary { filter: drop-shadow(0px 0px 6px #3b82f6); }
       `}</style>
 
-      <div className="flex flex-col gap-6 pb-32 px-1">
-        <div className="bg-slate-900 border border-white/10 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="flex flex-col gap-4 mb-10 border-b border-white/5 pb-6">
+      <div className="flex flex-col gap-6 pb-32 px-1 animate-in fade-in duration-500">
+        {/* CHART CARD */}
+        <div className="bg-bg-surface border border-border-color rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden">
+          <div className="flex flex-col gap-4 mb-10 border-b border-border-color/50 pb-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[var(--brand-primary)]/10 flex items-center justify-center text-[var(--brand-primary)]">
+                <div className="w-10 h-10 rounded-xl bg-brand-primary/10 flex items-center justify-center text-brand-primary">
                   <Trophy size={20} />
                 </div>
-                <h2 className="text-lg font-black uppercase italic text-white leading-tight max-w-[150px] truncate">
+                <h2 className="text-lg font-black uppercase italic text-text-main leading-tight max-w-37.5 truncate">
                   {exerciseName}
                 </h2>
               </div>
               <div className="flex gap-4">
                 {bestStats.map((s, i) => (
                   <div key={i} className="text-right">
-                    <p className="text-[8px] font-black uppercase text-slate-500 tracking-widest">
+                    <p className="text-[8px] font-black uppercase text-text-muted tracking-widest italic leading-none">
                       {s.type}
                     </p>
                     <p
-                      className={`text-xl font-black italic leading-none mt-1 ${i === 0 ? "text-[var(--brand-primary)]" : "text-blue-400"}`}
+                      className={`text-xl font-black italic leading-none mt-1.5 ${i === 0 ? "text-brand-primary" : "text-blue-400"}`}
                     >
                       {s.val}
-                      <span className="text-[8px] ml-0.5 uppercase italic">
+                      <span className="text-[8px] ml-0.5 uppercase">
                         {s.unit}
                       </span>
                     </p>
@@ -210,32 +257,32 @@ export const ExerciseProgressPage = () => {
 
           <div className="h-64 -mx-4">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData} accessibilityLayer={false}>
+              <AreaChart data={chartData}>
                 <CartesianGrid
                   strokeDasharray="3 3"
-                  stroke="#1e293b"
+                  stroke="rgba(255,255,255,0.05)"
                   vertical={false}
                 />
                 <XAxis dataKey="date" hide />
-
-                <YAxis yAxisId="left" hide domain={["auto", "auto"]} />
+                <YAxis
+                  yAxisId="left"
+                  hide
+                  domain={["dataMin - 5", "dataMax + 5"]}
+                />
                 <YAxis
                   yAxisId="right"
                   orientation="right"
                   hide
                   domain={["auto", "auto"]}
                 />
-
                 <Tooltip
                   cursor={{ stroke: "rgba(255,255,255,0.1)", strokeWidth: 2 }}
                   content={<CustomTooltip />}
                 />
 
-                {/* PRIMARY LINE WITH GLOW - NO DARK AREA FILL */}
                 <Area
                   yAxisId="left"
                   type="monotone"
-                  name={activeTypes[0]}
                   dataKey={activeTypes[0]}
                   stroke="var(--brand-primary)"
                   strokeWidth={4}
@@ -245,18 +292,16 @@ export const ExerciseProgressPage = () => {
                   dot={{ r: 4, fill: "var(--brand-primary)", strokeWidth: 0 }}
                   activeDot={{
                     r: 6,
-                    stroke: "#0f172a",
+                    stroke: "var(--bg-surface)",
                     strokeWidth: 3,
                     fill: "var(--brand-primary)",
                   }}
                 />
 
-                {/* SECONDARY LINE WITH GLOW - NO DARK AREA FILL */}
                 {activeTypes[1] && (
                   <Area
                     yAxisId="right"
                     type="monotone"
-                    name={activeTypes[1]}
                     dataKey={activeTypes[1]}
                     stroke="#3b82f6"
                     strokeWidth={4}
@@ -266,7 +311,7 @@ export const ExerciseProgressPage = () => {
                     dot={{ r: 4, fill: "#3b82f6", strokeWidth: 0 }}
                     activeDot={{
                       r: 6,
-                      stroke: "#0f172a",
+                      stroke: "var(--bg-surface)",
                       strokeWidth: 3,
                       fill: "#3b82f6",
                     }}
@@ -277,67 +322,70 @@ export const ExerciseProgressPage = () => {
           </div>
         </div>
 
+        {/* HISTORY TRIGGER */}
         <button
           onClick={handleShowHistory}
-          className="w-full bg-slate-900 border border-white/10 rounded-[2rem] py-6 flex items-center justify-center gap-3 active:scale-[0.98] transition-all"
+          className="w-full bg-bg-surface border border-border-color rounded-4xl py-6 flex items-center justify-center gap-3 active:scale-[0.98] transition-all shadow-lg"
         >
           {historyLoading ? (
-            <Loader2 className="animate-spin text-slate-500" size={18} />
+            <Loader2 className="animate-spin text-text-muted" size={18} />
           ) : (
             <>
-              <History
+              <HistoryIcon
                 size={18}
                 className={
-                  showHistory ? "text-[var(--brand-primary)]" : "text-slate-500"
+                  showHistory ? "text-brand-primary" : "text-text-muted"
                 }
               />
-              <span className="text-[10px] font-black uppercase tracking-widest text-white">
+              <span className="text-[10px] font-black uppercase tracking-widest text-text-main">
                 {showHistory ? "Hide Records" : "View History"}
               </span>
               <ChevronDown
                 size={16}
-                className={`text-slate-500 transition-transform ${showHistory ? "rotate-180" : ""}`}
+                className={`text-text-muted transition-transform duration-300 ${showHistory ? "rotate-180" : ""}`}
               />
             </>
           )}
         </button>
 
+        {/* HISTORY LIST */}
         {showHistory && (
-          <div className="space-y-4 px-1 pb-10">
+          <div className="space-y-4 px-1 pb-10 animate-in slide-in-from-top-2 duration-300">
             {sessionHistory.length > 0 ? (
               sessionHistory.map((w) => {
                 const isExpanded = expandedWorkoutId === w.id;
                 const peakVal = Math.max(
                   ...(w.logs?.map(
-                    (l: any) => l.weight || l.distance || l.duration,
+                    (l) => l.weight || l.distance || l.duration || 0,
                   ) || [0]),
                 );
                 const summary = getUnitData(
                   peakVal,
                   activeTypes[0] || "weight",
                 );
+
                 return (
                   <div key={w.id} className="flex flex-col">
                     <div
                       onClick={() =>
                         setExpandedWorkoutId(isExpanded ? null : w.id)
                       }
-                      className={`bg-slate-900/40 border rounded-[1.8rem] p-5 flex items-center justify-between transition-all duration-300 ${isExpanded ? "border-[var(--brand-primary)]/40 bg-slate-900/80" : "border-white/5"}`}
+                      className={`bg-bg-surface/50 border rounded-[1.8rem] p-5 flex items-center justify-between transition-all duration-300 ${isExpanded ? "border-brand-primary/40 bg-bg-surface shadow-xl" : "border-border-color"}`}
                     >
                       <div className="flex items-center gap-4">
-                        <div className="text-center bg-slate-800 p-2 rounded-xl min-w-[45px]">
-                          <p className="text-xs font-black text-white">
+                        <div className="text-center bg-bg-main p-2 rounded-xl min-w-11.25 border border-border-color">
+                          <p className="text-xs font-black text-text-main tabular-nums">
                             {format(new Date(w.start_time), "dd")}
                           </p>
-                          <p className="text-[8px] font-bold text-slate-500 uppercase">
+                          <p className="text-[8px] font-bold text-text-muted uppercase">
                             {format(new Date(w.start_time), "MMM")}
                           </p>
                         </div>
                         <div>
-                          <p className="text-xs font-black text-white uppercase italic truncate max-w-[150px]">
+                          <p className="text-xs font-black text-text-main uppercase italic truncate max-w-37.5">
                             {w.workout_name}
                           </p>
-                          <p className="text-[9px] font-bold text-slate-500 uppercase tracking-tight">
+                          <p className="text-[9px] font-bold text-text-muted uppercase tracking-tight">
                             {w.logs?.length || 0} Sets • Peak: {summary.val}
                             {summary.unit}
                           </p>
@@ -345,9 +393,10 @@ export const ExerciseProgressPage = () => {
                       </div>
                       <ChevronRight
                         size={14}
-                        className={`text-slate-700 transition-transform ${isExpanded ? "rotate-90 text-[var(--brand-primary)]" : ""}`}
+                        className={`text-text-muted transition-transform ${isExpanded ? "rotate-90 text-brand-primary" : ""}`}
                       />
                     </div>
+
                     <div
                       className={`grid transition-[grid-template-rows] duration-500 ease-in-out ${isExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
                     >
@@ -355,8 +404,18 @@ export const ExerciseProgressPage = () => {
                         <div className="pt-4 px-2">
                           <ExerciseCard
                             name=""
-                            rows={w.logs}
-                            fv={(v: any) => v || "-"}
+                            // DATA NORMALIZATION: Map optional/null fields to 0 for strict LogRow compatibility
+                            rows={w.logs.map((log) => ({
+                              ...log,
+                              weight: log.weight ?? 0,
+                              reps: log.reps ?? 0,
+                              distance: log.distance ?? 0,
+                              duration: log.duration ?? 0,
+                              set_number: log.set_number ?? 1,
+                            }))}
+                            fv={(v: string | number | undefined) =>
+                              v?.toString() || "-"
+                            }
                           />
                         </div>
                       </div>
@@ -365,10 +424,10 @@ export const ExerciseProgressPage = () => {
                 );
               })
             ) : (
-              <div className="py-20 flex flex-col items-center justify-center opacity-10">
-                <Dumbbell size={40} className="mb-4" />
-                <p className="text-[10px] font-black uppercase tracking-widest text-white">
-                  No history
+              <div className="py-20 flex flex-col items-center justify-center opacity-20">
+                <Dumbbell size={40} className="mb-4 text-text-muted" />
+                <p className="text-[10px] font-black uppercase tracking-widest text-text-main">
+                  No history found
                 </p>
               </div>
             )}

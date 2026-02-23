@@ -1,7 +1,4 @@
-import { useEffect } from "react";
 import { AppRoutes } from "./routes";
-import { SyncManager } from "./services/SyncManager";
-import { useAuth } from "./context/AuthContext";
 import { useBlockHorizontalSwipe } from "./hooks/useBlockHorizontalSwipe"; // Extracted
 
 /**
@@ -9,22 +6,8 @@ import { useBlockHorizontalSwipe } from "./hooks/useBlockHorizontalSwipe"; // Ex
  * Centralizes global logic: Sync, Navigation Guarding, and Route Injection.
  */
 function App() {
-  const { user_id } = useAuth();
-
   // Block browser edge-swipe gestures for a native app feel
   useBlockHorizontalSwipe();
-
-  /**
-   * GLOBAL SYNC RECONCILIATION
-   */
-  useEffect(() => {
-    if (user_id) {
-      // Setup network listener to retry sync when coming back online
-      SyncManager.watchConnection();
-      // Attempt to push any "dirty" offline records to Supabase
-      SyncManager.reconcile();
-    }
-  }, [user_id]);
 
   return (
     /* The app-root uses our CSS variables. 

@@ -10,12 +10,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: [
-        "favicon.ico",
-        "apple-touch-icon.png",
-        "mask-icon.svg",
-        "logo.webp",
-      ],
+      includeAssets: ["apple-touch-icon.png", "mask-icon.svg", "logo.webp"],
       manifest: {
         name: "Fitnex - Fitness Tracker",
         short_name: "Fitnex",

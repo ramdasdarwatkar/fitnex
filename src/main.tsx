@@ -38,6 +38,10 @@ if ("serviceWorker" in navigator) {
   });
 }
 
+/**
+ * GLOBAL SYNC RECONCILIATION
+ */
+
 // Sync whenever the user comes back online
 window.addEventListener("online", () => {
   SyncManager.reconcile();

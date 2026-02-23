@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronRight, GitCommit, Target } from "lucide-react";
+import { ChevronRight, GitCommit, Target, Loader2 } from "lucide-react";
 import { LibraryService } from "../../../services/LibraryService";
 
 // Types
-import type { Database } from "../../../types/database.types";
-type Muscle = Database["public"]["Tables"]["muscles"]["Row"];
+import type { Muscle } from "../../../types/database.types";
 
 interface MusclesTabProps {
   search: string;
@@ -18,132 +17,147 @@ export const MusclesTab = ({ search }: MusclesTabProps) => {
 
   // 1. Load Data via Service
   useEffect(() => {
+    let isMounted = true;
     const loadData = async () => {
       try {
         const data = await LibraryService.getActiveMuscles();
-        // Sorting alphabetically for a pro feel
-        setMuscles(data.sort((a, b) => a.name.localeCompare(b.name)));
-      } catch (error) {
+        if (isMounted) {
+          // Sorting alphabetically for a pro feel
+          setMuscles([...data].sort((a, b) => a.name.localeCompare(b.name)));
+        }
+      } catch (error: unknown) {
         console.error("Failed to load muscles:", error);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
     loadData();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  const query = search.toLowerCase().trim();
+  // 2. Optimized Hierarchy & Search Logic
+  // Using useMemo to prevent recalculating on every render unless search or muscles change
+  const filteredData = useMemo(() => {
+    const query = search.toLowerCase().trim();
 
-  // 2. Hierarchy Helpers
-  const getSubMuscles = (parentId: string) =>
-    muscles.filter((m) => m.parent === parentId);
+    // Group muscles by parent
+    const primary = muscles.filter((m) => !m.parent);
 
-  // 3. Deep Filter Logic
-  const filteredPrimary = muscles.filter((m) => {
-    if (m.parent) return false;
+    return primary
+      .map((parent) => {
+        const children = muscles.filter((m) => m.parent === parent.id);
 
-    const parentMatches = m.name.toLowerCase().includes(query);
-    const subMuscles = getSubMuscles(m.id);
-    const anyChildMatches = subMuscles.some((c) =>
-      c.name.toLowerCase().includes(query),
+        // Check if parent or any child matches search
+        const parentMatches = parent.name.toLowerCase().includes(query);
+        const matchingChildren = children.filter(
+          (c) => c.name.toLowerCase().includes(query) || parentMatches,
+        );
+
+        return {
+          ...parent,
+          children: matchingChildren,
+          isVisible: parentMatches || matchingChildren.length > 0,
+        };
+      })
+      .filter((group) => group.isVisible);
+  }, [muscles, search]);
+
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center py-20">
+        <Loader2 className="animate-spin text-brand-primary" size={32} />
+      </div>
     );
-
-    return parentMatches || anyChildMatches;
-  });
-
-  if (loading) return null;
+  }
 
   return (
-    /* flex-1 ensures the background color is forced to the bottom */
     <div className="flex-1 flex flex-col gap-6">
       <div className="space-y-6">
-        {filteredPrimary.map((muscle) => {
-          const children = getSubMuscles(muscle.id).filter(
-            (c) =>
-              query === "" ||
-              c.name.toLowerCase().includes(query) ||
-              muscle.name.toLowerCase().includes(query),
-          );
-
-          return (
-            <div
-              key={muscle.id}
-              className="space-y-2 animate-in fade-in slide-in-from-bottom-1 duration-300"
+        {filteredData.map((group) => (
+          <div
+            key={group.id}
+            className="space-y-2 animate-in fade-in slide-in-from-bottom-1 duration-300"
+          >
+            {/* Primary Muscle Card */}
+            <button
+              onClick={() => navigate(`/library/muscles/${group.id}`)}
+              className="w-full flex items-center justify-between p-5 bg-bg-surface border border-border-color rounded-3xl group active:scale-[0.98] transition-all shadow-sm"
             >
-              {/* Primary Muscle Card */}
-              <button
-                onClick={() => navigate(`/library/muscles/${muscle.id}`)}
-                className="w-full flex items-center justify-between p-5 bg-[var(--bg-surface)] border border-slate-800 rounded-[1.5rem] group active:scale-[0.98] transition-all"
-              >
-                <div className="flex items-center gap-4">
-                  <div
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center font-black italic border transition-all ${
-                      muscle.name.toLowerCase().includes(query) && query !== ""
-                        ? "bg-[var(--brand-primary)] border-[var(--brand-primary)] text-black"
-                        : "bg-[var(--bg-main)] border-slate-800 text-[var(--brand-primary)]"
-                    }`}
-                  >
-                    {muscle.name.charAt(0)}
-                  </div>
-                  <div className="text-left">
-                    <p className="text-sm font-black uppercase italic text-[var(--text-main)] group-hover:text-[var(--brand-primary)] transition-colors leading-none">
-                      {muscle.name}
-                    </p>
-                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-1">
-                      Primary Group
-                    </p>
-                  </div>
+              <div className="flex items-center gap-4">
+                <div
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center font-black italic border transition-all ${
+                    search &&
+                    group.name.toLowerCase().includes(search.toLowerCase())
+                      ? "bg-brand-primary border-brand-primary text-black"
+                      : "bg-bg-main border-border-color text-brand-primary"
+                  }`}
+                >
+                  {group.name.charAt(0)}
                 </div>
-                <ChevronRight
-                  size={16}
-                  className="text-slate-600 group-hover:text-[var(--brand-primary)] transition-colors"
-                />
-              </button>
+                <div className="text-left">
+                  <p className="text-sm font-black uppercase italic text-text-main group-hover:text-brand-primary transition-colors leading-none">
+                    {group.name}
+                  </p>
+                  <p className="text-[9px] font-black text-text-muted uppercase tracking-widest mt-1">
+                    Primary Group
+                  </p>
+                </div>
+              </div>
+              <ChevronRight
+                size={16}
+                className="text-text-muted group-hover:text-brand-primary transition-colors"
+              />
+            </button>
 
-              {/* Sub-Muscles List */}
-              {children.length > 0 && (
-                <div className="ml-6 space-y-2 border-l-2 border-slate-800 pl-4">
-                  {children.map((child) => (
-                    <button
-                      key={child.id}
-                      onClick={() => navigate(`/library/muscles/${child.id}`)}
-                      className="w-full flex items-center justify-between p-3.5 bg-[var(--bg-surface)] bg-opacity-40 border border-slate-800 rounded-xl group active:scale-[0.98] transition-all"
-                    >
-                      <div className="flex items-center gap-3">
-                        <GitCommit
-                          size={14}
-                          className={
-                            child.name.toLowerCase().includes(query) &&
-                            query !== ""
-                              ? "text-[var(--brand-primary)]"
-                              : "text-slate-600"
-                          }
-                        />
-                        <p
-                          className={`text-[12px] font-bold uppercase italic transition-colors ${
-                            child.name.toLowerCase().includes(query) &&
-                            query !== ""
-                              ? "text-[var(--text-main)]"
-                              : "text-slate-500"
-                          }`}
-                        >
-                          {child.name}
-                        </p>
-                      </div>
-                      <ChevronRight
-                        size={12}
-                        className="text-slate-600 group-hover:text-[var(--brand-primary)]"
+            {/* Sub-Muscles List */}
+            {group.children.length > 0 && (
+              <div className="ml-6 space-y-2 border-l-2 border-border-color/30 pl-4">
+                {group.children.map((child) => (
+                  <button
+                    key={child.id}
+                    onClick={() => navigate(`/library/muscles/${child.id}`)}
+                    className="w-full flex items-center justify-between p-3.5 bg-bg-surface/40 border border-border-color rounded-xl group active:scale-[0.98] transition-all"
+                  >
+                    <div className="flex items-center gap-3">
+                      <GitCommit
+                        size={14}
+                        className={
+                          search &&
+                          child.name
+                            .toLowerCase()
+                            .includes(search.toLowerCase())
+                            ? "text-brand-primary"
+                            : "text-text-muted"
+                        }
                       />
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        })}
+                      <p
+                        className={`text-[12px] font-bold uppercase italic transition-colors ${
+                          search &&
+                          child.name
+                            .toLowerCase()
+                            .includes(search.toLowerCase())
+                            ? "text-text-main"
+                            : "text-text-muted"
+                        }`}
+                      >
+                        {child.name}
+                      </p>
+                    </div>
+                    <ChevronRight
+                      size={12}
+                      className="text-text-muted group-hover:text-brand-primary"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
 
         {/* Empty State */}
-        {filteredPrimary.length === 0 && (
+        {filteredData.length === 0 && (
           <div className="flex flex-col items-center justify-center py-24 opacity-20">
             <Target size={48} strokeWidth={1} className="mb-4" />
             <p className="text-[10px] font-black uppercase tracking-[0.4em]">
@@ -153,7 +167,6 @@ export const MusclesTab = ({ search }: MusclesTabProps) => {
         )}
       </div>
 
-      {/* THE SPRING: Pushes everything up but stays flush to the bottom */}
       <div className="flex-1" />
     </div>
   );

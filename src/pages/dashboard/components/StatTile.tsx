@@ -17,7 +17,6 @@ export const StatTile = ({
   unit,
   isTime,
 }: StatTileProps) => {
-  // Formatter for Numbers and Time
   const formatValue = (val: number) => {
     if (isTime) {
       const h = Math.floor(val / 60);
@@ -30,26 +29,25 @@ export const StatTile = ({
   const hasActivityToday = todayValue > 0;
 
   return (
-    <div className="dashboard-card bg-slate-900/50 border border-slate-800 p-5 rounded-[2.2rem] flex flex-col justify-between min-h-[155px] group transition-all duration-300 hover:bg-slate-900">
-      {/* TOP SECTION: Today's Progress */}
+    <div className="bg-bg-surface border border-border-color p-5 rounded-[2.2rem] flex flex-col justify-between min-h-38.75 group transition-all duration-300 hover:border-brand-primary/30">
       <div className="flex justify-between items-start w-full">
         <div
           className={`p-2 rounded-xl transition-all duration-500 shadow-lg ${
             hasActivityToday
-              ? "bg-[var(--brand-primary)] text-black shadow-[0_0_20px_rgba(204,255,0,0.2)]"
-              : "bg-slate-800 text-slate-500"
+              ? "bg-brand-primary text-black shadow-[0_0_20px_rgba(var(--brand-primary-rgb),0.3)]"
+              : "bg-bg-surface-soft text-text-muted"
           }`}
         >
           {icon}
         </div>
 
         <div className="text-right">
-          <p className="text-[7px] font-black text-slate-500 uppercase tracking-widest mb-0.5">
+          <p className="text-[7px] font-black text-text-muted uppercase tracking-widest mb-0.5">
             Today
           </p>
           <p
             className={`text-sm font-black italic tabular-nums transition-colors duration-500 ${
-              hasActivityToday ? "text-white" : "text-slate-700"
+              hasActivityToday ? "text-text-main" : "text-text-muted/30"
             }`}
           >
             {hasActivityToday
@@ -59,26 +57,22 @@ export const StatTile = ({
         </div>
       </div>
 
-      {/* CENTER SECTION: Label */}
-      <div className="py-2">
-        <p className="text-[9px] font-black uppercase text-slate-400 tracking-[0.15em] group-hover:text-white transition-colors">
-          {label}
-        </p>
-      </div>
+      <p className="text-[9px] font-black uppercase text-text-muted tracking-[0.15em] group-hover:text-text-main transition-colors">
+        {label}
+      </p>
 
-      {/* BOTTOM SECTION: Weekly Cumulative */}
-      <div className="w-full pt-3 border-t border-slate-800/40">
+      <div className="w-full pt-3 border-t border-border-color/40">
         <div className="flex justify-between items-end">
           <div className="flex flex-col">
-            <p className="text-[7px] font-black text-slate-600 uppercase tracking-tighter mb-1">
+            <p className="text-[7px] font-black text-text-muted/60 uppercase tracking-tighter mb-1">
               Weekly Total
             </p>
-            <span className="text-xl font-black text-[var(--brand-primary)] italic leading-none tabular-nums tracking-tighter">
+            <span className="text-xl font-black text-brand-primary italic leading-none tabular-nums tracking-tighter">
               {formatValue(weekValue)}
             </span>
           </div>
           {unit && (
-            <span className="text-[8px] font-black text-slate-700 uppercase mb-0.5 group-hover:text-slate-500 transition-colors">
+            <span className="text-[8px] font-black text-text-muted uppercase mb-0.5">
               {unit}
             </span>
           )}

@@ -17,20 +17,14 @@ import type {
   LocalRoutine,
   LocalRoutineExercise,
   LocalUserProfile,
-  LocalAthleteLevel, // Added for local caching
+  LocalAthleteLevel,
+  LocalAppSettings, // Added for local caching
 } from "../types/database.types"; // Points to your consolidated types file
-
-export interface AppSettings {
-  id: string; // "global"
-  theme: "dark" | "light";
-  brandColor: string;
-  unitSystem: "metric" | "imperial";
-}
 
 export class FitnexDB extends Dexie {
   athlete_summary!: Table<AthleteSummary, string>;
   latest_personal_record!: Table<LatestPersonalRecord, string>;
-  app_settings!: Table<AppSettings, string>;
+  app_settings!: Table<LocalAppSettings, string>;
   athlete_levels_lookup!: Table<AthleteLevelsLookup, number>;
   athlete_level!: Table<LocalAthleteLevel, [string, string]>;
   personal_records!: Table<PersonalRecord, [string, string]>;
@@ -57,11 +51,10 @@ export class FitnexDB extends Dexie {
     // Bumped to version 4 to include body_metrics and enhanced sync indexing
     this.version(1).stores({
       athlete_summary: "user_id",
-      user_profile: "user_id",
-      latest_personal_record: "exercise_id",
+      user_profile: "user_id, is_synced",
       customized_stats:
         "[user_id+start_date+end_date], user_id, start_date, end_date",
-      app_settings: "id",
+      app_settings: "user_id",
       athlete_levels_lookup: "id, level_name",
       personal_records: "[user_id+exercise_id]",
 
@@ -69,14 +62,14 @@ export class FitnexDB extends Dexie {
       // Primary key is composite [user_id+logdate] to match Supabase
       body_metrics: "[user_id+logdate], user_id, logdate, is_synced",
 
-      muscles: "id, name, parent",
+      muscles: "id, name, parent,is_synced",
       equipment: "id, name",
-      exercises: "id, name",
-      athlete_level: "[user_id+updated_date]",
-      exercise_muscles: "[exercise_id+muscle_id], muscle_id",
-      exercise_equipment: "[exercise_id+equipment_id], equipment_id",
-      routines: "id, name",
-      routine_exercises: "[routine_id+exercise_id], exercise_id",
+      exercises: "id, name,is_synced",
+      athlete_level: "[user_id+updated_date],is_synced",
+      exercise_muscles: "[exercise_id+muscle_id], muscle_id,is_synced",
+      exercise_equipment: "[exercise_id+equipment_id], equipment_id,is_synced",
+      routines: "id, name,is_synced",
+      routine_exercises: "[routine_id+exercise_id], exercise_id,is_synced",
 
       workouts: "id, user_id, start_time, status, is_synced",
       workout_logs:

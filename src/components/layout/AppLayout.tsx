@@ -27,7 +27,7 @@ const LayoutContent = () => {
   }, [isSidebarOpen]);
 
   return (
-    <div className="relative min-h-screen text-text-main bg-bg-main selection:bg-brand-primary/30">
+    <div className="relative min-h-screen text-text-main bg-bg-main pt-safe-half selection:bg-brand-primary/30">
       <div className="flex min-h-screen">
         {/* Desktop Sidebar (Left Rail) */}
         <aside className="hidden lg:block w-72 border-r border-border-color shrink-0">

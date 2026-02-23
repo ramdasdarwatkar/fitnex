@@ -1,8 +1,8 @@
 import React from "react";
 import { BrowserRouter } from "react-router-dom";
-import { AuthProvider } from "../context/AuthContext";
 import { ThemeProvider } from "../context/ThemeProvider";
 import { WorkoutProvider } from "../context/WorkoutProvider";
+import { AuthProvider } from "../context/AuthProvider";
 
 interface AppProvidersProps {
   children: React.ReactNode;
