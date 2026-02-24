@@ -34,7 +34,7 @@ export const StatTile = ({
         <div
           className={`p-2 rounded-xl transition-all duration-500 shadow-lg ${
             hasActivityToday
-              ? "bg-brand-primary text-black shadow-[0_0_20px_rgba(var(--brand-primary-rgb),0.3)]"
+              ? "bg-brand-primary text-black shadow-glow-primary"
               : "bg-bg-surface-soft text-text-muted"
           }`}
         >
@@ -46,7 +46,7 @@ export const StatTile = ({
             Today
           </p>
           <p
-            className={`text-sm font-black italic tabular-nums transition-colors duration-500 ${
+            className={`text-sm font-black tabular-nums transition-colors duration-500 ${
               hasActivityToday ? "text-text-main" : "text-text-muted/30"
             }`}
           >
@@ -67,7 +67,7 @@ export const StatTile = ({
             <p className="text-[7px] font-black text-text-muted/60 uppercase tracking-tighter mb-1">
               Weekly Total
             </p>
-            <span className="text-xl font-black text-brand-primary italic leading-none tabular-nums tracking-tighter">
+            <span className="text-xl font-black text-brand-primary leading-none tabular-nums tracking-tighter">
               {formatValue(weekValue)}
             </span>
           </div>

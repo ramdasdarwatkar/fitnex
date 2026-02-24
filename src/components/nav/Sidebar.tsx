@@ -99,7 +99,7 @@ export const Sidebar = ({ isOpen, onClose, isStatic = false }: Props) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-bg-main/60 backdrop-blur-sm z-[90]"
+            className="fixed inset-0 bg-bg-main/60 backdrop-blur-sm z-90"
             onClick={onClose}
           />
         )}
@@ -123,7 +123,7 @@ export const Sidebar = ({ isOpen, onClose, isStatic = false }: Props) => {
 
         {/* COMPACT PROFILE CARD: Pinned below header */}
         <div className="px-6 mb-6 shrink-0">
-          <div className="relative p-4 bg-bg-surface-soft/40 border border-border-color rounded-[2rem] overflow-hidden">
+          <div className="relative p-4 bg-bg-surface-soft/40 border border-border-color rounded-4xl overflow-hidden">
             <div className="flex items-center gap-4 relative z-10">
               <div className="w-12 h-12 rounded-2xl bg-brand-primary flex items-center justify-center text-white shadow-lg">
                 <span className="font-black text-lg">
@@ -198,7 +198,7 @@ export const Sidebar = ({ isOpen, onClose, isStatic = false }: Props) => {
           <div className="mt-4 px-2 pb-6">
             <button
               onClick={handleCenterClick}
-              className={`w-full flex items-center justify-between p-4 rounded-[1.5rem] transition-all duration-300 border border-white/5 shadow-xl
+              className={`w-full flex items-center justify-between p-4 rounded-3xl transition-all duration-300 border border-white/5 shadow-xl
                 ${
                   menuExpanded || confirmRecovery
                     ? "bg-text-main text-bg-main"

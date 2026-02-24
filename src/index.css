@@ -3,23 +3,34 @@
 
 @theme {
   --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  
+  /* CORE TOKENS */
   --color-brand-primary: var(--brand-primary);
   --color-bg-main: var(--bg-main);
   --color-bg-surface: var(--bg-surface);
+  --color-bg-surface-soft: var(--bg-surface-soft);
   --color-text-main: var(--text-main);
   --color-text-muted: var(--text-muted);
   --color-border-color: var(--border-color);
+
+  /* FUNCTIONAL BRAND TOKENS */
+  --color-brand-info: #3b82f6;    
+  --color-brand-success: #10b981; 
+  --color-brand-error: #f43f5e;   
+  --color-brand-warning: #f59e0b; 
+
+  /* REFINED GLOW SHADOWS */
+  --shadow-glow-error: 0 0 20px color-mix(in srgb, #f43f5e, transparent 80%);
+  --shadow-glow-primary: 0 0 20px color-mix(in srgb, var(--brand-primary), transparent 70%);
 }
 
 /* ============================================= */
 /* THEME & BRAND COLOR VARIABLES (DYNAMIC)       */
 /* ============================================= */
 
-/* 1. Default Variables & Color Mappings (Dark Theme) */
 :root {
-  /* Default Brand Color (Zinc/Slate) */
   --brand-primary: #71717a; 
-  --brand-primary-rgb: 113, 113, 122; /* Required for Glow logic */
+  --brand-primary-rgb: 113, 113, 122;
   
   --bg-main: #000000;
   --bg-surface: #0f172a;
@@ -30,12 +41,10 @@
   --border-color: #1e293b;
   --divider-color: #0f172a;
   
-  /* Safe Area Utilities */
   --safe-top: env(safe-area-inset-top);
   --safe-bottom: env(safe-area-inset-bottom);
 }
 
-/* 2. Brand Color Logic (Matches the 'name' from DB) */
 [data-accent='emerald'] { --brand-primary: #10b981; --brand-primary-rgb: 16, 185, 129; }
 [data-accent='blue']    { --brand-primary: #3b82f6; --brand-primary-rgb: 59, 130, 246; }
 [data-accent='rose']    { --brand-primary: #f43f5e; --brand-primary-rgb: 244, 63, 94; }
@@ -43,7 +52,6 @@
 [data-accent='violet']  { --brand-primary: #8b5cf6; --brand-primary-rgb: 139, 92, 246; }
 [data-accent='orange']  { --brand-primary: #f97316; --brand-primary-rgb: 249, 115, 22; }
 
-/* 3. Light Theme Overrides (Fixed to support your switcher) */
 [data-theme='light'], .light-theme {
   --bg-main: #f8fafc;
   --bg-surface: #ffffff;
@@ -58,14 +66,9 @@
 /* ============================================= */
 /* RESET & CORE BODY */
 /* ============================================= */
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
+*, *::before, *::after { box-sizing: border-box; }
 
-html,
-body {
+html, body {
   margin: 0;
   padding: 0;
   height: var(--app-height, 100%); 
@@ -75,7 +78,6 @@ body {
   overscroll-behavior: none;
   touch-action: pan-y;
   -webkit-tap-highlight-color: transparent;
-  -webkit-touch-callout: none;
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
@@ -83,14 +85,8 @@ body {
 /* SCROLLBAR & LAYOUT UTILITIES                  */
 /* ============================================= */
 
-* {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-*::-webkit-scrollbar {
-  display: none;
-}
+* { scrollbar-width: none; -ms-overflow-style: none; }
+*::-webkit-scrollbar { display: none; }
 
 .app-root {
   min-height: 100%;
@@ -130,12 +126,6 @@ body {
   scrollbar-width: none !important;
 }
 
-.samsung-scroll::-webkit-scrollbar {
-  width: 0 !important;
-  height: 0 !important;
-  background: transparent !important;
-}
-
 /* ============================================= */
 /* INPUTS & ANIMATIONS                           */
 /* ============================================= */
@@ -144,29 +134,15 @@ input[type="date"] {
   display: block;
   appearance: none;
   -webkit-appearance: none;
-  -moz-appearance: none;
-  min-height: 1.5em;
   width: 100%;
   background: transparent;
   color: inherit;
 }
 
-input[type="date"]::-webkit-date-and-time-value {
-  text-align: left;
-  margin: 0;
-}
-
-.animate-login {
-  animation: loginFade 350ms ease-out;
-}
-
+.animate-login { animation: loginFade 350ms ease-out; }
 @keyframes loginFade {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  * { animation: none !important; transition: none !important; }
 }
 
 /* ============================================= */
@@ -181,24 +157,15 @@ input[type="date"]::-webkit-date-and-time-value {
   @apply -translate-y-1 border-[var(--brand-primary)]/30 shadow-[0_20px_40px_rgba(0,0,0,0.4)];
 }
 
-/* ============================================= */
-/* REFINED VISIBLE DEPTH SHADOWS                 */
-/* ============================================= */
-
 @layer utilities {
   .glow-heavy {
-    /* DARK MODE: Stronger black depth for OLED */
-    /* Increased opacity from 0.6 to 0.8 and spread to 2px */
     box-shadow: 0 0 45px 2px rgba(0, 0, 0, 0.85);
     transition: box-shadow 0.3s ease;
   }
 }
 
-/* LIGHT MODE: Visible Grey Shadow */
 [data-theme='light'], .light-theme {
   .glow-heavy {
-    /* Darkened the grey-slate shadow for clear visibility */
-    /* Increased opacity from 0.12 to 0.22 */
     box-shadow: 0 0 35px 0px rgba(15, 23, 42, 0.22); 
   }
 }
@@ -233,4 +200,16 @@ input[type="date"]::-webkit-date-and-time-value {
 
 .animate-progress-loading {
   animation: progress-loading 1.5s infinite ease-in-out;
+}
+
+/* HIDE BROWSER INPUT DEFAULTS */
+input::-ms-reveal,
+input::-ms-clear { display: none; }
+
+input::-webkit-contacts-auto-fill-button,
+input::-webkit-credentials-auto-fill-button {
+  visibility: hidden;
+  pointer-events: none;
+  position: absolute; 
+  right: 0;
 }

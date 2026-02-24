@@ -13,8 +13,6 @@ import { StatGrid } from "./components/StatGrid";
 import { AnalyticsService } from "../../services/AnalyticsService";
 import { useAuth } from "../../hooks/useAuth";
 
-// 1. Properly Type the Placeholder
-// We use a type that matches the expected structure of your StatGrid and Calendar
 interface DashboardStats {
   user_id: string;
   workout_sessions: number;
@@ -80,7 +78,6 @@ export const Dashboard = () => {
     return { week, today };
   }, [athlete?.user_id, weekStart, weekEnd, dayStart, dayEnd]);
 
-  // Use the placeholder if data is null/loading
   const weekData: DashboardStats = analytics?.week || DEFAULT_ANALYTICS;
   const todayData: DashboardStats = analytics?.today || DEFAULT_ANALYTICS;
 
@@ -97,10 +94,11 @@ export const Dashboard = () => {
 
       {isRestDayToday && (
         <section className="px-2 animate-in fade-in zoom-in duration-500">
-          <div className="w-full py-6 bg-blue-500/5 border border-blue-500/20 rounded-[2.5rem] flex flex-col items-center justify-center gap-2">
+          {/* REFACTORED: blue-500 -> brand-info */}
+          <div className="w-full py-6 bg-brand-info/5 border border-brand-info/20 rounded-[2.5rem] flex flex-col items-center justify-center gap-2">
             <div className="flex items-center gap-3">
-              <Coffee size={20} className="text-blue-400" />
-              <span className="text-[11px] font-black uppercase tracking-[0.3em] text-blue-400 italic">
+              <Coffee size={20} className="text-brand-info" />
+              <span className="text-[11px] font-black uppercase tracking-[0.3em] text-brand-info">
                 Recovery Mode Active
               </span>
             </div>
@@ -113,7 +111,7 @@ export const Dashboard = () => {
 
       <section className="space-y-4">
         <div className="flex items-center gap-3 px-2">
-          <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-text-muted italic">
+          <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-text-muted">
             Performance Overview
           </h2>
           <div className="h-px flex-1 bg-border-color/30" />
@@ -134,7 +132,7 @@ export const Dashboard = () => {
 
       <section className="space-y-4 pb-10 lg:pb-0">
         <div className="flex items-center gap-3 px-2">
-          <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-text-muted italic">
+          <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-text-muted">
             Live Analytics
           </h2>
           <div className="h-px flex-1 bg-border-color/30" />
