@@ -92,7 +92,7 @@ export const Dashboard = () => {
   if (!athlete?.user_id) return null;
 
   return (
-    <div className="flex-1 flex flex-col bg-bg-main px-6 space-y-10 min-h-screen pb-10 pt-safe mt-4 max-w-6xl mx-auto w-full relative">
+    <div className="flex-1 flex flex-col bg-bg-main space-y-10 min-h-screen pb-10 lg:pb-0 mt-4 max-w-6xl mx-auto w-full relative">
       <DashboardHeader />
 
       {isRestDayToday && (
@@ -132,7 +132,7 @@ export const Dashboard = () => {
         </div>
       </section>
 
-      <section className="space-y-4 pb-10">
+      <section className="space-y-4 pb-10 lg:pb-0">
         <div className="flex items-center gap-3 px-2">
           <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-text-muted italic">
             Live Analytics
@@ -142,7 +142,7 @@ export const Dashboard = () => {
         <StatGrid today={todayData} week={weekData} />
       </section>
 
-      <div className="h-10" />
+      <div className="h-10 lg:hidden" />
     </div>
   );
 };

@@ -19,6 +19,7 @@
 :root {
   /* Default Brand Color (Zinc/Slate) */
   --brand-primary: #71717a; 
+  --brand-primary-rgb: 113, 113, 122; /* Required for Glow logic */
   
   --bg-main: #000000;
   --bg-surface: #0f172a;
@@ -35,34 +36,22 @@
 }
 
 /* 2. Brand Color Logic (Matches the 'name' from DB) */
-[data-accent='emerald'] { --brand-primary: #10b981; }
-[data-accent='blue']    { --brand-primary: #3b82f6; }
-[data-accent='rose']    { --brand-primary: #f43f5e; }
-[data-accent='amber']   { --brand-primary: #f59e0b; }
-[data-accent='violet']  { --brand-primary: #8b5cf6; }
-[data-accent='orange']  { --brand-primary: #f97316; }
+[data-accent='emerald'] { --brand-primary: #10b981; --brand-primary-rgb: 16, 185, 129; }
+[data-accent='blue']    { --brand-primary: #3b82f6; --brand-primary-rgb: 59, 130, 246; }
+[data-accent='rose']    { --brand-primary: #f43f5e; --brand-primary-rgb: 244, 63, 94; }
+[data-accent='amber']   { --brand-primary: #f59e0b; --brand-primary-rgb: 245, 158, 11; }
+[data-accent='violet']  { --brand-primary: #8b5cf6; --brand-primary-rgb: 139, 92, 246; }
+[data-accent='orange']  { --brand-primary: #f97316; --brand-primary-rgb: 249, 115, 22; }
 
-/* 3. Light Theme Overrides (Triggered by data-theme) */
-[data-theme='light'] {
+/* 3. Light Theme Overrides (Fixed to support your switcher) */
+[data-theme='light'], .light-theme {
   --bg-main: #f8fafc;
   --bg-surface: #ffffff;
   --bg-surface-soft: #f1f5f9;
   --text-main: #0f172a;
   --text-muted: #64748b;
   --text-dim: #94a3b8;
-  --border-color: #e2e8f0; /* Fixed typo from e2e8e0 */
-  --divider-color: #f1f5f9;
-}
-
-/* Maintain .light-theme class for backwards compatibility */
-.light-theme {
-  --bg-main: #f8fafc;
-  --bg-surface: #ffffff;
-  --bg-surface-soft: #f1f5f9;
-  --text-main: #0f172a;
-  --text-muted: #64748b;
-  --text-dim: #94a3b8;
-  --border-color: #e2e8f0;
+  --border-color: #e2e8f0; 
   --divider-color: #f1f5f9;
 }
 
@@ -190,6 +179,28 @@ input[type="date"]::-webkit-date-and-time-value {
 
 .dashboard-card:hover {
   @apply -translate-y-1 border-[var(--brand-primary)]/30 shadow-[0_20px_40px_rgba(0,0,0,0.4)];
+}
+
+/* ============================================= */
+/* REFINED VISIBLE DEPTH SHADOWS                 */
+/* ============================================= */
+
+@layer utilities {
+  .glow-heavy {
+    /* DARK MODE: Stronger black depth for OLED */
+    /* Increased opacity from 0.6 to 0.8 and spread to 2px */
+    box-shadow: 0 0 45px 2px rgba(0, 0, 0, 0.85);
+    transition: box-shadow 0.3s ease;
+  }
+}
+
+/* LIGHT MODE: Visible Grey Shadow */
+[data-theme='light'], .light-theme {
+  .glow-heavy {
+    /* Darkened the grey-slate shadow for clear visibility */
+    /* Increased opacity from 0.12 to 0.22 */
+    box-shadow: 0 0 35px 0px rgba(15, 23, 42, 0.22); 
+  }
 }
 
 @layer components {

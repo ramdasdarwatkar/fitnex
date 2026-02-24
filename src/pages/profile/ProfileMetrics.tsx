@@ -173,7 +173,7 @@ export const ProfileMetrics = () => {
 
   return (
     <SubPageLayout title="Measurements">
-      <div className="flex-1 flex flex-col space-y-10 bg-bg-main pb-32 animate-in fade-in duration-500">
+      <div className="flex-1 flex flex-col space-y-10 bg-bg-main animate-in fade-in duration-500">
         <section>
           <SectionHeader icon={<Activity size={16} />} title="Core Vitals" />
           <div className="grid grid-cols-2 gap-4">

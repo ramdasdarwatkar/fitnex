@@ -22,6 +22,28 @@ import { useAuth } from "../../hooks/useAuth";
 import { useWorkout } from "../../hooks/useWorkout";
 import { DateUtils } from "../../util/dateUtils";
 
+// --- TYPES ---
+
+interface NavItem {
+  icon: LucideIcon;
+  label: string;
+  path: string;
+}
+
+interface NavButtonProps extends NavItem {
+  isActive: boolean;
+  isDisabled: boolean;
+  onClick: () => void;
+}
+
+interface QuickOptionProps {
+  icon: LucideIcon;
+  label: string;
+  onClick: () => void;
+}
+
+// --- COMPONENT ---
+
 export const BottomNav = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -34,8 +56,6 @@ export const BottomNav = () => {
   const isRestDay = useLiveQuery(async () => {
     if (!user_id) return false;
     const [start, end] = DateUtils.getTodayWindow();
-    const count = await db.workouts.count();
-    if (count === 0) return false;
     const entry = await db.workouts
       .where("start_time")
       .between(start, end, true, true)
@@ -47,27 +67,29 @@ export const BottomNav = () => {
   const handleActionSelect = async (type: "LIVE" | "PAST" | "REST") => {
     if (!user_id) return;
     setIsOpen(false);
-    setConfirmRecovery(false);
     if (type === "REST") return await WorkoutService.logRestDay(user_id);
+
     if (type === "PAST") {
       const minDate = format(
         new Date().setDate(new Date().getDate() - 21),
         "yyyy-MM-dd",
       );
       return navigate(
-        `/workout/active?mode=past&min=${minDate}&max=${format(new Date(), "yyyy-MM-dd")}`,
+        `/workout/active?mode=past&min=${minDate}&max=${format(
+          new Date(),
+          "yyyy-MM-dd",
+        )}`,
       );
     }
+
     await WorkoutService.startNewWorkout(user_id);
     navigate(`/workout/active?mode=live`);
   };
 
   const handleCenterClick = useCallback(() => {
     if (isOngoing) return resumeSession();
-    if (isRestDay && !confirmRecovery && !isOpen) {
-      setConfirmRecovery(true);
-      return;
-    }
+    if (isRestDay && !confirmRecovery && !isOpen)
+      return setConfirmRecovery(true);
     if (confirmRecovery && !isOpen) {
       setIsOpen(true);
       setConfirmRecovery(false);
@@ -76,7 +98,7 @@ export const BottomNav = () => {
     setIsOpen(!isOpen);
   }, [isOngoing, isRestDay, confirmRecovery, isOpen, resumeSession]);
 
-  const navItems = [
+  const navItems: NavItem[] = [
     { icon: Home, label: "Home", path: "/dashboard" },
     { icon: Library, label: "Library", path: "/library" },
     { icon: BarChart2, label: "Progress", path: "/progress" },
@@ -85,9 +107,10 @@ export const BottomNav = () => {
 
   return (
     <>
+      {/* Overlay Backdrop */}
       {(isOpen || confirmRecovery) && (
         <div
-          className="fixed inset-0 bg-bg-main/80 backdrop-blur-md animate-in fade-in duration-300 pointer-events-auto z-[9998]"
+          className="fixed inset-0 bg-bg-main/60 backdrop-blur-sm z-9998 animate-in fade-in duration-300"
           onClick={() => {
             setIsOpen(false);
             setConfirmRecovery(false);
@@ -95,9 +118,10 @@ export const BottomNav = () => {
         />
       )}
 
-      <div className="fixed bottom-0 left-0 w-full flex flex-col items-center pointer-events-none z-[9999]">
+      <div className="fixed bottom-0 left-0 w-full flex flex-col items-center z-9999 pointer-events-none px-4 pb-6">
+        {/* Quick Action Floating Menu */}
         {isOpen && (
-          <div className="mb-10 flex gap-10 animate-in slide-in-from-bottom-8 duration-300 pointer-events-auto">
+          <div className="mb-6 flex gap-4 p-4 bg-bg-surface/90 backdrop-blur-2xl rounded-[2.5rem] shadow-2xl pointer-events-auto">
             <QuickOption
               icon={Zap}
               label="Live"
@@ -118,42 +142,52 @@ export const BottomNav = () => {
           </div>
         )}
 
-        <nav className="w-full bg-bg-surface/95 backdrop-blur-2xl shadow-[0_-20px_50px_rgba(0,0,0,0.3)] pointer-events-auto">
-          <div className="flex items-center h-28 px-4 max-w-2xl mx-auto pb-safe">
-            <div className="flex flex-1 justify-evenly items-center">
-              {navItems.slice(0, 2).map((item) => (
-                <NavButton
-                  key={item.path}
-                  {...item}
-                  isActive={location.pathname === item.path}
-                  isDisabled={isOpen || confirmRecovery}
-                  onClick={() => navigate(item.path)}
-                />
-              ))}
-            </div>
+        {/* Main Navigation Container */}
+        <nav className="w-full max-w-lg bg-bg-surface/80 backdrop-blur-3xl rounded-[2.5rem] glow-heavy pointer-events-auto">
+          {/* EQUAL SPACING LOGIC: 
+              Using a single flex row with justify-between and consistent padding
+          */}
+          <div className="flex items-center justify-between h-20 px-6 relative">
+            {/* Left Items */}
+            <NavButton
+              {...navItems[0]}
+              isActive={location.pathname === navItems[0].path}
+              isDisabled={isOpen}
+              onClick={() => navigate(navItems[0].path)}
+            />
+            <NavButton
+              {...navItems[1]}
+              isActive={location.pathname === navItems[1].path}
+              isDisabled={isOpen}
+              onClick={() => navigate(navItems[1].path)}
+            />
 
-            <div className="flex flex-1 flex-col items-center justify-center gap-2.5">
+            {/* Central Action Trigger */}
+            <div className="relative -top-2 flex flex-col items-center">
               <button
                 onClick={handleCenterClick}
-                className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center transition-all duration-300 active:scale-90 shadow-2xl ${
+                className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-xl btn-scale ${
                   isOpen || confirmRecovery
                     ? "bg-text-main text-bg-main"
-                    : "bg-brand-primary text-bg-main shadow-brand-primary/40"
+                    : "bg-brand-primary text-bg-main"
                 }`}
               >
                 {isOpen ? (
-                  <X size={28} strokeWidth={3} />
+                  <X size={24} strokeWidth={2.5} />
                 ) : confirmRecovery || isOngoing ? (
-                  <Play size={28} fill="currentColor" />
+                  <Play size={24} fill="currentColor" />
                 ) : isRestDay ? (
-                  <CupSoda size={28} />
+                  <CupSoda size={24} />
                 ) : (
-                  <Dumbbell size={28} strokeWidth={2} />
+                  <Dumbbell size={24} />
                 )}
               </button>
-
               <span
-                className={`text-[12px] font-black uppercase tracking-widest text-center transition-all duration-500 ${confirmRecovery ? "text-brand-primary brightness-125" : isOpen ? "text-text-main" : "text-brand-primary"}`}
+                className={`absolute -bottom-5 text-[10px] font-bold tracking-tight transition-all ${
+                  confirmRecovery
+                    ? "text-brand-primary animate-pulse"
+                    : "text-text-muted"
+                }`}
               >
                 {isOngoing
                   ? "Live"
@@ -162,22 +196,24 @@ export const BottomNav = () => {
                     : confirmRecovery
                       ? "Train?"
                       : isRestDay
-                        ? "Resting"
+                        ? "Rest"
                         : "Start"}
               </span>
             </div>
 
-            <div className="flex flex-1 justify-evenly items-center">
-              {navItems.slice(2).map((item) => (
-                <NavButton
-                  key={item.path}
-                  {...item}
-                  isActive={location.pathname === item.path}
-                  isDisabled={isOpen || confirmRecovery}
-                  onClick={() => navigate(item.path)}
-                />
-              ))}
-            </div>
+            {/* Right Items */}
+            <NavButton
+              {...navItems[2]}
+              isActive={location.pathname === navItems[2].path}
+              isDisabled={isOpen}
+              onClick={() => navigate(navItems[2].path)}
+            />
+            <NavButton
+              {...navItems[3]}
+              isActive={location.pathname === navItems[3].path}
+              isDisabled={isOpen}
+              onClick={() => navigate(navItems[3].path)}
+            />
           </div>
         </nav>
       </div>
@@ -185,13 +221,7 @@ export const BottomNav = () => {
   );
 };
 
-interface NavButtonProps {
-  icon: LucideIcon;
-  label: string;
-  isActive: boolean;
-  onClick: () => void;
-  isDisabled: boolean;
-}
+// --- SUB-COMPONENTS ---
 
 const NavButton = ({
   icon: Icon,
@@ -201,46 +231,35 @@ const NavButton = ({
   isDisabled,
 }: NavButtonProps) => (
   <button
-    onClick={(e) => {
-      if (isDisabled) return;
-      e.stopPropagation();
-      onClick();
-    }}
+    onClick={onClick}
     disabled={isDisabled}
-    className={`relative flex flex-col items-center justify-center w-20 h-20 transition-all duration-500 ${isDisabled ? "opacity-10 grayscale" : "opacity-100"}`}
+    className={`flex flex-col items-center justify-center gap-1 w-14 h-14 rounded-xl transition-all duration-300 ${
+      isDisabled ? "opacity-20 blur-[0.5px]" : "opacity-100"
+    }`}
   >
-    <div
-      className={`absolute inset-1.5 rounded-2xl transition-all duration-500 ${isActive ? "bg-text-main/10" : "bg-transparent"}`}
+    <Icon
+      size={22}
+      className={isActive ? "text-brand-primary" : "text-text-muted"}
+      strokeWidth={isActive ? 3 : 2}
     />
-    <div
-      className={`relative z-10 flex flex-col items-center gap-2 ${isActive ? "text-text-main" : "text-text-muted opacity-60"}`}
+    <span
+      className={`text-[9px] font-semibold ${
+        isActive ? "text-brand-primary" : "text-text-muted"
+      }`}
     >
-      <Icon size={26} strokeWidth={isActive ? 2.5 : 2} />
-      <span className="text-[10px] font-black uppercase tracking-[0.15em] leading-none">
-        {label}
-      </span>
-    </div>
+      {label}
+    </span>
   </button>
 );
 
-const QuickOption = ({
-  icon: Icon,
-  label,
-  onClick,
-}: {
-  icon: LucideIcon;
-  label: string;
-  onClick: () => void;
-}) => (
+const QuickOption = ({ icon: Icon, label, onClick }: QuickOptionProps) => (
   <button
     onClick={onClick}
-    className="flex flex-col items-center gap-3 group pointer-events-auto"
+    className="flex flex-col items-center gap-2 px-4 py-2 rounded-2xl group transition-colors"
   >
-    <div className="w-18 h-18 bg-bg-surface rounded-3xl flex items-center justify-center text-brand-primary shadow-2xl active:scale-90 transition-all">
-      <Icon size={32} strokeWidth={2} />
+    <div className="w-12 h-12 rounded-2xl bg-bg-surface-soft flex items-center justify-center text-brand-primary shadow-sm group-active:scale-90 transition-transform">
+      <Icon size={24} />
     </div>
-    <span className="text-[12px] font-black text-text-main uppercase tracking-widest">
-      {label}
-    </span>
+    <span className="text-[11px] font-bold text-text-main">{label}</span>
   </button>
 );
