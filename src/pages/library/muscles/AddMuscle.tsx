@@ -4,6 +4,7 @@ import { SubPageLayout } from "../../../components/layout/SubPageLayout";
 import { LibraryService } from "../../../services/LibraryService";
 import { Plus, GitMerge, ChevronDown, Loader2 } from "lucide-react";
 import type { Muscle } from "../../../types/database.types";
+import { MuscleService } from "../../../services/MuscleService";
 
 export const AddMuscle = () => {
   const navigate = useNavigate();
@@ -16,7 +17,7 @@ export const AddMuscle = () => {
   // 2. Initial Data Load
   useEffect(() => {
     let isMounted = true;
-    LibraryService.getActiveMuscles().then((data) => {
+    MuscleService.getActiveMuscles().then((data) => {
       if (isMounted) setMuscles(data);
     });
     return () => {
@@ -32,7 +33,7 @@ export const AddMuscle = () => {
     try {
       // In our Local-First engine, this writes to Dexie with is_synced: 0
       // and triggers SyncManager.reconcile()
-      await LibraryService.addMuscle(form.name.trim(), form.parent_id || null);
+      await MuscleService.addMuscle(form.name.trim(), form.parent_id || null);
       navigate(-1);
     } catch (err: unknown) {
       const msg =

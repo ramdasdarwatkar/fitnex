@@ -14,6 +14,7 @@ import {
 
 // 1. IMPORT YOUR TYPES
 import type { Muscle } from "../../../types/database.types";
+import { MuscleService } from "../../../services/MuscleService";
 
 /**
  * CONFIRM MODAL
@@ -80,8 +81,8 @@ export const MuscleDetail = () => {
       if (!id) return;
       try {
         const [target, list] = await Promise.all([
-          LibraryService.getMuscleById(id),
-          LibraryService.getActiveMuscles(),
+          MuscleService.getMuscleById(id),
+          MuscleService.getActiveMuscles(),
         ]);
 
         if (isMounted && target) {
@@ -109,7 +110,7 @@ export const MuscleDetail = () => {
     if (!id || !form.name.trim() || processing) return;
     setProcessing(true);
     try {
-      await LibraryService.updateMuscle(
+      await MuscleService.updateMuscle(
         id,
         form.name.trim(),
         form.parent_id || null,
@@ -128,7 +129,7 @@ export const MuscleDetail = () => {
     if (!id || processing) return;
     setProcessing(true);
     try {
-      await LibraryService.archiveMuscle(id);
+      await MuscleService.archiveMuscle(id);
       navigate(-1);
     } catch (err: unknown) {
       console.error("Archive operation failed:", err);

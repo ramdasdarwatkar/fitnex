@@ -5,6 +5,7 @@ import { LibraryService } from "../../../services/LibraryService";
 
 // Types
 import type { Muscle } from "../../../types/database.types";
+import { MuscleService } from "../../../services/MuscleService";
 
 interface MusclesTabProps {
   search: string;
@@ -20,7 +21,7 @@ export const MusclesTab = ({ search }: MusclesTabProps) => {
     let isMounted = true;
     const loadData = async () => {
       try {
-        const data = await LibraryService.getActiveMuscles();
+        const data = await MuscleService.getActiveMuscles();
         if (isMounted) {
           // Sorting alphabetically for a pro feel
           setMuscles([...data].sort((a, b) => a.name.localeCompare(b.name)));

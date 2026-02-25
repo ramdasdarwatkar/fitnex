@@ -29,30 +29,12 @@
 /* ============================================= */
 
 :root {
-  --brand-primary: #71717a; 
-  --brand-primary-rgb: 113, 113, 122;
+  /** * PRODUCTION DEFAULTS (No Flash Guard)
+   * These match your cold-start fallback: Light Theme + Emerald Accent 
+   */
+  --brand-primary: #10b981; 
+  --brand-primary-rgb: 16, 185, 129;
   
-  --bg-main: #000000;
-  --bg-surface: #0f172a;
-  --bg-surface-soft: #1e293b;
-  --text-main: #ffffff;
-  --text-muted: #94a3b8;
-  --text-dim: #64748b;
-  --border-color: #1e293b;
-  --divider-color: #0f172a;
-  
-  --safe-top: env(safe-area-inset-top);
-  --safe-bottom: env(safe-area-inset-bottom);
-}
-
-[data-accent='emerald'] { --brand-primary: #10b981; --brand-primary-rgb: 16, 185, 129; }
-[data-accent='blue']    { --brand-primary: #3b82f6; --brand-primary-rgb: 59, 130, 246; }
-[data-accent='rose']    { --brand-primary: #f43f5e; --brand-primary-rgb: 244, 63, 94; }
-[data-accent='amber']   { --brand-primary: #f59e0b; --brand-primary-rgb: 245, 158, 11; }
-[data-accent='violet']  { --brand-primary: #8b5cf6; --brand-primary-rgb: 139, 92, 246; }
-[data-accent='orange']  { --brand-primary: #f97316; --brand-primary-rgb: 249, 115, 22; }
-
-[data-theme='light'], .light-theme {
   --bg-main: #f8fafc;
   --bg-surface: #ffffff;
   --bg-surface-soft: #f1f5f9;
@@ -61,10 +43,34 @@
   --text-dim: #94a3b8;
   --border-color: #e2e8f0; 
   --divider-color: #f1f5f9;
+  
+  --safe-top: env(safe-area-inset-top);
+  --safe-bottom: env(safe-area-inset-bottom);
+}
+
+/* DATA ACCENT OVERRIDES - Set by ThemeProvider from Dexie */
+[data-accent='emerald'] { --brand-primary: #10b981; --brand-primary-rgb: 16, 185, 129; }
+[data-accent='blue']    { --brand-primary: #3b82f6; --brand-primary-rgb: 59, 130, 246; }
+[data-accent='rose']    { --brand-primary: #f43f5e; --brand-primary-rgb: 244, 63, 94; }
+[data-accent='amber']   { --brand-primary: #f59e0b; --brand-primary-rgb: 245, 158, 11; }
+[data-accent='violet']  { --brand-primary: #8b5cf6; --brand-primary-rgb: 139, 92, 246; }
+[data-accent='orange']  { --brand-primary: #f97316; --brand-primary-rgb: 249, 115, 22; }
+[data-accent='zinc']    { --brand-primary: #71717a; --brand-primary-rgb: 113, 113, 122; }
+
+/* DATA THEME DARK OVERRIDES - Set by ThemeProvider from Dexie */
+[data-theme='dark'] {
+  --bg-main: #000000;
+  --bg-surface: #0f172a;
+  --bg-surface-soft: #1e293b;
+  --text-main: #ffffff;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+  --border-color: #1e293b;
+  --divider-color: #0f172a;
 }
 
 /* ============================================= */
-/* RESET & CORE BODY */
+/* RESET & CORE BODY                             */
 /* ============================================= */
 *, *::before, *::after { box-sizing: border-box; }
 
@@ -78,7 +84,8 @@ html, body {
   overscroll-behavior: none;
   touch-action: pan-y;
   -webkit-tap-highlight-color: transparent;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  /* Transition handles the fade from default (Light) to user preference (Dark) */
+  transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1), color 0.4s ease;
 }
 
 /* ============================================= */
@@ -164,10 +171,8 @@ input[type="date"] {
   }
 }
 
-[data-theme='light'], .light-theme {
-  .glow-heavy {
-    box-shadow: 0 0 35px 0px rgba(15, 23, 42, 0.22); 
-  }
+[data-theme='light'] .glow-heavy {
+  box-shadow: 0 0 35px 0px rgba(15, 23, 42, 0.22); 
 }
 
 @layer components {
@@ -212,4 +217,17 @@ input::-webkit-credentials-auto-fill-button {
   pointer-events: none;
   position: absolute; 
   right: 0;
+}
+
+/* UTILITIES */
+@layer utilities {
+  .glass-card {
+    background: linear-gradient(145deg, var(--bg-surface), var(--bg-main));
+    border: 1px solid var(--border-color);
+    box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+  }
+  
+  .pro-shadow {
+    box-shadow: 0 0 20px 0 var(--brand-primary-glow);
+  }
 }

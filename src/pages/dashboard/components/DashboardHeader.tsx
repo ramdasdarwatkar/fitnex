@@ -1,65 +1,83 @@
 import { useMemo } from "react";
-import { Sparkles } from "lucide-react";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../../hooks/useAuth";
+import { Sparkles } from "lucide-react";
 
-export const DashboardHeader = () => {
-  const { athlete } = useAuth();
+interface DashboardHeaderProps {
+  athlete: {
+    name?: string;
+  } | null;
+}
+
+export const DashboardHeader = ({ athlete }: DashboardHeaderProps) => {
   const navigate = useNavigate();
 
-  // 1. Time-aware greeting
-  const greeting = useMemo(() => {
-    const hour = new Date().getHours();
-    if (hour < 12) return "Good morning";
-    if (hour < 17) return "Good afternoon";
-    return "Good evening";
-  }, []);
-
-  // 2. Extract First Name
-  const athleteName = athlete?.name;
-
   const firstName = useMemo(() => {
-    if (!athleteName) return "Athlete";
-    const namePart = athleteName.trim().split(" ")[0];
-    return namePart.charAt(0).toUpperCase() + namePart.slice(1).toLowerCase();
-  }, [athleteName]);
+    const name = athlete?.name?.trim().split(" ")[0] || "Athlete";
+    return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+  }, [athlete?.name]);
 
-  // 3. Current Date Logic
-  const { monthName, dayNumber } = useMemo(() => {
-    const today = new Date();
+  const dateInfo = useMemo(() => {
+    const now = new Date();
+    const hour = now.getHours();
+
+    let timeGreeting = "Good evening";
+    if (hour < 12) timeGreeting = "Good morning";
+    else if (hour < 17) timeGreeting = "Good afternoon";
+    else if (hour > 21) timeGreeting = "Good night";
+
     return {
-      monthName: format(today, "MMM"),
-      dayNumber: format(today, "dd"),
+      dayNum: format(now, "dd"),
+      shortMonth: format(now, "MMM"),
+      shortDay: format(now, "EEE"),
+      timeGreeting,
     };
   }, []);
 
   return (
-    <header className="pt-4 pb-2 flex justify-between items-center">
-      <div className="space-y-1">
-        {/* REFACTORED: Removed italic, kept brand-primary token */}
-        <p className="flex items-center gap-2 text-brand-primary font-black text-[10px] uppercase tracking-[0.2em]">
-          <Sparkles size={12} strokeWidth={3} fill="currentColor" />
-          {greeting},
-        </p>
-        {/* REFACTORED: Removed italic for a bolder, architectural look */}
-        <h1 className="text-3xl font-black text-text-main tracking-tighter uppercase leading-none">
-          {firstName}!
+    <header className="flex justify-between items-center w-full px-1 py-3">
+      {/* LEFT: Symmetrical 2-Line Stack */}
+      <div className="flex flex-col gap-1">
+        {/* Line 1: Hello + Name */}
+        <h1 className="text-[16px] lg:text-[18px] font-bold text-text-main tracking-tight">
+          Hello, {firstName}
         </h1>
+
+        {/* Line 2: Fancy Greeting (Same Size) */}
+        <div className="flex items-center gap-2">
+          <div className="relative flex items-center justify-center">
+            <div className="absolute inset-0 bg-brand-primary/20 blur-md rounded-full animate-pulse" />
+            <Sparkles
+              size={12}
+              className="relative text-brand-primary"
+              fill="currentColor"
+            />
+          </div>
+          <p className="text-[16px] lg:text-[18px] font-bold text-brand-primary tracking-tight">
+            {dateInfo.timeGreeting}
+          </p>
+        </div>
       </div>
 
-      {/* Monthly View Trigger Button */}
+      {/* RIGHT: Production-Grade Modular Calendar Widget */}
       <button
         onClick={() => navigate("/workout/history")}
-        /* REFACTORED: Used border-border-color and brand-primary/40 tokens */
-        className="w-12 h-12 rounded-2xl bg-bg-surface border border-border-color flex flex-col items-center justify-center text-text-muted active:scale-90 transition-all hover:border-brand-primary/40 shadow-xl group"
+        className="group relative flex flex-col w-14 lg:w-16 rounded-xl border border-border-color bg-bg-surface transition-all duration-300 hover:border-brand-primary hover:shadow-glow-primary active:scale-95 overflow-hidden shadow-sm"
       >
-        <span className="text-[7px] font-black text-text-muted group-hover:text-brand-primary transition-colors mb-0.5 uppercase tracking-tighter">
-          {monthName}
-        </span>
-        <span className="text-sm font-black text-text-main leading-none tabular-nums">
-          {dayNumber}
-        </span>
+        <div className="w-full bg-brand-primary py-1 flex justify-center">
+          <span className="text-[8px] lg:text-[9px] font-black text-white uppercase tracking-[0.15em]">
+            {dateInfo.shortMonth}
+          </span>
+        </div>
+
+        <div className="flex-1 flex flex-col items-center py-2 lg:py-2.5">
+          <span className="text-xl lg:text-2xl font-black text-text-main tabular-nums leading-none tracking-tighter">
+            {dateInfo.dayNum}
+          </span>
+          <span className="text-[8px] font-black text-text-muted uppercase tracking-[0.15em] mt-1 group-hover:text-brand-primary transition-colors">
+            {dateInfo.shortDay}
+          </span>
+        </div>
       </button>
     </header>
   );

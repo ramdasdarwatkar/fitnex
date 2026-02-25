@@ -1,98 +1,66 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { db, type AppSettings } from "../db/database";
+import React, { useEffect, useMemo } from "react";
+import { useLiveQuery } from "dexie-react-hooks";
+import { db } from "../db/database";
 import { ThemeContext } from "./ThemeTypes";
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [theme, setThemeState] = useState<"dark" | "light">("dark");
-  const [brandColor, setBrandColorState] = useState("#ff7f50");
+  /**
+   * 1. THE OBSERVER
+   * Reads from Dexie. We use a fallback object to ensure 'theme'
+   * and 'accent_color' are never undefined.
+   */
+  const settings = useLiveQuery(() => db.app_settings.toCollection().first());
 
-  const applyTheme = useCallback((t: "dark" | "light") => {
-    const root = window.document.documentElement;
-    if (t === "light") {
-      root.classList.add("light-theme");
-    } else {
-      root.classList.remove("light-theme");
-    }
-  }, []);
+  /**
+   * 2. RESOLVE VALUES
+   * We explicitly cast the theme to the union type to satisfy TypeScript.
+   * Default: Light & Emerald.
+   */
+  const theme = (settings?.theme as "dark" | "light") ?? "light";
+  const accentColor = settings?.accent_color ?? "emerald";
 
-  const applyColor = useCallback((color: string) => {
-    document.documentElement.style.setProperty("--brand-primary", color);
-  }, []);
-
-  // Load from Dexie on Mount
+  /**
+   * 3. DOM SYNC
+   * No 'system' logic here—purely handles the two states.
+   */
   useEffect(() => {
-    const loadSettings = async () => {
-      try {
-        const settings = await db.app_settings.get("global");
-        if (settings) {
-          applyTheme(settings.theme);
-          applyColor(settings.brandColor);
-          setThemeState(settings.theme);
-          setBrandColorState(settings.brandColor);
-        } else {
-          applyTheme("dark");
-          applyColor("#ff7f50");
-        }
-      } catch (err: unknown) {
-        console.error(
-          "Theme Load Error:",
-          err instanceof Error ? err.message : err,
-        );
-      }
-    };
-    loadSettings();
-  }, [applyTheme, applyColor]);
+    const doc = document.documentElement;
 
-  const setTheme = useCallback(
-    async (t: "dark" | "light") => {
-      try {
-        setThemeState(t);
-        applyTheme(t);
-        const existing = await db.app_settings.get("global");
-        await db.app_settings.put({
-          ...existing,
-          id: "global",
-          theme: t,
-          brandColor: brandColor,
-          unitSystem: existing?.unitSystem || "metric",
-        } as AppSettings);
-      } catch (err: unknown) {
-        console.error("SetTheme Error:", err);
-      }
-    },
-    [brandColor, applyTheme],
-  );
+    doc.setAttribute("data-theme", theme);
+    doc.setAttribute("data-accent", accentColor);
 
-  const setBrandColor = useCallback(
-    async (color: string) => {
-      try {
-        setBrandColorState(color);
-        applyColor(color);
-        const existing = await db.app_settings.get("global");
-        await db.app_settings.put({
-          ...existing,
-          id: "global",
-          theme,
-          brandColor: color,
-          unitSystem: existing?.unitSystem || "metric",
-        } as AppSettings);
-      } catch (err: unknown) {
-        console.error("SetColor Error:", err);
-      }
-    },
-    [theme, applyColor],
-  );
+    if (theme === "light") {
+      doc.classList.add("light-theme");
+    } else {
+      doc.classList.remove("light-theme");
+    }
+
+    // Clean up legacy inline styles
+    doc.style.removeProperty("--brand-primary");
+    doc.style.removeProperty("--brand-primary-rgb");
+  }, [theme, accentColor]);
+
+  /**
+   * 4. PERSISTENCE METHODS
+   */
+  const setTheme = async (t: "dark" | "light") => {
+    await db.app_settings.toCollection().modify({ theme: t });
+  };
+
+  const setBrandColor = async (accent: string) => {
+    await db.app_settings.toCollection().modify({ accent_color: accent });
+  };
 
   const value = useMemo(
     () => ({
       theme,
-      brandColor,
+      brandColor: accentColor,
       setTheme,
       setBrandColor,
     }),
-    [theme, brandColor, setTheme, setBrandColor],
+    [theme, accentColor],
   );
 
   return (

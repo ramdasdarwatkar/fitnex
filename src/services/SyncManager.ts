@@ -44,7 +44,6 @@ export const SyncManager = {
    * 2. ATOMIC LOCAL PURGE
    */
   async clearLocalDatabase(): Promise<void> {
-    // Purges all tables in the Dexie instance
     await Promise.all(db.tables.map((table) => table.clear()));
   },
 
@@ -64,7 +63,7 @@ export const SyncManager = {
       await this.pushTable("routines", "id");
       await this.pushTable("workouts", "id");
 
-      // Step 2: Push Relational Mappings (Children) in parallel
+      // Step 2: Push Relational Mappings (Children)
       await Promise.all([
         this.pushTable("exercise_muscles", "exercise_id, muscle_id"),
         this.pushTable("exercise_equipment", "exercise_id, equipment_id"),
@@ -79,7 +78,7 @@ export const SyncManager = {
 
   /**
    * 4. GENERIC PUSH ENGINE
-   * Directly uses tableName for Supabase calls since names match 1:1.
+   * Strips local-only columns before upserting to Supabase.
    */
   async pushTable(tableName: string, conflictKeys: string) {
     const table = db.table(tableName);
@@ -87,8 +86,19 @@ export const SyncManager = {
 
     if (dirty.length === 0) return;
 
-    // Prepare payload by removing the local-only 'is_synced' property
-    const payload = dirty.map(({ is_synced, ...originalData }) => originalData);
+    // DATA CLEANING LOGIC
+    const payload = dirty.map((item) => {
+      // 1. Remove 'is_synced' from every table
+      // 2. Remove 'completed' specifically from 'workout_logs'
+      const { is_synced, ...rest } = item;
+
+      if (tableName === "workout_logs") {
+        const { completed, ...supabaseData } = rest;
+        return supabaseData;
+      }
+
+      return rest;
+    });
 
     // UPSERT directly to the table name
     const { error } = await supabase
@@ -97,7 +107,7 @@ export const SyncManager = {
 
     if (error) throw error;
 
-    // Local Update Logic
+    // Local Update Logic: Mark as synced
     const primaryKeys = conflictKeys.split(",").map((k) => k.trim());
 
     if (primaryKeys.length === 1) {

@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { BodyMap } from "./BodyMap";
 import { LibraryService } from "../../../services/LibraryService";
+import { MuscleService } from "../../../services/MuscleService";
 
 interface BodyMapCardProps {
   muscleNames?: string;
@@ -10,7 +11,7 @@ interface BodyMapCardProps {
 export const BodyMapCard = ({ muscleNames = "" }: BodyMapCardProps) => {
   // 1. Fetch data stable array
   const orphanMusclesRaw = useLiveQuery(
-    () => LibraryService.getOrphanMuscles(),
+    () => MuscleService.getOrphanMuscles(),
     [],
     [],
   );

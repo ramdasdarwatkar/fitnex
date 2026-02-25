@@ -1,7 +1,7 @@
-import { useState, useMemo } from "react";
-import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "../../../db/database";
+import { useEffect, useState, useMemo } from "react";
 import { X, Search, Check, Dumbbell } from "lucide-react";
+import { LibraryService } from "../../../services/LibraryService";
+import { ExerciseService } from "../../../services/ExerciseService";
 
 // --- 1. STRICT INTERFACES ---
 
@@ -10,10 +10,17 @@ interface ExercisePickerProps {
   onAdd: (ids: string[]) => void;
 }
 
-interface ExerciseMeta {
-  topLevel: string;
-  equipmentNames: string[];
-  searchTerms: string[];
+interface ExerciseListItem {
+  id: string;
+  name: string;
+  category: string;
+  categoryName: string;
+  equipmentName: string;
+}
+
+interface ExerciseGroup {
+  name: string;
+  items: ExerciseListItem[];
 }
 
 // --- 2. MAIN COMPONENT ---
@@ -21,92 +28,44 @@ interface ExerciseMeta {
 export const ExercisePicker = ({ onClose, onAdd }: ExercisePickerProps) => {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
+  const [exercises, setExercises] = useState<ExerciseListItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // 1. Fetch tables from Dexie
-  const liveExercises = useLiveQuery(() => db.exercises.toArray());
-  const liveExMuscles = useLiveQuery(() => db.exercise_muscles.toArray());
-  const liveMuscles = useLiveQuery(() => db.muscles.toArray());
-  const liveExEquipment = useLiveQuery(() => db.exercise_equipment.toArray());
-  const liveEquipment = useLiveQuery(() => db.equipment.toArray());
-
-  // 2. STABILIZATION: Move the logical OR inside useMemo to keep references stable
-  const exercises = useMemo(() => liveExercises || [], [liveExercises]);
-  const exMuscles = useMemo(() => liveExMuscles || [], [liveExMuscles]);
-  const muscles = useMemo(() => liveMuscles || [], [liveMuscles]);
-  const exEquipment = useMemo(() => liveExEquipment || [], [liveExEquipment]);
-  const equipment = useMemo(() => liveEquipment || [], [liveEquipment]);
-
-  // 3. Pre-process Relational Metadata for Search
-  const exerciseMetadata = useMemo(() => {
-    const map: Record<string, ExerciseMeta> = {};
-
-    exercises.forEach((ex) => {
-      // Primary Muscle Resolution
-      const muscleLink = exMuscles.find(
-        (em) => em.exercise_id === ex.id && em.role === "primary",
-      );
-      let currentMuscle = muscles.find((m) => m.id === muscleLink?.muscle_id);
-      const muscleHierarchy: string[] = currentMuscle
-        ? [currentMuscle.name.toLowerCase()]
-        : [];
-
-      let safety = 0;
-      while (currentMuscle?.parent && safety < 5) {
-        const parent = muscles.find((m) => m.id === currentMuscle?.parent);
-        if (!parent) break;
-        currentMuscle = parent;
-        muscleHierarchy.push(currentMuscle.name.toLowerCase());
-        safety++;
-      }
-
-      // Equipment Resolution
-      const equipLinks = exEquipment.filter((ee) => ee.exercise_id === ex.id);
-      const equipNames = equipLinks
-        .map(
-          (link) =>
-            equipment.find((e) => e.id === link.equipment_id)?.name || "",
-        )
-        .filter(Boolean);
-
-      map[ex.id] = {
-        topLevel: currentMuscle?.name || "Other",
-        equipmentNames: equipNames,
-        searchTerms: [
-          ex.name.toLowerCase(),
-          ...muscleHierarchy,
-          ...equipNames.map((en) => en.toLowerCase()),
-        ],
-      };
+  // 1. Single efficient fetch replacing all relational Dexie queries
+  useEffect(() => {
+    ExerciseService.getExercisesForList().then((data) => {
+      setExercises(data as ExerciseListItem[]);
+      setLoading(false);
     });
-    return map;
-  }, [exercises, exMuscles, muscles, exEquipment, equipment]);
+  }, []);
 
-  // 4. Grouping & Filtering
+  // 2. Grouping & Filtering Logic
   const groupedExercises = useMemo(() => {
     const query = search.toLowerCase().trim();
 
     const filtered = exercises.filter((ex) => {
-      const meta = exerciseMetadata[ex.id];
-      return !query || meta?.searchTerms.some((term) => term.includes(query));
-    });
-
-    const groups: Record<string, typeof exercises> = {};
-    filtered.forEach((ex) => {
-      const groupName = exerciseMetadata[ex.id]?.topLevel || "Other";
-      if (!groups[groupName]) groups[groupName] = [];
-      groups[groupName].push(ex);
-    });
-
-    return Object.keys(groups)
-      .sort()
-      .reduce(
-        (acc, key) => {
-          acc[key] = groups[key];
-          return acc;
-        },
-        {} as Record<string, typeof exercises>,
+      return (
+        ex.name.toLowerCase().includes(query) ||
+        ex.categoryName.toLowerCase().includes(query)
       );
-  }, [exercises, search, exerciseMetadata]);
+    });
+
+    const groups: Record<string, ExerciseGroup> = {};
+
+    filtered.forEach((ex) => {
+      if (!groups[ex.category]) {
+        groups[ex.category] = {
+          name: ex.categoryName,
+          items: [],
+        };
+      }
+      groups[ex.category].items.push(ex);
+    });
+
+    return Object.values(groups).sort((a, b) => a.name.localeCompare(b.name));
+  }, [exercises, search]);
+
+  if (loading) return null;
 
   return (
     <div className="fixed inset-0 z-600 bg-bg-main flex flex-col animate-in slide-in-from-bottom duration-500 ease-out">
@@ -154,19 +113,18 @@ export const ExercisePicker = ({ onClose, onAdd }: ExercisePickerProps) => {
 
       {/* EXERCISE LIST */}
       <div className="flex-1 overflow-y-auto px-6 pb-40 pt-6 space-y-12">
-        {Object.entries(groupedExercises).map(([group, list]) => (
-          <div key={group} className="space-y-5">
+        {groupedExercises.map((group) => (
+          <div key={group.name} className="space-y-5">
             <div className="flex items-center gap-4 sticky top-0 bg-bg-main py-3 z-10">
               <h3 className="text-[11px] font-black text-brand-primary uppercase tracking-[0.4em] italic whitespace-nowrap">
-                {group}
+                {group.name}
               </h3>
               <div className="h-px w-full bg-border-color/30" />
             </div>
 
             <div className="grid grid-cols-1 gap-3.5">
-              {list.map((ex) => {
+              {group.items.map((ex) => {
                 const isSelected = selected.includes(ex.id);
-                const meta = exerciseMetadata[ex.id];
 
                 return (
                   <button
@@ -211,20 +169,15 @@ export const ExercisePicker = ({ onClose, onAdd }: ExercisePickerProps) => {
                         </span>
 
                         <div className="flex flex-wrap items-center gap-2.5">
-                          {meta?.equipmentNames.map((name) => (
-                            <div
-                              key={name}
-                              className="flex items-center gap-1.5 bg-bg-main px-3 py-1 rounded-lg border border-border-color shadow-sm"
-                            >
-                              <Dumbbell
-                                size={11}
-                                className="text-brand-primary opacity-70"
-                              />
-                              <span className="text-[9px] font-black uppercase text-text-muted italic">
-                                {name}
-                              </span>
-                            </div>
-                          ))}
+                          <div className="flex items-center gap-1.5 bg-bg-main px-3 py-1 rounded-lg border border-border-color shadow-sm">
+                            <Dumbbell
+                              size={11}
+                              className="text-brand-primary opacity-70"
+                            />
+                            <span className="text-[9px] font-black uppercase text-text-muted italic">
+                              {ex.equipmentName}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -234,6 +187,16 @@ export const ExercisePicker = ({ onClose, onAdd }: ExercisePickerProps) => {
             </div>
           </div>
         ))}
+
+        {/* EMPTY STATE */}
+        {groupedExercises.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-32 opacity-20 text-text-muted">
+            <Dumbbell size={64} strokeWidth={1} className="mb-6" />
+            <p className="text-[10px] font-black uppercase tracking-[0.5em] italic">
+              No Exercises Found
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -228,7 +228,7 @@ export const WorkoutHistory = () => {
         </header>
 
         <div className="px-6 grid grid-cols-7 gap-3 text-center">
-          {["S", "M", "T", "W", "T", "F", "S"].map((d) => (
+          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
             <span
               key={d}
               className="text-[9px] font-black uppercase text-text-muted opacity-40 italic"

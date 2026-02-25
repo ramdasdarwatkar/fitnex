@@ -17,6 +17,7 @@ import {
   AlertCircle,
   type LucideIcon,
 } from "lucide-react";
+import { ExerciseService } from "../../../services/ExerciseService";
 
 // --- 1. STRICT INTERFACES ---
 
@@ -65,7 +66,7 @@ const ConfirmModal = ({
         onClick={onCancel}
       />
       <div className="relative w-full max-w-sm bg-bg-surface border border-border-color rounded-[3rem] p-10 shadow-2xl animate-in zoom-in-95 duration-200">
-        <div className="w-16 h-16 rounded-3xl bg-brand-danger/10 flex items-center justify-center text-brand-danger mb-8 mx-auto">
+        <div className="w-16 h-16 rounded-3xl bg-brand-error/10 flex items-center justify-center text-brand-error mb-8 mx-auto">
           <AlertCircle size={32} />
         </div>
         <h3 className="text-xl font-black uppercase italic text-text-main mb-3 tracking-tighter text-center leading-none">
@@ -78,7 +79,7 @@ const ConfirmModal = ({
         <div className="flex flex-col gap-4">
           <button
             onClick={onConfirm}
-            className="w-full py-6 bg-brand-danger text-white rounded-2xl font-black uppercase italic tracking-widest active:scale-95 shadow-xl shadow-brand-danger/20 transition-all"
+            className="w-full py-6 bg-brand-error text-white rounded-2xl font-black uppercase italic tracking-widest active:scale-95 shadow-xl shadow-brand-error/20 transition-all"
           >
             Archive Entry
           </button>
@@ -102,7 +103,7 @@ export const ExerciseDetail = () => {
 
   useEffect(() => {
     if (id) {
-      LibraryService.getExerciseDetails(id).then((res) => {
+      ExerciseService.getExerciseById(id).then((res) => {
         if (res) setData(res as ExerciseDetailData);
       });
     }
@@ -203,7 +204,7 @@ export const ExerciseDetail = () => {
             <Target size={16} className="text-brand-primary" />
             Biomechanics
           </div>
-          [Image of the muscular system showing primary and secondary muscles]
+
           <div className="space-y-10">
             {["primary", "secondary", "stabilizer"].map((role) => {
               const list = data.muscles.filter((m) => m.role === role);
@@ -213,17 +214,18 @@ export const ExerciseDetail = () => {
                 role === "primary"
                   ? "text-brand-primary"
                   : role === "secondary"
-                    ? "text-blue-500"
+                    ? "text-brand-info"
                     : "text-brand-success";
 
               return (
                 <div key={role} className="space-y-4">
-                  <p
+                  {/* FIXED: Changed <p> to <div> to resolve hydration error */}
+                  <div
                     className={`text-[10px] font-black uppercase tracking-widest italic flex items-center gap-2 ${roleColor}`}
                   >
                     <div className={`w-1 h-1 rounded-full bg-current`} />
                     {role} Focus
-                  </p>
+                  </div>
                   <div className="flex flex-wrap gap-3">
                     {list.map((m) => (
                       <span
@@ -258,7 +260,7 @@ export const ExerciseDetail = () => {
             </button>
             <button
               onClick={() => setShowArchiveModal(true)}
-              className="py-6 bg-brand-danger/10 text-brand-danger rounded-[2.5rem] font-black uppercase italic text-[11px] border border-brand-danger/20 active:scale-[0.97] transition-all flex items-center justify-center gap-3"
+              className="py-6 bg-brand-error/10 text-brand-error rounded-[2.5rem] font-black uppercase italic text-[11px] border border-brand-error/20 active:scale-[0.97] transition-all flex items-center justify-center gap-3"
             >
               <Trash2 size={18} /> Archive
             </button>

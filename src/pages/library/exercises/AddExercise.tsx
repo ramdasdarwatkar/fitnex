@@ -14,6 +14,7 @@ import { useAuth } from "../../../hooks/useAuth";
 import { db } from "../../../db/database";
 import { LibraryService } from "../../../services/LibraryService";
 import { type Equipment, type Muscle } from "../../../types/database.types";
+import { ExerciseService } from "../../../services/ExerciseService";
 
 // --- 1. STRICT INTERFACES ---
 
@@ -60,7 +61,7 @@ export const AddExercise = () => {
 
     setIsSaving(true);
     try {
-      await LibraryService.saveExercise(form, user_id);
+      await ExerciseService.saveExercise(form, user_id);
       navigate("/library");
     } catch (error) {
       console.error("Failed to save exercise:", error);

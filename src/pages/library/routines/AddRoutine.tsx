@@ -26,6 +26,7 @@ import { ExercisePicker } from "../exercises/ExercisePicker";
 // 1. Strict Interfaces
 import type { Routine } from "../../../types/database.types";
 import { useAuth } from "../../../hooks/useAuth";
+import { ExerciseService } from "../../../services/ExerciseService";
 
 export interface SelectedExercise extends EnrichedExercise {
   target_sets: number;
@@ -64,7 +65,7 @@ export const AddRoutine = () => {
 
   useEffect(() => {
     let isMounted = true;
-    LibraryService.getExercisesWithMeta().then((data) => {
+    ExerciseService.getExercisesWithMeta().then((data) => {
       if (isMounted) setLibrary(data);
     });
     return () => {

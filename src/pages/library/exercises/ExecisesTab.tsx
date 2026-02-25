@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronRight, Dumbbell } from "lucide-react";
 import { LibraryService } from "../../../services/LibraryService";
+import { ExerciseService } from "../../../services/ExerciseService";
 
 // --- 1. STRICT INTERFACES ---
 
@@ -26,7 +27,7 @@ export const ExercisesTab = ({ search }: { search: string }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    LibraryService.getExercisesForList().then((data) => {
+    ExerciseService.getExercisesForList().then((data) => {
       setExercises(data as ExerciseListItem[]);
       setLoading(false);
     });

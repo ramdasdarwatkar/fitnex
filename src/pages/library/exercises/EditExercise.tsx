@@ -13,6 +13,7 @@ import {
   ChevronDown,
   Loader2,
 } from "lucide-react";
+import { ExerciseService } from "../../../services/ExerciseService";
 
 // --- 1. STRICT INTERFACES ---
 
@@ -75,7 +76,7 @@ export const EditExercise = () => {
         const [m, e, data] = await Promise.all([
           db.muscles.toArray(),
           db.equipment.toArray(),
-          LibraryService.getExerciseForEdit(id),
+          ExerciseService.getExerciseForEdit(id),
         ]);
 
         const initialData = data as RawExerciseData;
@@ -131,7 +132,7 @@ export const EditExercise = () => {
     if (!id) return;
     setSaving(true);
     try {
-      await LibraryService.updateExercise(id, form);
+      await ExerciseService.updateExercise(id, form);
       navigate(-1);
     } catch (e) {
       console.error("Update failed:", e);

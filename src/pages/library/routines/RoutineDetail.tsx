@@ -27,6 +27,7 @@ import { ExercisePicker } from "../exercises/ExercisePicker";
 
 // 1. Strict Interfaces
 import { useAuth } from "../../../hooks/useAuth";
+import { ExerciseService } from "../../../services/ExerciseService";
 
 export interface SelectedExercise extends Partial<EnrichedExercise> {
   id: string; // The specific junction ID or a generated local ID
@@ -91,7 +92,7 @@ export const RoutineDetail = () => {
       try {
         const [details, fullLibrary] = await Promise.all([
           RoutineService.getRoutineDetail(id),
-          LibraryService.getExercisesWithMeta(),
+          ExerciseService.getExercisesWithMeta(),
         ]);
 
         if (isMounted && details) {

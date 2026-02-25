@@ -9,7 +9,7 @@
       content="black-translucent"
     />
 
-    <meta name="theme-color" content="#000000" />
+    <meta name="theme-color" content="#f8fafc" />
 
     <meta
       name="viewport"
@@ -20,22 +20,6 @@
 
     <title>fitnex</title>
 
-    <script>
-      (function () {
-        try {
-          const theme = localStorage.getItem("fitnex-theme");
-          const color = localStorage.getItem("fitnex-color");
-          if (theme === "light")
-            document.documentElement.classList.add("light-theme");
-          if (color)
-            document.documentElement.style.setProperty(
-              "--brand-primary",
-              color,
-              "important",
-            );
-        } catch (e) {}
-      })();
-    </script>
   </head>
 
   <body>

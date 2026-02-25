@@ -17,6 +17,8 @@ export const StatTile = ({
   unit,
   isTime,
 }: StatTileProps) => {
+  const hasActivity = todayValue > 0;
+
   const formatValue = (val: number) => {
     if (isTime) {
       const h = Math.floor(val / 60);
@@ -26,56 +28,66 @@ export const StatTile = ({
     return val?.toLocaleString() ?? "0";
   };
 
-  const hasActivityToday = todayValue > 0;
-
   return (
-    <div className="bg-bg-surface border border-border-color p-5 rounded-[2.2rem] flex flex-col justify-between min-h-38.75 group transition-all duration-300 hover:border-brand-primary/30">
-      <div className="flex justify-between items-start w-full">
-        <div
-          className={`p-2 rounded-xl transition-all duration-500 shadow-lg ${
-            hasActivityToday
-              ? "bg-brand-primary text-black shadow-glow-primary"
-              : "bg-bg-surface-soft text-text-muted"
-          }`}
-        >
-          {icon}
-        </div>
+    <div className="glass-card group relative p-6 rounded-4xl overflow-hidden transition-all duration-500 hover:-translate-y-1 hover:border-brand-primary/40">
+      {/* Background Decorative Element */}
+      <div className="absolute -right-4 -top-4 w-20 h-20 bg-brand-primary/5 rounded-full blur-3xl group-hover:bg-brand-primary/10 transition-colors" />
 
-        <div className="text-right">
-          <p className="text-[7px] font-black text-text-muted uppercase tracking-widest mb-0.5">
-            Today
-          </p>
-          <p
-            className={`text-sm font-black tabular-nums transition-colors duration-500 ${
-              hasActivityToday ? "text-text-main" : "text-text-muted/30"
+      <div className="relative z-10 space-y-6">
+        {/* Header: Label & Icon */}
+        <div className="flex items-center justify-between">
+          <div
+            className={`p-2 rounded-xl border transition-all duration-500 ${
+              hasActivity
+                ? "bg-brand-primary/10 border-brand-primary/20 text-brand-primary pro-shadow"
+                : "bg-bg-surface-soft border-border-color text-text-muted"
             }`}
           >
-            {hasActivityToday
-              ? `+${formatValue(todayValue)}`
-              : formatValue(todayValue)}
-          </p>
+            {icon}
+          </div>
+          <span
+            className={`text-[10px] font-black uppercase tracking-widest ${hasActivity ? "text-brand-primary" : "text-text-muted"}`}
+          >
+            {hasActivity ? "Active" : "Stable"}
+          </span>
         </div>
-      </div>
 
-      <p className="text-[9px] font-black uppercase text-text-muted tracking-[0.15em] group-hover:text-text-main transition-colors">
-        {label}
-      </p>
-
-      <div className="w-full pt-3 border-t border-border-color/40">
-        <div className="flex justify-between items-end">
-          <div className="flex flex-col">
-            <p className="text-[7px] font-black text-text-muted/60 uppercase tracking-tighter mb-1">
-              Weekly Total
-            </p>
-            <span className="text-xl font-black text-brand-primary leading-none tabular-nums tracking-tighter">
+        {/* Middle: Main Stat */}
+        <div className="space-y-1">
+          <p className="text-[10px] font-bold text-text-muted uppercase tracking-[0.2em]">
+            {label}
+          </p>
+          <div className="flex items-baseline gap-1">
+            <h3 className="text-3xl font-black tracking-tighter text-text-main leading-none">
               {formatValue(weekValue)}
+            </h3>
+            {unit && !isTime && (
+              <span className="text-[10px] font-bold text-text-muted uppercase tracking-tighter">
+                {unit}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Footer: Today's Progress Bar */}
+        <div className="pt-4 border-t border-border-color/50">
+          <div className="flex justify-between items-center mb-1.5">
+            <span className="text-[8px] font-black text-text-muted uppercase">
+              Today
+            </span>
+            <span
+              className={`text-[10px] font-black tabular-nums ${hasActivity ? "text-brand-primary" : "text-text-muted/40"}`}
+            >
+              {hasActivity ? `+${formatValue(todayValue)}` : "0"}
             </span>
           </div>
-          {unit && (
-            <span className="text-[8px] font-black text-text-muted uppercase mb-0.5">
-              {unit}
-            </span>
-          )}
+          {/* Progress Visualizer */}
+          <div className="h-1 w-full bg-bg-surface-soft rounded-full overflow-hidden">
+            <div
+              className={`h-full transition-all duration-1000 ${hasActivity ? "bg-brand-primary shadow-glow-primary" : "bg-text-muted/20"}`}
+              style={{ width: hasActivity ? "65%" : "0%" }}
+            />
+          </div>
         </div>
       </div>
     </div>
