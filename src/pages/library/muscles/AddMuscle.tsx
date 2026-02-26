@@ -24,7 +24,7 @@ export const AddMuscle = () => {
     };
   }, []);
 
-  // 3. Save Logic with Sync Integration
+  // 3. Save Logic
   const onSave = async () => {
     if (!form.name.trim() || loading) return;
 
@@ -43,12 +43,12 @@ export const AddMuscle = () => {
 
   return (
     <SubPageLayout title="New Muscle">
-      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        {/* FORM CONTAINER - Updated to rounded-2xl */}
-        <div className="bg-bg-surface border border-border-color/60 p-6 rounded-2xl space-y-8 shadow-xl">
-          {/* MUSCLE NAME INPUT - Updated Typography and Rounding */}
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold uppercase tracking-widest text-text-muted ml-1">
+      <div className="flex-1 flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        {/* FORM CONTAINER */}
+        <div className="bg-bg-surface border border-border-color p-6 rounded-xl space-y-8 shadow-sm">
+          {/* MUSCLE NAME INPUT */}
+          <div className="space-y-1">
+            <label className="text-[10px] font-black uppercase italic tracking-widest text-text-muted ml-1">
               Muscle Name
             </label>
             <input
@@ -58,14 +58,14 @@ export const AddMuscle = () => {
               onChange={(e: ChangeEvent<HTMLInputElement>) =>
                 setForm({ ...form, name: e.target.value })
               }
-              placeholder="e.g. Upper Chest"
-              className="w-full bg-bg-main border border-border-color/60 rounded-xl py-4 px-5 text-xl font-bold text-text-main outline-none focus:border-brand-primary/50 focus:ring-4 focus:ring-brand-primary/5 transition-all placeholder:text-text-muted/20"
+              placeholder="E.G. UPPER CHEST..."
+              className="w-full bg-bg-main border border-border-color rounded-xl py-4 px-5 text-xl font-black italic text-text-main outline-none focus:border-brand-primary/50 transition-all placeholder:text-text-muted/20 uppercase tracking-tighter"
             />
           </div>
 
-          {/* PARENT SELECT - Updated Typography and Rounding */}
-          <div className="relative space-y-2">
-            <label className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-text-muted ml-1">
+          {/* PARENT SELECT */}
+          <div className="relative space-y-1">
+            <label className="flex items-center gap-2 text-[10px] font-black uppercase italic tracking-widest text-text-muted ml-1">
               <GitMerge size={12} className="text-brand-primary" />
               Parent Group
             </label>
@@ -75,12 +75,12 @@ export const AddMuscle = () => {
                 onChange={(e: ChangeEvent<HTMLSelectElement>) =>
                   setForm({ ...form, parent_id: e.target.value })
                 }
-                className="w-full bg-bg-main border border-border-color/60 rounded-xl py-4 px-5 text-xs font-bold uppercase tracking-wide text-text-main outline-none appearance-none focus:border-brand-primary/50 focus:ring-4 focus:ring-brand-primary/5 transition-all pr-12"
+                className="w-full bg-bg-main border border-border-color rounded-xl py-4 px-5 text-[11px] font-black uppercase italic tracking-wide text-text-main outline-none appearance-none focus:border-brand-primary/50 transition-all pr-12"
               >
                 <option value="">No Parent (Primary)</option>
                 {muscles.map((m) => (
                   <option key={m.id} value={m.id}>
-                    {m.name}
+                    {m.name.toUpperCase()}
                   </option>
                 ))}
               </select>
@@ -92,22 +92,22 @@ export const AddMuscle = () => {
           </div>
         </div>
 
-        {/* ACTION BUTTON - Updated to rounded-xl and bold typography */}
+        {/* ACTION BUTTON */}
         <button
           onClick={onSave}
           disabled={loading || !form.name.trim()}
-          className="w-full py-4 bg-brand-primary text-black font-bold uppercase tracking-widest rounded-xl flex items-center justify-center gap-3 active:scale-[0.98] transition-all disabled:opacity-30 shadow-lg shadow-brand-primary/20"
+          className="w-full h-14 bg-brand-primary text-bg-main font-black uppercase italic tracking-widest rounded-xl flex items-center justify-center gap-3 active:scale-[0.98] transition-all disabled:opacity-30 shadow-lg shadow-brand-primary/20"
         >
           {loading ? (
             <Loader2 className="animate-spin" size={22} />
           ) : (
-            <Plus size={20} strokeWidth={3} />
+            <Plus size={20} strokeWidth={4} />
           )}
           <span>{loading ? "Syncing..." : "Add to Library"}</span>
         </button>
 
-        <p className="text-center text-[9px] font-bold text-text-muted uppercase tracking-[0.2em] opacity-40">
-          Created muscles are available across all exercises.
+        <p className="text-center text-[9px] font-black uppercase italic text-text-muted tracking-widest opacity-40">
+          Created muscles are available across all exercises
         </p>
       </div>
     </SubPageLayout>

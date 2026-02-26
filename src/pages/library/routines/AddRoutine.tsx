@@ -148,20 +148,20 @@ export const AddRoutine = () => {
     <SubPageLayout title="New Routine">
       <div className="flex-1 flex flex-col gap-6 pb-32 animate-in fade-in slide-in-from-bottom-4 duration-500">
         {/* IDENTITY CARD */}
-        <div className="bg-bg-surface border border-border-color/60 p-6 rounded-2xl space-y-6 shadow-sm">
+        <div className="bg-bg-surface border border-border-color p-6 rounded-xl space-y-6 shadow-sm">
           <input
             autoFocus
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="ROUTINE NAME"
-            className="w-full bg-transparent text-2xl font-bold text-text-main outline-none uppercase tracking-tight placeholder:opacity-20"
+            className="w-full bg-transparent text-2xl font-black italic text-text-main outline-none uppercase tracking-tighter placeholder:text-text-muted/20"
           />
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="NOTES..."
-            className="w-full bg-bg-main/50 border border-border-color/40 rounded-xl p-4 text-xs font-semibold text-text-main outline-none resize-none h-20"
+            className="w-full bg-bg-main/50 border border-border-color rounded-xl p-4 text-[11px] font-bold text-text-main outline-none resize-none h-20 placeholder:text-text-muted/40 uppercase tracking-widest"
           />
           <div className="flex gap-2">
             <PrivacyToggle
@@ -186,7 +186,7 @@ export const AddRoutine = () => {
           className="w-full bg-bg-surface border border-dashed border-border-color rounded-xl py-5 flex items-center justify-center gap-3 text-text-muted active:scale-[0.98] transition-all"
         >
           <Plus size={18} className="text-brand-primary" />
-          <span className="text-xs font-bold uppercase tracking-widest">
+          <span className="text-[11px] font-black uppercase italic tracking-widest">
             Add Exercises
           </span>
         </button>
@@ -229,7 +229,7 @@ export const AddRoutine = () => {
         <button
           onClick={onSave}
           disabled={loading || !name || selectedExercises.length === 0}
-          className="w-full h-14 bg-brand-primary text-bg-main font-bold uppercase tracking-widest rounded-xl shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-3 mt-4 disabled:opacity-30"
+          className="w-full h-14 bg-brand-primary text-bg-main font-black uppercase italic tracking-widest rounded-xl shadow-md shadow-brand-primary/20 active:scale-[0.98] transition-all flex items-center justify-center gap-3 mt-4 disabled:opacity-30"
         >
           {loading ? (
             <Loader2 className="animate-spin" />
@@ -277,7 +277,6 @@ const SortableExerciseItem = ({
     position: "relative" as const,
   };
 
-  // Mandatory Sets + Optional Reps/Duration
   const metrics = [
     {
       key: "target_sets" as const,
@@ -303,10 +302,10 @@ const SortableExerciseItem = ({
     <div
       ref={setNodeRef}
       style={style}
-      className={`bg-bg-surface border rounded-2xl p-4 space-y-4 shadow-sm transition-all ${
+      className={`bg-bg-surface border rounded-xl p-4 space-y-4 shadow-sm transition-all ${
         isDragging
           ? "border-brand-primary ring-4 ring-brand-primary/10 shadow-2xl scale-[1.02]"
-          : "border-border-color/60"
+          : "border-border-color"
       }`}
     >
       <div className="flex items-center justify-between">
@@ -318,10 +317,10 @@ const SortableExerciseItem = ({
           >
             <GripVertical size={16} />
           </div>
-          <div className="w-6 h-6 rounded-lg bg-bg-main border border-border-color/40 flex items-center justify-center text-[10px] font-bold text-text-muted shrink-0">
+          <div className="w-6 h-6 rounded-lg bg-bg-main border border-border-color flex items-center justify-center text-[10px] font-black italic text-text-muted shrink-0">
             {index + 1}
           </div>
-          <span className="text-sm font-bold uppercase text-text-main truncate tracking-tight">
+          <span className="text-[13px] font-black uppercase italic text-text-main truncate tracking-tight">
             {ex.name}
           </span>
         </div>
@@ -333,7 +332,6 @@ const SortableExerciseItem = ({
         </button>
       </div>
 
-      {/* HORIZONTAL GRID: Labels above boxes */}
       <div
         className="grid gap-2"
         style={{
@@ -351,7 +349,7 @@ const SortableExerciseItem = ({
                 </span>
               </div>
 
-              <div className="flex items-center justify-between bg-bg-main/40 border border-border-color/40 rounded-xl p-1">
+              <div className="flex items-center justify-between bg-bg-main border border-border-color rounded-xl p-1">
                 <button
                   type="button"
                   onClick={() => onUpdate(m.key, Math.max(0, value - 1))}
@@ -360,7 +358,7 @@ const SortableExerciseItem = ({
                   <Minus size={12} />
                 </button>
 
-                <span className="text-xs font-black text-text-main tabular-nums">
+                <span className="text-xs font-black italic text-text-main tabular-nums">
                   {value}
                 </span>
 
@@ -392,12 +390,12 @@ const PrivacyToggle = ({
   <button
     type="button"
     onClick={onClick}
-    className={`flex-1 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest border transition-all flex items-center justify-center gap-2 ${
+    className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase italic tracking-widest border transition-all flex items-center justify-center gap-2 ${
       active
         ? primary
-          ? "bg-brand-primary text-bg-main border-brand-primary shadow-sm shadow-brand-primary/10"
+          ? "bg-brand-primary text-bg-main border-brand-primary shadow-md shadow-brand-primary/10"
           : "bg-text-main text-bg-main border-text-main shadow-sm"
-        : "border-border-color/60 text-text-muted opacity-60"
+        : "border-border-color text-text-muted opacity-40"
     }`}
   >
     {icon} {label}

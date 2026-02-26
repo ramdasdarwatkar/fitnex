@@ -39,17 +39,17 @@ export const OnboardingPage = () => {
     initial_points: 0,
   });
 
-  // BMI Logic
+  // BMI Logic - Using semantic status colors instead of hardcoded yellow/red
   const bmiData = useMemo(() => {
     const h = formData.height / 100;
     const bmi = parseFloat((formData.current_weight / (h * h)).toFixed(1));
     if (bmi < 18.5)
-      return { val: bmi, label: "Underweight", color: "text-yellow-500" };
+      return { val: bmi, label: "Underweight", color: "text-warning" };
     if (bmi < 25)
       return { val: bmi, label: "Healthy", color: "text-brand-primary" };
     if (bmi < 30)
-      return { val: bmi, label: "Overweight", color: "text-orange-500" };
-    return { val: bmi, label: "Obese", color: "text-red-500" };
+      return { val: bmi, label: "Overweight", color: "text-warning" };
+    return { val: bmi, label: "Obese", color: "text-error" };
   }, [formData.height, formData.current_weight]);
 
   const weightDiff = formData.current_weight - formData.target_weight;
@@ -67,7 +67,6 @@ export const OnboardingPage = () => {
       const now = new Date().toISOString();
       const today = now.split("T")[0];
 
-      // 1. Map to UserProfile
       const profileData: UserProfile = {
         user_id,
         name: formData.name,
@@ -80,7 +79,6 @@ export const OnboardingPage = () => {
         updated_at: now,
       };
 
-      // 2. Map to BodyMetrics
       const metricsData: BodyMetrics = {
         user_id,
         logdate: today,
@@ -90,7 +88,6 @@ export const OnboardingPage = () => {
         updated_at: now,
       };
 
-      // 3. Map to AthleteLevel
       const levelData: AthleteLevel = {
         user_id,
         level_points: formData.initial_points,
@@ -99,11 +96,7 @@ export const OnboardingPage = () => {
       };
 
       const result = await saveOnboarding(profileData, metricsData, levelData);
-
-      if (!result.success) {
-        alert(result.error);
-      }
-      // Success is handled by the Auth/Cache guard automatically redirecting
+      if (!result.success) alert(result.error);
     } catch (err) {
       console.error("Onboarding UI Error:", err);
     } finally {
@@ -113,10 +106,10 @@ export const OnboardingPage = () => {
 
   return (
     <div className="flex flex-col h-screen bg-bg-main text-text-main pt-safe overflow-hidden">
-      {/* 1. PROGRESS BAR */}
-      <div className="flex-none h-1 w-full bg-bg-surface-soft">
+      {/* 1. PROGRESS BAR - Simplified shadow to match brand system */}
+      <div className="flex-none h-1.5 w-full bg-bg-surface border-b border-border-color">
         <div
-          className="h-full bg-brand-primary transition-all duration-700 shadow-[0_0_15px_rgba(var(--brand-primary-rgb),0.5)]"
+          className="h-full bg-brand-primary transition-all duration-700 shadow-[0_0_10px_var(--brand-primary-alpha)]"
           style={{ width: `${(step / 6) * 100}%` }}
         />
       </div>
@@ -131,7 +124,7 @@ export const OnboardingPage = () => {
                   First, <br /> the{" "}
                   <span className="text-brand-primary">Basics</span>
                 </h1>
-                <p className="text-text-muted font-medium italic">
+                <p className="text-text-muted font-bold italic uppercase text-[11px] tracking-widest">
                   What should we call you?
                 </p>
               </header>
@@ -178,7 +171,7 @@ export const OnboardingPage = () => {
                   {formData.name.split(" ")[0] || "Athlete"}!
                 </span>
               </h1>
-              <p className="text-text-muted font-medium mb-10 italic">
+              <p className="text-text-muted font-bold uppercase text-[11px] tracking-widest mt-2 mb-10 italic">
                 How tall are you?
               </p>
               <RulerPicker
@@ -196,7 +189,7 @@ export const OnboardingPage = () => {
               <h1 className="text-3xl font-black uppercase italic tracking-tight">
                 Current Weight
               </h1>
-              <p className="text-text-muted font-medium mb-10 italic">
+              <p className="text-text-muted font-bold uppercase text-[11px] tracking-widest mt-2 mb-10 italic">
                 Your starting point today
               </p>
               <RulerPicker
@@ -208,16 +201,19 @@ export const OnboardingPage = () => {
                   setFormData({ ...formData, current_weight: v })
                 }
               />
-              <div className="mt-8 bg-bg-surface border border-border-color p-6 rounded-4xl flex justify-between items-center backdrop-blur-md">
+              {/* BMI Card - Normalized to rounded-xl */}
+              <div className="mt-8 bg-bg-surface border border-border-color p-6 rounded-xl flex justify-between items-center shadow-md shadow-brand-primary/5">
                 <div className="text-left">
                   <p className="text-[10px] text-text-muted font-black uppercase tracking-widest">
                     BMI Index
                   </p>
-                  <p className={`text-lg font-black italic ${bmiData.color}`}>
+                  <p
+                    className={`text-lg font-black italic uppercase ${bmiData.color}`}
+                  >
                     {bmiData.label}
                   </p>
                 </div>
-                <div className="text-5xl font-black italic tabular-nums">
+                <div className="text-5xl font-black italic tabular-nums text-text-main">
                   {bmiData.val}
                 </div>
               </div>
@@ -230,7 +226,7 @@ export const OnboardingPage = () => {
               <h1 className="text-3xl font-black uppercase italic">
                 Target Weight
               </h1>
-              <p className="text-text-muted font-medium mb-10 italic">
+              <p className="text-text-muted font-bold uppercase text-[11px] tracking-widest mt-2 mb-10 italic">
                 What is your dream goal?
               </p>
               <RulerPicker
@@ -240,7 +236,7 @@ export const OnboardingPage = () => {
                 value={formData.target_weight}
                 onChange={(v) => setFormData({ ...formData, target_weight: v })}
               />
-              <div className="mt-8 py-3 px-8 bg-brand-primary/10 border border-brand-primary/20 rounded-full inline-block mx-auto animate-in zoom-in duration-500">
+              <div className="mt-8 py-3 px-8 bg-brand-primary/10 border border-brand-primary/20 rounded-xl inline-block mx-auto animate-in zoom-in duration-500">
                 <span className="text-brand-primary font-black uppercase tracking-tighter text-xs italic">
                   {encouragementText}
                 </span>
@@ -253,19 +249,20 @@ export const OnboardingPage = () => {
               <h1 className="text-4xl font-black uppercase mb-4 leading-tight italic">
                 Commitment
               </h1>
-              <p className="text-text-muted font-medium mb-12 italic">
+              <p className="text-text-muted font-bold uppercase text-[11px] tracking-widest mb-12 italic">
                 How many days a week will you train?
               </p>
-              <div className="flex justify-between items-center bg-bg-surface p-6 rounded-[2.5rem] border border-border-color">
+              {/* Selector Container - Normalized to rounded-xl */}
+              <div className="flex justify-between items-center bg-bg-surface p-6 rounded-xl border border-border-color shadow-md shadow-brand-primary/5">
                 {[1, 2, 3, 4, 5, 6, 7].map((d) => (
                   <button
                     key={d}
                     onClick={() =>
                       setFormData({ ...formData, target_workout_days: d })
                     }
-                    className={`w-10 h-10 rounded-full font-black transition-all ${
+                    className={`w-10 h-10 rounded-lg font-black italic transition-all ${
                       formData.target_workout_days === d
-                        ? "bg-brand-primary text-white scale-125 shadow-lg shadow-brand-primary/40"
+                        ? "bg-brand-primary text-bg-main scale-110 shadow-md shadow-brand-primary/20"
                         : "text-text-muted"
                     }`}
                   >
@@ -283,7 +280,7 @@ export const OnboardingPage = () => {
                 <h1 className="text-3xl font-black uppercase italic">
                   Experience
                 </h1>
-                <p className="text-text-muted font-medium italic">
+                <p className="text-text-muted font-bold uppercase text-[11px] tracking-widest italic">
                   Where should we start you off?
                 </p>
               </header>
@@ -303,12 +300,12 @@ export const OnboardingPage = () => {
         </div>
       </div>
 
-      {/* 3. FOOTER */}
+      {/* 3. FOOTER - Normalized to rounded-xl and semantic colors */}
       <footer className="flex-none px-8 pt-2 pb-10 flex gap-3 bg-transparent mt-auto">
         {step > 1 && (
           <button
             onClick={() => setStep((s) => s - 1)}
-            className="h-14 w-14 bg-bg-surface rounded-2xl border border-border-color flex items-center justify-center text-text-muted active:scale-90 transition-all"
+            className="h-14 w-14 bg-bg-surface rounded-xl border border-border-color flex items-center justify-center text-text-muted active:scale-90 transition-all"
           >
             <ChevronLeft size={24} />
           </button>
@@ -316,7 +313,7 @@ export const OnboardingPage = () => {
         <button
           onClick={step === 6 ? handleFinish : () => setStep((s) => s + 1)}
           disabled={loading || (step === 1 && !formData.name)}
-          className="h-14 flex-1 bg-brand-primary text-white rounded-2xl font-black uppercase tracking-widest italic shadow-lg shadow-brand-primary/20 active:scale-[0.98] transition-all disabled:opacity-30"
+          className="h-14 flex-1 bg-brand-primary text-bg-main rounded-xl font-black uppercase tracking-widest italic shadow-md shadow-brand-primary/20 active:scale-[0.98] transition-all disabled:opacity-30"
         >
           {loading ? (
             <Loader2 className="animate-spin mx-auto" />

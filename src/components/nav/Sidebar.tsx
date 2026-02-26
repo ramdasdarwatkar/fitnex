@@ -84,7 +84,7 @@ export const Sidebar = ({ isOpen, onClose, isStatic = false }: Props) => {
   ];
 
   const sidebarBase =
-    "h-full bg-bg-surface flex flex-col border-r border-border-color shadow-2xl overflow-hidden";
+    "h-full bg-bg-surface flex flex-col border-r border-border-color/40 overflow-hidden";
   const responsiveClasses = isStatic
     ? `w-72 sticky top-0 ${sidebarBase}`
     : `fixed inset-y-0 left-0 w-80 z-[100] transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${
@@ -99,110 +99,103 @@ export const Sidebar = ({ isOpen, onClose, isStatic = false }: Props) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-bg-main/60 backdrop-blur-sm z-90"
+            className="fixed inset-0 bg-bg-main/80 backdrop-blur-sm z-90"
             onClick={onClose}
           />
         )}
       </AnimatePresence>
 
       <aside className={responsiveClasses}>
-        {/* HEADER: Pinned to top */}
-        <div className="pt-10 px-8 pb-6 flex items-center justify-between shrink-0">
-          <h2 className="text-2xl font-black tracking-tighter text-text-main">
-            FIT<span className="text-brand-primary">NEX</span>
+        {/* LOGO SECTION */}
+        <div className="pt-10 px-8 pb-8 flex items-center justify-between shrink-0">
+          <h2 className="text-xl font-bold tracking-widest text-text-main uppercase">
+            Fit<span className="text-brand-primary">nex</span>
           </h2>
           {!isStatic && (
             <button
               onClick={onClose}
-              className="p-2 rounded-xl bg-bg-surface-soft text-text-muted active:scale-90 transition-all"
+              className="p-2 rounded-xl bg-bg-main text-text-muted active:scale-90 transition-all border border-border-color/40"
             >
-              <X size={20} />
+              <X size={18} />
             </button>
           )}
         </div>
 
-        {/* COMPACT PROFILE CARD: Pinned below header */}
-        <div className="px-6 mb-6 shrink-0">
-          <div className="relative p-4 bg-bg-surface-soft/40 border border-border-color rounded-4xl overflow-hidden">
-            <div className="flex items-center gap-4 relative z-10">
-              <div className="w-12 h-12 rounded-2xl bg-brand-primary flex items-center justify-center text-white shadow-lg">
-                <span className="font-black text-lg">
-                  {athlete?.name?.[0]?.toUpperCase() || "A"}
-                </span>
+        {/* PROFILE SECTION: Uses bg-bg-main/40 for a recessed card feel */}
+        <div className="px-6 mb-8 shrink-0">
+          <div className="p-4 bg-bg-main/40 border border-border-color/60 rounded-xl">
+            <div className="flex items-center gap-4">
+              {/* Avatar uses bg-main text for contrast on Emerald */}
+              <div className="w-12 h-12 rounded-xl bg-brand-primary flex items-center justify-center text-bg-main font-bold text-lg shadow-sm">
+                {athlete?.name?.[0]?.toUpperCase() || "A"}
               </div>
               <div className="min-w-0">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <span className="px-1.5 py-0.5 rounded-md bg-brand-primary/10 text-brand-primary text-[9px] font-black uppercase tracking-wider">
-                    LVL {athlete?.current_level || 1}
-                  </span>
-                </div>
-                <h3 className="font-black text-text-main text-[16px] leading-tight uppercase truncate">
+                <span className="px-2 py-0.5 rounded-md bg-brand-primary/10 text-brand-primary text-[10px] font-bold uppercase tracking-wider mb-1 block w-fit">
+                  Level {athlete?.current_level || 1}
+                </span>
+                <h3 className="font-bold text-text-main text-sm uppercase truncate">
                   {nameParts[0]} {nameParts[1] || ""}
                 </h3>
               </div>
             </div>
 
-            {/* Compact Progress Line */}
-            <div className="mt-4 relative z-10">
-              <div className="h-1 w-full bg-bg-main/50 rounded-full overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{
-                    width: `${athlete?.level_completion_percent || 0}%`,
-                  }}
-                  className="h-full bg-brand-primary rounded-full"
-                />
-              </div>
+            {/* Level Progress */}
+            <div className="mt-4 h-1.5 w-full bg-border-color/40 rounded-full overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{
+                  width: `${athlete?.level_completion_percent || 0}%`,
+                }}
+                className="h-full bg-brand-primary rounded-full"
+              />
             </div>
           </div>
         </div>
 
-        {/* NAVIGATION AREA: Scrollable if menu items + workout menu exceed height */}
-        <nav className="flex-1 px-4 overflow-y-auto no-scrollbar flex flex-col">
-          <div className="space-y-1">
-            {navItems.map((item) => {
-              const isActive = location.pathname === item.path;
-              return (
-                <button
-                  key={item.path}
-                  onClick={() => {
-                    navigate(item.path);
-                    if (!isStatic) onClose();
-                  }}
-                  className={`w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl transition-all relative group ${
-                    isActive
-                      ? "bg-bg-surface-soft/80"
-                      : "hover:bg-bg-surface-soft/40"
+        {/* NAV SECTION */}
+        <nav className="flex-1 px-4 overflow-y-auto samsung-scroll flex flex-col gap-1">
+          {navItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <button
+                key={item.path}
+                onClick={() => {
+                  navigate(item.path);
+                  if (!isStatic) onClose();
+                }}
+                className={`w-full flex items-center gap-4 px-5 py-3 rounded-xl transition-all ${
+                  isActive
+                    ? "bg-bg-main border border-border-color/40"
+                    : "hover:bg-bg-main/40"
+                }`}
+              >
+                <item.icon
+                  size={20}
+                  className={
+                    isActive ? "text-brand-primary" : "text-text-muted"
+                  }
+                  strokeWidth={isActive ? 2.5 : 2}
+                />
+                <span
+                  className={`text-sm font-bold uppercase tracking-wide ${
+                    isActive ? "text-text-main" : "text-text-muted"
                   }`}
                 >
-                  <item.icon
-                    size={20}
-                    className={
-                      isActive ? "text-brand-primary" : "text-text-dim"
-                    }
-                    strokeWidth={isActive ? 2.5 : 2}
-                  />
-                  <span
-                    className={`text-sm font-bold tracking-tight ${
-                      isActive ? "text-text-main" : "text-text-muted"
-                    }`}
-                  >
-                    {item.label}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+                  {item.label}
+                </span>
+              </button>
+            );
+          })}
 
-          {/* QUICK ACTIONS: Integrated Workout Launcher */}
-          <div className="mt-4 px-2 pb-6">
+          {/* LAUNCHER BUTTON */}
+          <div className="mt-6 px-1">
             <button
               onClick={handleCenterClick}
-              className={`w-full flex items-center justify-between p-4 rounded-3xl transition-all duration-300 border border-white/5 shadow-xl
+              className={`w-full flex items-center justify-between p-4 rounded-xl transition-all duration-300 border border-border-color/40 shadow-sm
                 ${
                   menuExpanded || confirmRecovery
                     ? "bg-text-main text-bg-main"
-                    : "bg-brand-primary text-white"
+                    : "bg-brand-primary text-bg-main"
                 }
               `}
             >
@@ -214,21 +207,19 @@ export const Sidebar = ({ isOpen, onClose, isStatic = false }: Props) => {
                 ) : (
                   <Dumbbell size={18} />
                 )}
-                <span className="text-[11px] font-black uppercase tracking-widest">
+                <span className="text-[10px] font-bold uppercase tracking-widest">
                   {isOngoing
-                    ? "Resume"
+                    ? "Resume Session"
                     : confirmRecovery
-                      ? "Train?"
+                      ? "Train Now?"
                       : isRestDay
-                        ? "Resting"
-                        : "Start"}
+                        ? "Rest Day"
+                        : "Start Workout"}
                 </span>
               </div>
               <ChevronDown
                 size={14}
-                className={`transition-transform duration-500 ${
-                  menuExpanded ? "rotate-180" : ""
-                }`}
+                className={`transition-transform duration-300 ${menuExpanded ? "rotate-180" : ""}`}
               />
             </button>
 
@@ -238,8 +229,7 @@ export const Sidebar = ({ isOpen, onClose, isStatic = false }: Props) => {
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: "auto", opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.3, ease: "easeInOut" }}
-                  className="overflow-hidden bg-bg-surface-soft/20 rounded-b-2xl border-x border-b border-border-color"
+                  className="overflow-hidden bg-bg-main/20 rounded-b-xl border-x border-b border-border-color/40"
                 >
                   <SidebarQuickOption
                     icon={Zap}
@@ -264,17 +254,17 @@ export const Sidebar = ({ isOpen, onClose, isStatic = false }: Props) => {
           </div>
         </nav>
 
-        {/* FOOTER: Fixed to bottom */}
-        <div className="p-6 shrink-0 border-t border-border-color/50">
+        {/* TERMINATE ACTION */}
+        <div className="p-6 shrink-0 border-t border-border-color/40">
           <button
             onClick={signOut}
-            className="flex items-center justify-center gap-3 w-full py-4 rounded-2xl bg-rose-500/10 text-rose-500 border border-rose-500/20 hover:bg-rose-500 hover:text-white transition-all group active:scale-95"
+            className="flex items-center justify-center gap-3 w-full py-4 rounded-xl bg-brand-error/10 text-brand-error border border-brand-error/20 hover:bg-brand-error hover:text-bg-main transition-all active:scale-95 group"
           >
             <LogOut
               size={16}
               className="group-hover:-translate-x-1 transition-transform"
             />
-            <span className="text-[10px] font-black uppercase tracking-[0.2em]">
+            <span className="text-[10px] font-bold uppercase tracking-widest">
               Terminate
             </span>
           </button>
@@ -295,13 +285,13 @@ const SidebarQuickOption = ({
 }) => (
   <button
     onClick={onClick}
-    className="w-full flex items-center gap-4 p-4 px-6 text-text-muted hover:text-text-main hover:bg-bg-surface-soft transition-all group"
+    className="w-full flex items-center gap-4 p-4 px-6 text-text-muted hover:text-text-main hover:bg-bg-main transition-all group"
   >
     <Icon
       size={14}
-      className="text-brand-primary/70 group-hover:text-brand-primary transition-colors"
+      className="text-brand-primary/60 group-hover:text-brand-primary transition-colors"
     />
-    <span className="text-[10px] font-bold uppercase tracking-wider">
+    <span className="text-[10px] font-bold uppercase tracking-widest">
       {label}
     </span>
   </button>

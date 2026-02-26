@@ -101,7 +101,7 @@ export const ProgressPage = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-bg-main pb-32 animate-in fade-in duration-500">
-      <header className="p-6 pt-12">
+      <header className="pt-12">
         <h1 className="text-2xl font-black uppercase italic text-text-main mb-6 tracking-tighter">
           Body <span className="text-brand-primary">Progress</span>
         </h1>
@@ -151,7 +151,7 @@ export const ProgressPage = () => {
           <Loader2 className="animate-spin text-brand-primary" size={32} />
         </div>
       ) : (
-        <div className="p-6 space-y-8">
+        <div className="p-6 px-0 space-y-8">
           {/* CHART AREA */}
           <div className="bg-bg-surface border border-border-color rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden">
             <div className="flex justify-between items-start mb-10 border-b border-border-color/50 pb-6">

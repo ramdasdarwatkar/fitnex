@@ -1,233 +1,182 @@
-@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 
 @theme {
   --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
   
-  /* CORE TOKENS */
+  /* CORE THEME TOKENS */
   --color-brand-primary: var(--brand-primary);
+  --color-brand-success: var(--brand-success);
+  --color-brand-error: var(--brand-error);
   --color-bg-main: var(--bg-main);
   --color-bg-surface: var(--bg-surface);
-  --color-bg-surface-soft: var(--bg-surface-soft);
   --color-text-main: var(--text-main);
   --color-text-muted: var(--text-muted);
   --color-border-color: var(--border-color);
 
-  /* FUNCTIONAL BRAND TOKENS */
-  --color-brand-info: #3b82f6;    
-  --color-brand-success: #10b981; 
-  --color-brand-error: #f43f5e;   
-  --color-brand-warning: #f59e0b; 
-
-  /* REFINED GLOW SHADOWS */
-  --shadow-glow-error: 0 0 20px color-mix(in srgb, #f43f5e, transparent 80%);
-  --shadow-glow-primary: 0 0 20px color-mix(in srgb, var(--brand-primary), transparent 70%);
+  /* UNIFIED RADIUS */
+  --radius-xl: 0.75rem;
 }
 
 /* ============================================= */
-/* THEME & BRAND COLOR VARIABLES (DYNAMIC)       */
+/* DESIGN TOKENS (DYNAMIC)                       */
 /* ============================================= */
 
 :root {
-  /** * PRODUCTION DEFAULTS (No Flash Guard)
-   * These match your cold-start fallback: Light Theme + Emerald Accent 
-   */
+  /* EMERALD LIGHT THEME (Production Standard) */
   --brand-primary: #10b981; 
-  --brand-primary-rgb: 16, 185, 129;
+  --brand-success: #10b981;
+  --brand-error: #ef4444;
   
-  --bg-main: #f8fafc;
+  --bg-main: #f8fafc;    /* Slate 50 */
   --bg-surface: #ffffff;
-  --bg-surface-soft: #f1f5f9;
-  --text-main: #0f172a;
-  --text-muted: #64748b;
-  --text-dim: #94a3b8;
-  --border-color: #e2e8f0; 
-  --divider-color: #f1f5f9;
+  --text-main: #0f172a;  /* Slate 900 */
+  --text-muted: #64748b; /* Slate 500 */
+  --border-color: #e2e8f0; /* Slate 200 */
   
+  /* SAFE AREAS */
   --safe-top: env(safe-area-inset-top);
   --safe-bottom: env(safe-area-inset-bottom);
 }
 
-/* DATA ACCENT OVERRIDES - Set by ThemeProvider from Dexie */
-[data-accent='emerald'] { --brand-primary: #10b981; --brand-primary-rgb: 16, 185, 129; }
-[data-accent='blue']    { --brand-primary: #3b82f6; --brand-primary-rgb: 59, 130, 246; }
-[data-accent='rose']    { --brand-primary: #f43f5e; --brand-primary-rgb: 244, 63, 94; }
-[data-accent='amber']   { --brand-primary: #f59e0b; --brand-primary-rgb: 245, 158, 11; }
-[data-accent='violet']  { --brand-primary: #8b5cf6; --brand-primary-rgb: 139, 92, 246; }
-[data-accent='orange']  { --brand-primary: #f97316; --brand-primary-rgb: 249, 115, 22; }
-[data-accent='zinc']    { --brand-primary: #71717a; --brand-primary-rgb: 113, 113, 122; }
-
-/* DATA THEME DARK OVERRIDES - Set by ThemeProvider from Dexie */
 [data-theme='dark'] {
+  /* EMERALD DARK THEME */
   --bg-main: #000000;
-  --bg-surface: #0f172a;
-  --bg-surface-soft: #1e293b;
-  --text-main: #ffffff;
-  --text-muted: #94a3b8;
-  --text-dim: #64748b;
-  --border-color: #1e293b;
-  --divider-color: #0f172a;
+  --bg-surface: #0f172a; /* Slate 900 */
+  --text-main: #f8fafc;  /* Slate 50 */
+  --text-muted: #94a3b8; /* Slate 400 */
+  --border-color: #1e293b; /* Slate 800 */
 }
 
 /* ============================================= */
-/* RESET & CORE BODY                             */
+/* RESET & CORE LAYOUT                            */
 /* ============================================= */
-*, *::before, *::after { box-sizing: border-box; }
+
+*, *::before, *::after { 
+  box-sizing: border-box; 
+  -webkit-tap-highlight-color: transparent;
+}
 
 html, body {
   margin: 0;
   padding: 0;
-  height: var(--app-height, 100%); 
-  background: var(--bg-main);
+  height: var(--app-height, 100vh); 
+  background-color: var(--bg-main);
   color: var(--text-main);
   font-family: "Poppins", sans-serif;
-  overscroll-behavior: none;
-  touch-action: pan-y;
-  -webkit-tap-highlight-color: transparent;
-  /* Transition handles the fade from default (Light) to user preference (Dark) */
-  transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1), color 0.4s ease;
+  overscroll-behavior-y: none; /* Prevents "bounce" on iOS */
+  transition: background-color 0.3s ease;
 }
 
-/* ============================================= */
-/* SCROLLBAR & LAYOUT UTILITIES                  */
-/* ============================================= */
-
-* { scrollbar-width: none; -ms-overflow-style: none; }
-*::-webkit-scrollbar { display: none; }
-
+/* 1. Outermost Wrapper */
 .app-root {
   min-height: 100%;
   display: flex;
   flex-direction: column;
-  background: var(--bg-main);
+  background-color: var(--bg-main);
 }
 
+/* 2. Inner Page Container (Inside Layouts) */
 .page-container {
   flex: 1;
-  min-height: 100%;
-  animation: page-enter 250ms ease-out;
-  padding-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  animation: page-fade 300ms ease-out forwards;
 }
 
-@keyframes page-enter {
+@keyframes page-fade {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-.text-brand { color: var(--brand-primary); }
-.bg-brand { background-color: var(--brand-primary); }
-.border-brand { border-color: var(--brand-primary); }
+/* ============================================= */
+/* SCROLLING & UTILITIES                         */
+/* ============================================= */
 
-/* SAFE AREA UTILITIES */
-@media (pointer: coarse) {
-  .safe-ios-top { padding-top: var(--safe-top); }
-  .pt-safe-half { padding-top: calc(var(--safe-top) / 2); }
-}
-
-@supports (-webkit-touch-callout: none) {
-  .ios-no-top { padding-top: 0 !important; }
-}
+/* Hide scrollbars globally */
+* { scrollbar-width: none; -ms-overflow-style: none; }
+*::-webkit-scrollbar { display: none; }
 
 .samsung-scroll {
   -webkit-overflow-scrolling: touch;
-  scrollbar-width: none !important;
+}
+
+/* Standard selection color */
+::selection {
+  background-color: color-mix(in srgb, var(--brand-primary), transparent 85%);
+  color: var(--brand-primary);
 }
 
 /* ============================================= */
-/* INPUTS & ANIMATIONS                           */
+/* PRODUCTION COMPONENT SHADOWS                  */
 /* ============================================= */
 
-input[type="date"] {
+@layer utilities {
+  .shadow-soft {
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+  }
+}
+
+/* ============================================= */
+/* INPUT & BUTTON STANDARDS                      */
+/* ============================================= */
+
+input[type="date"],
+input[type="time"] {
   display: block;
   appearance: none;
   -webkit-appearance: none;
-  width: 100%;
   background: transparent;
   color: inherit;
 }
 
-.animate-login { animation: loginFade 350ms ease-out; }
-@keyframes loginFade {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* ============================================= */
-/* CARDS & COMPONENTS                            */
-/* ============================================= */
-
-.dashboard-card {
-  @apply transition-all duration-300 ease-out border-transparent;
-}
-
-.dashboard-card:hover {
-  @apply -translate-y-1 border-[var(--brand-primary)]/30 shadow-[0_20px_40px_rgba(0,0,0,0.4)];
+/* Remove blue fill from iOS autofill */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0px 1000px var(--bg-surface) inset;
+  transition: background-color 5000s ease-in-out 0s;
 }
 
 @layer utilities {
-  .glow-heavy {
-    box-shadow: 0 0 45px 2px rgba(0, 0, 0, 0.85);
-    transition: box-shadow 0.3s ease;
-  }
-}
-
-[data-theme='light'] .glow-heavy {
-  box-shadow: 0 0 35px 0px rgba(15, 23, 42, 0.22); 
-}
-
-@layer components {
-  .lab-card {
-    @apply bg-bg-surface border border-border-color rounded-[2.5rem] shadow-2xl overflow-hidden backdrop-blur-md;
-  }
-
-  .no-focus-ring svg, 
-  .no-focus-ring .recharts-surface, 
-  .no-focus-ring .recharts-wrapper {
-    @apply !outline-none !border-none !ring-0;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .btn-scale {
-    @apply active:scale-95 transition-all duration-200 cursor-pointer;
-  }
-
-  .chart-glow-primary {
-    filter: drop-shadow(0px 0px 6px var(--brand-primary));
-  }
-}
-
-/* PROGRESS BAR ANIMATIONS */
-@keyframes progress-loading {
-  0% { transform: translateX(-100%); }
-  50% { transform: translateX(0%); }
-  100% { transform: translateX(100%); }
-}
-
-.animate-progress-loading {
-  animation: progress-loading 1.5s infinite ease-in-out;
-}
-
-/* HIDE BROWSER INPUT DEFAULTS */
-input::-ms-reveal,
-input::-ms-clear { display: none; }
-
-input::-webkit-contacts-auto-fill-button,
-input::-webkit-credentials-auto-fill-button {
-  visibility: hidden;
-  pointer-events: none;
-  position: absolute; 
-  right: 0;
-}
-
-/* UTILITIES */
-@layer utilities {
-  .glass-card {
-    background: linear-gradient(145deg, var(--bg-surface), var(--bg-main));
-    border: 1px solid var(--border-color);
-    box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+  /* Shiny Aura for Light Mode (Clean, soft grey glow) */
+  .nav-shadow-light {
+    box-shadow: 
+      0 0 15px 0px rgba(0, 0, 0, 0.05), /* Inner soft spread */
+      0 0 30px 2px rgba(15, 23, 42, 0.08); /* Outer grey-slate halo */
   }
   
-  .pro-shadow {
-    box-shadow: 0 0 20px 0 var(--brand-primary-glow);
+  /* Neon Emerald Glow for Dark Mode (The "Shiny" effect) */
+  .nav-shadow-dark {
+    box-shadow: 
+      0 0 12px 0px color-mix(in srgb, var(--brand-primary), transparent 60%), /* Core glow */
+      0 0 35px 4px color-mix(in srgb, var(--brand-primary), transparent 85%); /* Large atmosphere */
+  }
+}
+
+/* Add these specific utilities to index.css */
+@layer utilities {
+  /* Dynamic Safe Top: Uses the notch height or falls back to a clean 1rem (16px) */
+  .pt-notch {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  
+  /* Use this for the "Balanced" look you want */
+  .pt-safe-standard {
+    padding-top: max(1.25rem, env(safe-area-inset-top));
+  }
+}
+
+@layer utilities {
+  /* Clamp the notch: Min 10px, Preferred Notch, Max 30px */
+  .pt-notch-slim {
+    padding-top: clamp(10px, env(safe-area-inset-top), 30px);
+  }
+}
+
+@layer utilities {
+  /* 80% of the hardware notch: Professional, not cramped, not huge */
+  .pt-safe-pro {
+    padding-top: calc(env(safe-area-inset-top, 0px) * 0.8);
   }
 }

@@ -39,39 +39,53 @@ export const LevelPicker = ({ value, onChange }: Props) => {
   };
 
   return (
-    <div className="relative w-full h-[380px]">
-      <div className="h-full overflow-y-auto pr-2 space-y-4 no-scrollbar pb-10">
-        {levels.map((lvl) => (
-          <button
-            key={lvl.id}
-            onClick={() => onChange(lvl.level_name, lvl.min_points)}
-            className={`w-full flex items-center gap-4 p-5 rounded-[2rem] border-2 transition-all active:scale-95 text-left ${value === lvl.level_name ? "border-brand bg-brand/10 shadow-lg" : "border-slate-800 bg-slate-900/40"}`}
-          >
-            <div
-              className={`p-3 rounded-2xl ${value === lvl.level_name ? "bg-brand text-white" : "bg-slate-800 text-slate-500"}`}
+    <div className="relative w-full h-95">
+      <div className="h-full overflow-y-auto pr-2 space-y-3 no-scrollbar pb-10">
+        {levels.map((lvl) => {
+          const isActive = value === lvl.level_name;
+          return (
+            <button
+              key={lvl.id}
+              onClick={() => onChange(lvl.level_name, lvl.min_points)}
+              className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all active:scale-[0.98] text-left ${
+                isActive
+                  ? "border-brand-primary bg-brand-primary/10 shadow-md shadow-brand-primary/5"
+                  : "border-border-color bg-bg-surface"
+              }`}
             >
-              {lvl.multiplier > 1.8 ? (
-                <Trophy size={24} />
-              ) : lvl.multiplier > 1.2 ? (
-                <Star size={24} />
-              ) : (
-                <Zap size={24} />
-              )}
-            </div>
-            <div className="flex-1">
-              <span
-                className={`text-lg font-black block uppercase tracking-tight ${value === lvl.level_name ? "text-white" : "text-slate-300"}`}
+              <div
+                className={`p-3 rounded-xl transition-colors ${
+                  isActive
+                    ? "bg-brand-primary text-bg-main"
+                    : "bg-bg-main text-text-muted"
+                }`}
               >
-                {lvl.level_name}
-              </span>
-              <span className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">
-                {formatExperience(lvl.min_points)}
-              </span>
-            </div>
-          </button>
-        ))}
+                {lvl.multiplier > 1.8 ? (
+                  <Trophy size={20} />
+                ) : lvl.multiplier > 1.2 ? (
+                  <Star size={20} />
+                ) : (
+                  <Zap size={20} />
+                )}
+              </div>
+              <div className="flex-1">
+                <span
+                  className={`text-[13px] font-black block uppercase italic tracking-tight leading-none mb-1 ${
+                    isActive ? "text-brand-primary" : "text-text-main"
+                  }`}
+                >
+                  {lvl.level_name}
+                </span>
+                <span className="text-[9px] text-text-muted font-bold uppercase tracking-widest">
+                  {formatExperience(lvl.min_points)}
+                </span>
+              </div>
+            </button>
+          );
+        })}
       </div>
-      <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-black to-transparent pointer-events-none" />
+      {/* Dynamic gradient that matches your theme background */}
+      <div className="absolute bottom-0 left-0 right-0 h-16 bg-linear-to-t from-bg-main to-transparent pointer-events-none" />
     </div>
   );
 };

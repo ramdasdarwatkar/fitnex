@@ -8,38 +8,45 @@ interface GenderPickerProps {
 
 export const GenderPicker = ({ value, onChange }: GenderPickerProps) => {
   const options = [
-    { id: "male" as GenderType, label: "Male", icon: <User size={32} /> },
+    { id: "male" as GenderType, label: "Male", icon: <User size={24} /> },
     {
       id: "female" as GenderType,
       label: "Female",
-      icon: <UserCircle size={32} />,
+      icon: <UserCircle size={24} />,
     },
-    { id: "other" as GenderType, label: "Other", icon: <Users size={32} /> },
+    { id: "other" as GenderType, label: "Other", icon: <Users size={24} /> },
   ];
 
   return (
     <div className="grid grid-cols-1 gap-4 w-full">
-      {options.map((opt) => (
-        <button
-          key={opt.id}
-          type="button"
-          onClick={() => onChange(opt.id)}
-          className={`flex items-center gap-6 p-6 rounded-3xl border-2 transition-all active:scale-95 ${
-            value === opt.id
-              ? "border-brand bg-brand/10 text-brand"
-              : "border-slate-800 bg-slate-900/50 text-slate-500"
-          }`}
-        >
-          <div
-            className={`p-4 rounded-2xl ${value === opt.id ? "bg-brand text-white shadow-lg shadow-brand/30" : "bg-slate-800"}`}
+      {options.map((opt) => {
+        const isActive = value === opt.id;
+        return (
+          <button
+            key={opt.id}
+            type="button"
+            onClick={() => onChange(opt.id)}
+            className={`flex items-center gap-6 p-5 rounded-xl border transition-all active:scale-[0.98] ${
+              isActive
+                ? "border-brand-primary bg-brand-primary/10 text-brand-primary"
+                : "border-border-color bg-bg-surface text-text-muted"
+            }`}
           >
-            {opt.icon}
-          </div>
-          <span className="text-xl font-bold uppercase tracking-tight">
-            {opt.label}
-          </span>
-        </button>
-      ))}
+            <div
+              className={`p-4 rounded-xl transition-colors ${
+                isActive
+                  ? "bg-brand-primary text-bg-main shadow-md shadow-brand-primary/10"
+                  : "bg-bg-main text-text-muted"
+              }`}
+            >
+              {opt.icon}
+            </div>
+            <span className="text-[13px] font-black uppercase italic tracking-widest">
+              {opt.label}
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 };

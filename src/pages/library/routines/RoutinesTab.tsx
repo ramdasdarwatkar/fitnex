@@ -84,7 +84,7 @@ export const RoutinesTab = ({ search }: RoutinesTabProps) => {
       {filtered.length === 0 ? (
         <div className="text-center py-20 opacity-30">
           <ClipboardList size={48} className="mx-auto mb-4 text-text-muted" />
-          <p className="text-[10px] font-black uppercase tracking-widest text-text-muted">
+          <p className="text-[10px] font-black uppercase italic tracking-widest text-text-muted">
             No Routines Found
           </p>
         </div>
@@ -92,7 +92,7 @@ export const RoutinesTab = ({ search }: RoutinesTabProps) => {
         filtered.map((route) => (
           <div
             key={route.id}
-            className="bg-bg-surface border border-border-color rounded-xl p-6 space-y-5 shadow-xl transition-all hover:border-border-color-hover"
+            className="bg-bg-surface border border-border-color rounded-xl p-6 space-y-5 shadow-sm transition-all hover:border-border-color-hover"
           >
             {/* Routine Header */}
             <div
@@ -100,54 +100,61 @@ export const RoutinesTab = ({ search }: RoutinesTabProps) => {
               onClick={() => navigate(`/library/routines/${route.id}`)}
             >
               <div className="flex items-center gap-4">
-                {/* Icon Box: Matches ExerciseTab icon rounding */}
-                <div className="w-12 h-12 rounded-[1.4rem] bg-bg-main flex items-center justify-center text-brand-primary border border-border-color group-hover:border-brand-primary/30 transition-all">
+                {/* Icon Box: Specialized rounding to match brand icon style */}
+                <div className="w-12 h-12 rounded-[1.4rem] bg-bg-main flex items-center justify-center text-brand-primary border border-border-color group-hover:border-brand-primary/30 transition-all shadow-inner">
                   <ClipboardList size={22} />
                 </div>
                 <div>
-                  <h3 className="text-[13px] font-black uppercase italic text-text-main leading-none group-hover:text-brand-primary transition-colors">
+                  <h3 className="text-[13px] font-black uppercase italic text-text-main leading-none group-hover:text-brand-primary transition-colors tracking-tight">
                     {route.name}
                   </h3>
-                  <p className="text-[9px] font-bold text-text-muted uppercase tracking-widest mt-1.5">
+                  <p className="text-[9px] font-bold text-text-muted uppercase tracking-widest mt-2 flex items-center gap-1.5">
+                    <span className="w-1 h-1 rounded-full bg-brand-primary" />
                     {route.exercise_count} Exercises
                   </p>
                 </div>
               </div>
-              <ChevronRight
-                size={18}
-                className="text-text-muted opacity-40 group-hover:opacity-100 group-hover:translate-x-1 transition-all"
-              />
+              <div className="w-8 h-8 rounded-full flex items-center justify-center bg-bg-main border border-border-color group-hover:bg-brand-primary group-hover:border-brand-primary transition-all">
+                <ChevronRight
+                  size={16}
+                  className="text-text-muted group-hover:text-bg-main transition-all"
+                />
+              </div>
             </div>
 
-            {/* Tags: Matches ExerciseTab tag style */}
-            <div className="flex flex-wrap gap-2">
+            {/* Muscle Group Tags */}
+            <div className="flex flex-wrap gap-1.5">
               {route.muscles.length > 0 ? (
                 route.muscles.map((m) => (
                   <span
                     key={m}
-                    className="px-2.5 py-1 bg-bg-main border border-border-color rounded-lg text-[7px] font-black uppercase text-text-muted"
+                    className="px-2.5 py-1 bg-bg-main/50 border border-border-color rounded-lg text-[7px] font-black uppercase italic text-text-muted tracking-wider"
                   >
                     {m}
                   </span>
                 ))
               ) : (
-                <span className="text-[7px] font-black uppercase text-text-muted opacity-30 italic">
-                  No focus data
+                <span className="text-[7px] font-black uppercase text-text-muted/30 italic tracking-widest">
+                  General Fitness
                 </span>
               )}
             </div>
 
-            {/* Action Button: Strictly rounded-[1.4rem] and font-black italic */}
+            {/* Primary Action Button */}
             <button
               onClick={() => handleStartRoutine(route)}
-              className={`w-full py-5 rounded-[1.4rem] flex items-center justify-center gap-2 transition-all font-black uppercase italic text-[11px] tracking-widest active:scale-95 shadow-lg ${
+              className={`w-full py-4 rounded-[1.2rem] flex items-center justify-center gap-3 transition-all font-black uppercase italic text-[11px] tracking-widest active:scale-[0.98] shadow-md ${
                 isOngoing
-                  ? "bg-bg-main text-text-muted border border-border-color cursor-not-allowed opacity-50"
-                  : "bg-brand-primary text-bg-main shadow-brand-primary/20"
+                  ? "bg-bg-main text-text-muted border border-border-color cursor-not-allowed opacity-40"
+                  : "bg-brand-primary text-bg-main shadow-brand-primary/20 hover:brightness-110"
               }`}
             >
-              <Play size={14} fill="currentColor" />
-              {isOngoing ? "Session in progress" : "Start Routine"}
+              <Play
+                size={14}
+                fill="currentColor"
+                className={isOngoing ? "opacity-0" : ""}
+              />
+              <span>{isOngoing ? "Session in progress" : "Start Routine"}</span>
             </button>
           </div>
         ))

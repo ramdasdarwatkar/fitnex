@@ -35,7 +35,7 @@ export const ProfileHome = () => {
   if (!athlete) return null;
 
   return (
-    <div className="flex-1 flex flex-col bg-bg-main min-h-screen px-6 pb-32 pt-safe animate-in fade-in duration-500">
+    <div className="flex-1 flex flex-col bg-bg-main min-h-screen pb-32 pt-safe animate-in fade-in duration-500">
       {/* HEADER - LOGOUT */}
       <header className="flex justify-end pt-6 pb-2">
         <button

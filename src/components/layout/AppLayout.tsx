@@ -9,6 +9,7 @@ const LayoutContent = () => {
   const { isSidebarOpen, closeSidebar } = useUI();
   const location = useLocation();
 
+  // Reset scroll of the main container on route change
   useLayoutEffect(() => {
     const mainContent = document.getElementById("main-scroll-container");
     if (mainContent) {
@@ -16,19 +17,16 @@ const LayoutContent = () => {
     }
   }, [location.pathname]);
 
+  // Prevent body scroll when mobile sidebar is open
   useEffect(() => {
-    if (isSidebarOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
+    document.body.style.overflow = isSidebarOpen ? "hidden" : "";
   }, [isSidebarOpen]);
 
   return (
-    <div className="relative h-screen w-full text-text-main bg-bg-main overflow-hidden flex flex-col selection:bg-brand-primary/20">
+    <div className="relative h-screen w-full text-text-main bg-bg-main overflow-hidden flex flex-col">
       <div className="flex flex-1 overflow-hidden">
-        {/* DESKTOP SIDEBAR */}
-        <aside className="hidden lg:block w-72 h-full shrink-0 overflow-hidden bg-bg-surface">
+        {/* DESKTOP SIDEBAR - Standardized Border/Background */}
+        <aside className="hidden lg:block w-72 h-full shrink-0 overflow-hidden bg-bg-surface border-r border-border-color/40">
           <Sidebar isOpen={true} onClose={() => {}} isStatic />
         </aside>
 
@@ -40,20 +38,20 @@ const LayoutContent = () => {
         {/* MAIN VIEWPORT */}
         <main
           id="main-scroll-container"
-          className="flex-1 min-w-0 relative overflow-y-auto overflow-x-hidden samsung-scroll pt-safe-half"
+          className="flex-1 min-w-0 relative overflow-y-auto overflow-x-hidden samsung-scroll pt-notch-pro"
         >
-          {/* FIXED SPACING: 
-              - Changed p-5 to px-6 to match SubPageLayout.
-              - Added flex flex-col to match the inner structure.
+          {/* THE GUTTER STANDARD: 
+              PX-6 is only here. Max-width 7xl ensures it looks 
+              professional on wide tablets/desktops.
           */}
-          <div className="page-container flex-1 flex flex-col px-6 pb-36 lg:pb-12 max-w-7xl mx-auto">
+          <div className="page-container px-6 pb-12 max-w-7xl mx-auto">
             <Outlet />
           </div>
         </main>
       </div>
 
-      {/* MOBILE NAVIGATION */}
-      <div className="lg:hidden z-100">
+      {/* MOBILE NAVIGATION - High Z-Index to stay above cards */}
+      <div className="lg:hidden z-100 border-t border-border-color/40">
         <BottomNav />
       </div>
     </div>

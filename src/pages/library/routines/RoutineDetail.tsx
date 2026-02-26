@@ -55,10 +55,11 @@ export interface SelectedExercise extends EnrichedExercise {
 
 type TargetMetricKey = "target_sets" | "target_reps" | "target_duration";
 
+// Fixed interface to allow undefined/optional values from the DB
 interface RoutineExerciseDB {
   exercise_id: string;
-  target_sets: number | null;
-  target_reps: number | null;
+  target_sets?: number | null;
+  target_reps?: number | null;
   target_duration?: number | null;
 }
 
@@ -174,7 +175,7 @@ export const RoutineDetail = () => {
           updated_at: new Date().toISOString(),
         },
         selectedExercises.map((ex) => ({
-          exercise_id: ex.exercise_id || ex.id,
+          exercise_id: ex.id,
           target_sets: ex.target_sets,
           target_reps: ex.target_reps,
           target_duration: ex.target_duration,
@@ -199,17 +200,17 @@ export const RoutineDetail = () => {
     <SubPageLayout title={isEditing ? "Edit Routine" : "Routine Detail"}>
       <div className="flex-1 flex flex-col gap-6 pb-32 animate-in fade-in slide-in-from-bottom-4 duration-500">
         {/* HEADER CARD */}
-        <div className="bg-bg-surface border border-border-color/60 p-6 rounded-2xl space-y-6 shadow-sm">
+        <div className="bg-bg-surface border border-border-color p-6 rounded-xl space-y-6 shadow-sm">
           <div className="space-y-1">
-            <label className="text-[10px] font-bold uppercase tracking-widest text-text-muted ml-1">
-              Title
+            <label className="text-[10px] font-black uppercase tracking-widest text-text-muted ml-1 italic">
+              Routine Title
             </label>
             <input
               disabled={!isEditing}
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full bg-transparent text-2xl font-bold text-text-main outline-none uppercase tracking-tight disabled:opacity-100"
+              className="w-full bg-transparent text-2xl font-black italic text-text-main outline-none uppercase tracking-tighter disabled:opacity-100"
             />
           </div>
 
@@ -218,7 +219,7 @@ export const RoutineDetail = () => {
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="NOTES..."
-            className="w-full bg-bg-main/50 border border-border-color/40 rounded-xl p-4 text-xs font-semibold text-text-main outline-none resize-none h-20 disabled:opacity-60"
+            className="w-full bg-bg-main/50 border border-border-color rounded-xl p-4 text-[11px] font-bold text-text-main outline-none resize-none h-20 placeholder:text-text-muted/40 uppercase tracking-widest disabled:opacity-60"
           />
 
           <div className="flex gap-2">
@@ -244,12 +245,13 @@ export const RoutineDetail = () => {
             className="w-full bg-bg-surface border border-dashed border-border-color rounded-xl py-5 flex items-center justify-center gap-3 text-text-muted active:scale-[0.98] transition-all"
           >
             <Plus size={18} className="text-brand-primary" />
-            <span className="text-xs font-bold uppercase tracking-widest">
+            <span className="text-[11px] font-black uppercase italic tracking-widest">
               Add Exercises
             </span>
           </button>
         )}
 
+        {/* SORTABLE LIST */}
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -259,7 +261,7 @@ export const RoutineDetail = () => {
             items={selectedExercises.map((e) => e.tempId)}
             strategy={verticalListSortingStrategy}
           >
-            <div className="space-y-3">
+            <div className="space-y-4">
               {selectedExercises.map((ex, idx) => (
                 <SortableExerciseItem
                   key={ex.tempId}
@@ -293,18 +295,18 @@ export const RoutineDetail = () => {
                 disabled={
                   processing || !name.trim() || selectedExercises.length === 0
                 }
-                className="w-full h-14 bg-brand-primary text-bg-main font-bold uppercase tracking-widest rounded-xl shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-3"
+                className="w-full h-14 bg-brand-primary text-bg-main font-black uppercase italic tracking-widest rounded-xl shadow-md shadow-brand-primary/20 active:scale-[0.98] transition-all flex items-center justify-center gap-3"
               >
                 {processing ? (
                   <Loader2 className="animate-spin" />
                 ) : (
                   <Check size={20} strokeWidth={3} />
                 )}
-                <span>Update Template</span>
+                <span>Save Changes</span>
               </button>
               <button
                 onClick={() => setIsEditing(false)}
-                className="w-full py-4 bg-bg-surface text-text-muted font-bold uppercase text-[10px] tracking-widest rounded-xl border border-border-color/40"
+                className="w-full py-4 bg-bg-surface text-text-muted font-black uppercase italic text-[10px] tracking-widest rounded-xl border border-border-color"
               >
                 Discard Changes
               </button>
@@ -313,14 +315,14 @@ export const RoutineDetail = () => {
             <>
               <button
                 onClick={() => setIsEditing(true)}
-                className="w-full h-14 bg-text-main text-bg-main font-bold uppercase tracking-widest rounded-xl shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-3"
+                className="w-full h-14 bg-text-main text-bg-main font-black uppercase italic tracking-widest rounded-xl shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-3"
               >
                 <Edit3 size={18} />
                 <span>Modify Routine</span>
               </button>
               <button
                 onClick={() => setShowModal(true)}
-                className="w-full py-4 bg-bg-surface text-brand-error font-bold uppercase text-[10px] tracking-widest rounded-xl border border-brand-error/10 active:scale-95 transition-all"
+                className="w-full py-4 bg-bg-surface text-brand-error font-black uppercase italic text-[10px] tracking-widest rounded-xl border border-brand-error/20 active:scale-[0.98] transition-all"
               >
                 <Trash2 size={16} className="inline mr-2" />
                 Archive Routine
@@ -348,7 +350,7 @@ export const RoutineDetail = () => {
             setSelectedExercises((prev) => [...prev, ...newItems]);
             setShowPicker(false);
           }}
-          excludedIds={selectedExercises.map((e) => e.exercise_id || e.id)}
+          excludedIds={selectedExercises.map((e) => e.id)}
         />
       )}
 
@@ -416,7 +418,11 @@ const SortableExerciseItem = ({
     <div
       ref={setNodeRef}
       style={style}
-      className={`bg-bg-surface border rounded-2xl p-4 space-y-4 shadow-sm transition-all ${isDragging ? "border-brand-primary ring-4 ring-brand-primary/10 shadow-2xl scale-[1.02]" : "border-border-color/60"}`}
+      className={`bg-bg-surface border rounded-xl p-4 space-y-4 shadow-sm transition-all ${
+        isDragging
+          ? "border-brand-primary ring-4 ring-brand-primary/10 shadow-2xl scale-[1.02]"
+          : "border-border-color"
+      }`}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3 overflow-hidden">
@@ -429,10 +435,10 @@ const SortableExerciseItem = ({
               <GripVertical size={16} />
             </div>
           )}
-          <div className="w-6 h-6 rounded-lg bg-bg-main border border-border-color/40 flex items-center justify-center text-[10px] font-bold text-text-muted shrink-0">
+          <div className="w-6 h-6 rounded-lg bg-bg-main border border-border-color flex items-center justify-center text-[10px] font-black italic text-text-muted shrink-0">
             {index + 1}
           </div>
-          <span className="text-sm font-bold uppercase text-text-main truncate tracking-tight">
+          <span className="text-[13px] font-black uppercase italic text-text-main truncate tracking-tight">
             {ex.name}
           </span>
         </div>
@@ -458,12 +464,14 @@ const SortableExerciseItem = ({
             <div key={m.key} className="space-y-1.5 text-center">
               <div className="flex items-center gap-1 justify-center opacity-40">
                 {m.icon}
-                <span className="text-[8px] font-bold uppercase tracking-widest">
+                <span className="text-[8px] font-black uppercase tracking-widest">
                   {m.label}
                 </span>
               </div>
               <div
-                className={`flex items-center justify-between bg-bg-main/40 border border-border-color/40 rounded-xl p-1 ${!isEditing ? "opacity-80" : ""}`}
+                className={`flex items-center justify-between bg-bg-main border border-border-color rounded-xl p-1 ${
+                  !isEditing ? "opacity-80" : ""
+                }`}
               >
                 {isEditing && (
                   <button
@@ -474,7 +482,9 @@ const SortableExerciseItem = ({
                   </button>
                 )}
                 <span
-                  className={`text-xs font-bold text-text-main tabular-nums ${!isEditing ? "w-full py-1.5" : ""}`}
+                  className={`text-xs font-black italic text-text-main tabular-nums ${
+                    !isEditing ? "w-full py-1.5 text-center" : ""
+                  }`}
                 >
                   {val}
                 </span>
@@ -505,7 +515,13 @@ const PrivacyToggle = ({
   <button
     type="button"
     onClick={onClick}
-    className={`flex-1 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest border transition-all flex items-center justify-center gap-2 ${active ? (primary ? "bg-brand-primary text-bg-main border-brand-primary" : "bg-text-main text-bg-main border-text-main") : "border-border-color/60 text-text-muted opacity-60"}`}
+    className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase italic tracking-widest border transition-all flex items-center justify-center gap-2 ${
+      active
+        ? primary
+          ? "bg-brand-primary text-bg-main border-brand-primary shadow-md shadow-brand-primary/10"
+          : "bg-text-main text-bg-main border-text-main shadow-sm"
+        : "border-border-color text-text-muted opacity-40"
+    }`}
   >
     {icon} {label}
   </button>
@@ -527,24 +543,24 @@ const ConfirmModal = ({
         className="absolute inset-0 bg-bg-main/80 backdrop-blur-sm animate-in fade-in"
         onClick={onCancel}
       />
-      <div className="relative w-full max-w-xs bg-bg-surface border border-border-color rounded-4xl p-8 text-center animate-in zoom-in-95 shadow-2xl">
+      <div className="relative w-full max-w-xs bg-bg-surface border border-border-color rounded-xl p-8 text-center animate-in zoom-in-95 shadow-2xl">
         <AlertCircle className="mx-auto text-brand-error mb-4" size={40} />
-        <h3 className="text-xl font-bold uppercase text-text-main mb-2 tracking-tight">
+        <h3 className="text-xl font-black uppercase italic text-text-main mb-2 tracking-tighter">
           Archive Routine?
         </h3>
-        <p className="text-xs font-semibold text-text-muted mb-8 leading-relaxed">
+        <p className="text-[11px] font-bold text-text-muted mb-8 leading-relaxed uppercase tracking-wide">
           This template will be hidden from your routine library.
         </p>
         <div className="flex flex-col gap-3">
           <button
             onClick={onConfirm}
-            className="w-full py-4 bg-brand-error text-bg-main rounded-xl font-bold uppercase tracking-widest active:scale-95 transition-all"
+            className="w-full py-4 bg-brand-error text-bg-main rounded-xl font-black uppercase italic tracking-widest active:scale-[0.98] transition-all"
           >
             Confirm Archive
           </button>
           <button
             onClick={onCancel}
-            className="w-full py-4 text-text-muted font-bold uppercase text-[10px] tracking-widest"
+            className="w-full py-4 text-text-muted font-black uppercase italic text-[10px] tracking-widest"
           >
             Cancel
           </button>

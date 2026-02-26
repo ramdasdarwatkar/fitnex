@@ -93,7 +93,7 @@ export const Dashboard = () => {
        - 'gap-y-8' provides professional breathing room without looking "disconnected".
        - 'px-5' is the sweet spot for professional mobile/desktop padding.
     */
-    <div className="flex-1 flex flex-col bg-bg-main min-h-screen max-w-7xl mx-auto w-full relative py-4 lg:py-8 gap-y-8 overflow-x-hidden">
+    <div className="flex-1 flex flex-col bg-bg-main min-h-screen max-w-7xl mx-auto w-full relative lg:py-8 gap-y-8 overflow-x-hidden">
       {/* Flush Header Section */}
       <DashboardHeader athlete={athlete} />
 
