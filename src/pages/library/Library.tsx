@@ -51,7 +51,7 @@ export const Library = () => {
   return (
     <div className="flex-1 flex flex-col bg-bg-main min-h-screen pt-safe">
       {/* TABS HEADER */}
-      <div className="sticky top-0 z-30 bg-bg-main px-4 pt-6 pb-2">
+      <div className="sticky top-0 z-30 bg-bg-main pt-6 pb-2">
         <div className="flex bg-bg-surface p-1.5 rounded-[1.8rem] border border-border-color shadow-sm">
           {tabs.map((tab) => {
             const isActive = activeTab === tab.id;
@@ -76,7 +76,7 @@ export const Library = () => {
       </div>
 
       {/* Main Content Area */}
-      <div className="px-4 flex-1 flex flex-col pb-32">
+      <div className="flex-1 flex flex-col pb-32">
         <div className="flex items-center gap-3 mt-4 mb-6">
           <div className="relative flex-1">
             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted">

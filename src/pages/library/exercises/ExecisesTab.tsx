@@ -1,7 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronRight, Dumbbell } from "lucide-react";
-import { LibraryService } from "../../../services/LibraryService";
+import { ChevronRight, Dumbbell, Loader2 } from "lucide-react";
 import { ExerciseService } from "../../../services/ExerciseService";
 
 // --- 1. STRICT INTERFACES ---
@@ -35,7 +34,7 @@ export const ExercisesTab = ({ search }: { search: string }) => {
 
   const query = search.toLowerCase().trim();
 
-  // GROUPING & SEARCHING
+  // GROUPING & SEARCHING - Logic preserved, styling sanitized
   const groupedExercises = useMemo(() => {
     const filtered = exercises.filter((ex) => {
       return (
@@ -59,41 +58,49 @@ export const ExercisesTab = ({ search }: { search: string }) => {
     return Object.values(groups).sort((a, b) => a.name.localeCompare(b.name));
   }, [exercises, query]);
 
-  if (loading) return null;
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center py-20">
+        <Loader2
+          className="animate-spin text-text-muted opacity-20"
+          size={32}
+        />
+      </div>
+    );
+  }
 
   return (
-    <div className="flex-1 flex flex-col gap-10 pb-32 animate-in fade-in duration-500">
+    <div className="flex-1 flex flex-col gap-8 pb-32 animate-in fade-in duration-500">
       {groupedExercises.map((group) => (
-        <div key={group.name} className="flex flex-col gap-5">
-          {/* SEMANTIC CATEGORY HEADER */}
-          <div className="sticky top-0 z-10 py-4 bg-bg-main/90 backdrop-blur-md flex items-center gap-4">
-            <h2 className="text-[10px] font-black uppercase italic text-brand-primary tracking-[0.3em] whitespace-nowrap">
+        <div key={group.name} className="flex flex-col gap-3">
+          {/* REFINED CATEGORY HEADER */}
+          <div className="sticky top-0 z-10 py-3 bg-bg-main/80 backdrop-blur-md flex items-center gap-3">
+            <h2 className="text-[11px] font-bold uppercase text-brand-primary tracking-widest whitespace-nowrap ml-1">
               {group.name}
             </h2>
-            <div className="h-px flex-1 bg-border-color/30" />
+            <div className="h-px flex-1 bg-border-color/20" />
           </div>
 
-          <div className="space-y-3">
+          <div className="grid gap-2.5">
             {group.items.map((ex) => (
               <button
                 key={ex.id}
                 onClick={() => navigate(`/library/exercises/${ex.id}`)}
-                className="w-full flex items-center justify-between p-6 bg-bg-surface border border-border-color/50 rounded-[2.5rem] active:scale-[0.97] hover:border-brand-primary/50 transition-all group shadow-sm"
+                className="w-full flex items-center justify-between p-4 bg-bg-surface border border-border-color rounded-xl active:scale-[0.98] transition-all group shadow-sm"
               >
-                <div className="flex flex-col text-left gap-1.5">
-                  <span className="text-[15px] font-black uppercase italic text-text-main tracking-tight group-hover:text-brand-primary transition-colors">
+                <div className="flex flex-col text-left gap-1">
+                  <span className="text-sm font-bold text-text-main group-hover:text-brand-primary transition-colors">
                     {ex.name}
                   </span>
                   <div className="flex items-center gap-2">
-                    <div className="w-1 h-1 rounded-full bg-brand-primary/40" />
-                    <span className="text-[9px] font-black uppercase text-text-muted tracking-widest opacity-60">
+                    <span className="text-[10px] font-bold uppercase text-text-muted opacity-60 tracking-wider">
                       {ex.equipmentName}
                     </span>
                   </div>
                 </div>
 
-                <div className="w-10 h-10 rounded-2xl bg-bg-main border border-border-color flex items-center justify-center text-text-muted group-hover:text-brand-primary group-hover:border-brand-primary transition-all shadow-inner">
-                  <ChevronRight size={20} />
+                <div className="w-8 h-8 rounded-lg bg-bg-main border border-border-color flex items-center justify-center text-text-muted group-hover:text-brand-primary group-hover:border-brand-primary transition-all shadow-sm">
+                  <ChevronRight size={18} />
                 </div>
               </button>
             ))}
@@ -104,8 +111,8 @@ export const ExercisesTab = ({ search }: { search: string }) => {
       {/* EMPTY STATE */}
       {groupedExercises.length === 0 && (
         <div className="flex flex-col items-center justify-center py-32 opacity-20 text-text-muted animate-in zoom-in-95 duration-300">
-          <Dumbbell size={64} strokeWidth={1} className="mb-6" />
-          <p className="text-[10px] font-black uppercase tracking-[0.5em] italic">
+          <Dumbbell size={48} strokeWidth={1.5} className="mb-4" />
+          <p className="text-[11px] font-bold uppercase tracking-[0.3em]">
             No Exercises Found
           </p>
         </div>

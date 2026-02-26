@@ -259,7 +259,7 @@ export const ExerciseService = {
   },
 
   async updateExercise(id: string, formData: any) {
-    const has = (val: string) => (formData.tracking.includes(val) ? 1 : 0);
+    const has = (val: string) => formData.tracking.includes(val);
     const payload = {
       name: formData.name,
       category: formData.category,

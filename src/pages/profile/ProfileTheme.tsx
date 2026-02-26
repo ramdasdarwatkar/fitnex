@@ -1,14 +1,7 @@
-import { useState, useEffect, type ReactNode, type ChangeEvent } from "react";
-import {
-  Moon,
-  Sun,
-  Check,
-  Sparkles,
-  Paintbrush,
-  Hash,
-  Pipette,
-} from "lucide-react";
+import { useState, type ReactNode } from "react";
+import { Moon, Sun, Check, Sparkles, Paintbrush } from "lucide-react";
 import { SubPageLayout } from "../../components/layout/SubPageLayout";
+import { useTheme } from "../../hooks/useTheme";
 
 // 1. Strict Interfaces
 interface ThemeCardProps {
@@ -19,51 +12,40 @@ interface ThemeCardProps {
   desc: string;
 }
 
+// IDs must match your [data-accent='id'] selectors in index.css
 const BRAND_PALETTE = [
-  { name: "Fitnex Orange", hex: "#ff7f50" },
-  { name: "Electric Blue", hex: "#3b82f6" },
-  { name: "Cyber Green", hex: "#22c55e" },
-  { name: "Neon Purple", hex: "#a855f7" },
-  { name: "Crimson Red", hex: "#ef4444" },
-  { name: "Solar Yellow", hex: "#eab308" },
+  { name: "Fitnex Orange", id: "orange", hex: "#ff7f50" },
+  { name: "Electric Blue", id: "blue", hex: "#3b82f6" },
+  { name: "Cyber Green", id: "emerald", hex: "#10b981" },
+  { name: "Neon Purple", id: "violet", hex: "#a855f7" },
+  { name: "Crimson Red", id: "rose", hex: "#ef4444" },
+  { name: "Zinc Slate", id: "zinc", hex: "#71717a" },
 ];
 
 export const ProfileTheme = () => {
-  const [activeTheme, setActiveTheme] = useState<"dark" | "light">(() => {
-    return document.documentElement.classList.contains("light-theme")
-      ? "light"
-      : "dark";
-  });
-
-  const [activeColor, setActiveColor] = useState(() => {
-    return localStorage.getItem("fitnex-color") || "#ff7f50";
-  });
-
-  const [customHex, setCustomHex] = useState(activeColor);
+  const { theme, brandColor, setTheme, setBrandColor } = useTheme();
 
   /**
-   * APPLY CHANGES
-   * Synchronizes LocalStorage and document attributes/styles
+   * 1. INITIALIZE STATE DIRECTLY
+   * By seeding useState with context values, we avoid the need for
+   * a useEffect sync, which prevents the "cascading render" error.
    */
-  const handleApply = () => {
-    const root = document.documentElement;
-    localStorage.setItem("fitnex-theme", activeTheme);
-    localStorage.setItem("fitnex-color", activeColor);
+  const [pendingTheme, setPendingTheme] = useState<"dark" | "light">(theme);
+  const [pendingColor, setPendingColor] = useState(brandColor);
 
-    if (activeTheme === "light") {
-      root.classList.add("light-theme");
-    } else {
-      root.classList.remove("light-theme");
+  /**
+   * 2. APPLY CHANGES
+   * Updates Dexie via ThemeContext.
+   * ThemeProvider watches Dexie and applies the [data-accent] attribute.
+   */
+  const handleApply = async () => {
+    try {
+      await setTheme(pendingTheme);
+      await setBrandColor(pendingColor);
+    } catch (error) {
+      console.error("Failed to update appearance:", error);
     }
-
-    root.style.setProperty("--brand-primary", activeColor);
-
-    // Optional: Success feedback could be added here
   };
-
-  useEffect(() => {
-    setCustomHex(activeColor);
-  }, [activeColor]);
 
   return (
     <SubPageLayout title="Appearance">
@@ -79,15 +61,15 @@ export const ProfileTheme = () => {
 
           <div className="grid grid-cols-2 gap-3">
             <ThemeCard
-              active={activeTheme === "dark"}
-              onClick={() => setActiveTheme("dark")}
+              active={pendingTheme === "dark"}
+              onClick={() => setPendingTheme("dark")}
               label="Dark"
               icon={<Moon size={20} />}
               desc="OLED Saver"
             />
             <ThemeCard
-              active={activeTheme === "light"}
-              onClick={() => setActiveTheme("light")}
+              active={pendingTheme === "light"}
+              onClick={() => setPendingTheme("light")}
               label="Light"
               icon={<Sun size={20} />}
               desc="High Contrast"
@@ -104,12 +86,12 @@ export const ProfileTheme = () => {
             </h2>
           </div>
 
-          <div className="p-8 rounded-[2.5rem] mb-4 border border-border-color bg-bg-surface shadow-xl">
+          <div className="p-8 rounded-[2.5rem] border border-border-color bg-bg-surface shadow-xl">
             <div className="grid grid-cols-3 gap-y-8 gap-x-4">
               {BRAND_PALETTE.map((color) => (
                 <button
-                  key={color.hex}
-                  onClick={() => setActiveColor(color.hex)}
+                  key={color.id}
+                  onClick={() => setPendingColor(color.id)}
                   className="flex flex-col items-center gap-2 group"
                 >
                   <div
@@ -117,60 +99,29 @@ export const ProfileTheme = () => {
                     style={{
                       backgroundColor: color.hex,
                       borderColor:
-                        activeColor.toLowerCase() === color.hex.toLowerCase()
+                        pendingColor === color.id
                           ? "rgba(255,255,255,0.4)"
                           : "transparent",
                     }}
                   >
-                    {activeColor.toLowerCase() === color.hex.toLowerCase() && (
+                    {pendingColor === color.id && (
                       <Check size={24} className="text-white" strokeWidth={4} />
                     )}
                   </div>
+                  <span className="text-[8px] font-black uppercase text-text-muted opacity-40 mt-1">
+                    {color.id}
+                  </span>
                 </button>
               ))}
             </div>
           </div>
-
-          {/* CUSTOM COLOR INPUTS */}
-          <div className="grid grid-cols-12 gap-3 mt-4">
-            <div className="col-span-8 relative">
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted">
-                <Hash size={14} />
-              </div>
-              <input
-                type="text"
-                value={customHex.replace("#", "")}
-                onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                  const val = `#${e.target.value}`;
-                  setCustomHex(val);
-                  if (/^#[0-9A-F]{6}$/i.test(val)) setActiveColor(val);
-                }}
-                className="w-full border border-border-color rounded-2xl py-5 pl-10 pr-4 text-xs font-black uppercase bg-bg-surface text-text-main outline-none focus:border-brand-primary/50 transition-colors tabular-nums"
-                placeholder="FFFFFF"
-              />
-            </div>
-
-            <div className="col-span-4 relative">
-              <input
-                type="color"
-                value={activeColor}
-                onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  setActiveColor(e.target.value)
-                }
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-              />
-              <div className="w-full h-full border border-border-color rounded-2xl flex items-center justify-center text-text-muted bg-bg-surface group-hover:bg-bg-main transition-colors">
-                <Pipette size={20} />
-              </div>
-            </div>
-          </div>
         </section>
 
-        {/* SUBMIT */}
+        {/* SUBMIT ACTION */}
         <div className="pt-6 px-1">
           <button
             onClick={handleApply}
-            className="w-full py-6 bg-brand-primary text-black font-black uppercase italic tracking-widest rounded-4xl active:scale-[0.98] transition-all shadow-xl shadow-brand-primary/20"
+            className="w-full py-6 bg-brand-primary text-bg-main font-black uppercase italic tracking-widest rounded-4xl active:scale-[0.98] transition-all shadow-xl shadow-brand-primary/20"
           >
             Apply Changes
           </button>

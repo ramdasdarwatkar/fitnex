@@ -46,11 +46,13 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
    * 4. PERSISTENCE METHODS
    */
   const setTheme = async (t: "dark" | "light") => {
-    await db.app_settings.toCollection().modify({ theme: t });
+    await db.app_settings.toCollection().modify({ theme: t, is_synced: 0 });
   };
 
   const setBrandColor = async (accent: string) => {
-    await db.app_settings.toCollection().modify({ accent_color: accent });
+    await db.app_settings
+      .toCollection()
+      .modify({ accent_color: accent, is_synced: 0 });
   };
 
   const value = useMemo(

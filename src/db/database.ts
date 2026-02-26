@@ -6,7 +6,6 @@ import type {
   AthleteLevelsLookup,
   LocalWorkoutLog,
   LocalWorkout,
-  LatestPersonalRecord,
   LocalCustomizedStats,
   Workout,
   LocalBodyMetrics,
@@ -23,7 +22,6 @@ import type {
 
 export class FitnexDB extends Dexie {
   athlete_summary!: Table<AthleteSummary, string>;
-  latest_personal_record!: Table<LatestPersonalRecord, string>;
   app_settings!: Table<LocalAppSettings, string>;
   athlete_levels_lookup!: Table<AthleteLevelsLookup, number>;
   athlete_level!: Table<LocalAthleteLevel, [string, string]>;
@@ -56,7 +54,7 @@ export class FitnexDB extends Dexie {
         "[user_id+start_date+end_date], user_id, start_date, end_date",
       app_settings: "user_id",
       athlete_levels_lookup: "id, level_name",
-      personal_records: "[user_id+exercise_id]",
+      personal_records: "[user_id+exercise_id],exercise_id",
 
       // 🆕 NEW: body_metrics store
       // Primary key is composite [user_id+logdate] to match Supabase

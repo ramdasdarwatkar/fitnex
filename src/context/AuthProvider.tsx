@@ -1,32 +1,40 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
+import { useLiveQuery } from "dexie-react-hooks";
 import { supabase } from "../lib/supabase";
 import { SyncManager } from "../services/SyncManager";
 import { AthleteService } from "../services/AthleteService";
 import { AuthContext } from "./AuthTypes";
-import type { AthleteSummary } from "../types/database.types";
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [user_id, setUserId] = useState<string | null>(null);
-  const [athlete, setAthlete] = useState<AthleteSummary | null>(null);
   const [loading, setLoading] = useState(true);
+
+  /**
+   * LIVE DATA OBSERVATION
+   * Monitors Dexie for changes to the athlete summary.
+   * Updates 'athlete' instantly when syncSummary or any DB write occurs.
+   */
+  const athlete = useLiveQuery(
+    () => (user_id ? AthleteService.getLocalSummary(user_id) : null),
+    [user_id],
+  );
 
   /**
    * ATOMIC HYDRATION
    * Ensures User ID and Profile are resolved before the Splash Screen clears.
    */
   const hydrate = useCallback(async (uid: string) => {
-    // 1. Service handles the Dexie vs Supabase priority logic
-    let profile = await AthleteService.getLocalSummary(uid);
-
-    if (!profile && window.navigator.onLine) {
-      profile = await AthleteService.syncSummary(uid);
-    }
-
-    // 2. We set both states. React batches these updates into one render cycle.
     setUserId(uid);
-    setAthlete(profile);
+
+    // Check if we have data locally
+    const profile = await AthleteService.getLocalSummary(uid);
+
+    // If missing and online, trigger the sync which writes to Dexie
+    if (!profile && window.navigator.onLine) {
+      await AthleteService.syncSummary(uid);
+    }
   }, []);
 
   useEffect(() => {
@@ -42,7 +50,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           await hydrate(id);
         } else {
           setUserId(null);
-          setAthlete(null);
         }
       } catch (err) {
         console.error("Auth Initialization Error:", err);
@@ -60,7 +67,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       if (!session) {
         setUserId(null);
-        setAthlete(null);
         setLoading(false);
       } else {
         await hydrate(id!);
@@ -102,15 +108,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       await supabase.auth.signOut();
 
       setUserId(null);
-      setAthlete(null);
     } catch (error) {
       console.error("Logout process failed:", error);
     }
   }, []);
 
+  /**
+   * Determine if we are still "Loading" the profile from Dexie
+   * useLiveQuery returns 'undefined' while the initial promise resolves.
+   */
+  const isResolvingProfile = user_id !== null && athlete === undefined;
+
   const value = useMemo(
-    () => ({ user_id, athlete, loading, signOut }),
-    [user_id, athlete, loading, signOut],
+    () => ({
+      user_id,
+      athlete: athlete ?? null,
+      loading: loading || isResolvingProfile,
+      signOut,
+    }),
+    [user_id, athlete, loading, isResolvingProfile, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -4,6 +4,7 @@ import type { Database, UserProfile } from "../../types/database.types";
 import { User, Target, ChevronDown, Save, RefreshCcw } from "lucide-react";
 import { SubPageLayout } from "../../components/layout/SubPageLayout";
 import { useAuth } from "../../hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 
 type GenderType = Database["public"]["Tables"]["user_profile"]["Row"]["gender"];
 
@@ -21,6 +22,7 @@ interface SelectInputProps {
 
 export const ProfileDetails = () => {
   const { user_id, athlete } = useAuth();
+  const navigate = useNavigate();
   const [saving, setSaving] = useState(false);
 
   const [form, setForm] = useState({
@@ -60,7 +62,7 @@ export const ProfileDetails = () => {
        * We explicitly re-state 'created_at' to satisfy strict TS requirements.
        */
       const updatedProfile: UserProfile = {
-        ...athlete,
+        user_id,
         name: form.name.trim(),
         gender: form.gender.toLowerCase() as GenderType,
         birthdate: form.birth_date,
@@ -78,6 +80,7 @@ export const ProfileDetails = () => {
 
       // Feedback for the user
       console.log("Profile updated successfully");
+      navigate(-1);
     } catch (err: unknown) {
       console.error("Profile update failed:", err);
       alert("Failed to update profile settings.");

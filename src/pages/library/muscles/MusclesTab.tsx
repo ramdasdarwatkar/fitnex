@@ -1,7 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronRight, GitCommit, Target, Loader2 } from "lucide-react";
-import { LibraryService } from "../../../services/LibraryService";
 
 // Types
 import type { Muscle } from "../../../types/database.types";

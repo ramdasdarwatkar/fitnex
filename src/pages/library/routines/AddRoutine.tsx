@@ -7,10 +7,6 @@ import {
 } from "react";
 import { useNavigate } from "react-router-dom";
 import { SubPageLayout } from "../../../components/layout/SubPageLayout";
-import {
-  LibraryService,
-  type EnrichedExercise,
-} from "../../../services/LibraryService";
 import { RoutineService } from "../../../services/RoutineService";
 import {
   Check,
@@ -26,7 +22,10 @@ import { ExercisePicker } from "../exercises/ExercisePicker";
 // 1. Strict Interfaces
 import type { Routine } from "../../../types/database.types";
 import { useAuth } from "../../../hooks/useAuth";
-import { ExerciseService } from "../../../services/ExerciseService";
+import {
+  ExerciseService,
+  type EnrichedExercise,
+} from "../../../services/ExerciseService";
 
 export interface SelectedExercise extends EnrichedExercise {
   target_sets: number;
@@ -281,6 +280,7 @@ export const AddRoutine = () => {
         <ExercisePicker
           onClose={() => setShowPicker(false)}
           onAdd={handleAddExercises}
+          excludedIds={selectedExercises.map((ex) => ex.id)}
         />
       )}
     </SubPageLayout>

@@ -27,6 +27,7 @@ import { ExercisePicker } from "../library/exercises/ExercisePicker";
 import { DateUtils } from "../../util/dateUtils";
 import { PersonalRecordService } from "../../services/PersonalRecordService";
 import { type LocalWorkoutLog } from "../../types/database.types";
+import { WorkoutLogsService } from "../../services/WorkoutLogsService";
 
 // --- 1. STRICT TYPE DEFINITIONS ---
 
@@ -289,7 +290,10 @@ export const ActiveWorkout = () => {
               fireConfetti={() => fireConfetti("light")}
               triggerHaptic={triggerHaptic}
               onRemove={() =>
-                WorkoutService.deleteExercise(activeWorkout.id, exId)
+                WorkoutLogsService.removeExerciseFromWorkout(
+                  activeWorkout.id,
+                  exId,
+                )
               }
             />
           ))}
@@ -299,8 +303,9 @@ export const ActiveWorkout = () => {
       {showPicker && (
         <ExercisePicker
           onClose={() => setShowPicker(false)}
+          excludedIds={Object.keys(groupedExercises)}
           onAdd={(ids) => {
-            WorkoutService.addExercisesToActive(activeWorkout.id, ids);
+            WorkoutLogsService.addExercisesToActive(activeWorkout.id, ids);
             setShowPicker(false);
             triggerHaptic(50);
           }}
@@ -541,7 +546,7 @@ const ExerciseTable = ({
           ))}
           <button
             onClick={() =>
-              WorkoutService.addSet(
+              WorkoutLogsService.addSet(
                 activeWorkoutId,
                 exerciseId,
                 sets.length + 1,
@@ -584,13 +589,16 @@ const WorkoutLogRow = ({
   const [touchX, setTouchX] = useState<number | null>(null);
 
   const handleUpdate = (field: string, val: number | null) =>
-    WorkoutService.updateLog({ ...set, [field]: val } as ActiveLog);
+    WorkoutLogsService.updateLog({ ...set, [field]: val } as ActiveLog);
 
   const handleComplete = async () => {
     if (!exercise) return;
     const nextVal = set.completed === 1 ? 0 : 1;
     triggerHaptic(30);
-    await WorkoutService.updateLog({ ...set, completed: nextVal } as ActiveLog);
+    await WorkoutLogsService.updateLog({
+      ...set,
+      completed: nextVal,
+    } as ActiveLog);
     if (nextVal === 1) {
       onRest();
       if (Number(set.weight) > 0) {
@@ -615,7 +623,7 @@ const WorkoutLogRow = ({
         if (touchX && touchX - e.changedTouches[0].clientX > 70) {
           setIsDeleting(true);
           triggerHaptic(50);
-          setTimeout(() => WorkoutService.deleteSet(set.id), 300);
+          setTimeout(() => WorkoutLogsService.deleteSet(set.id), 300);
         }
       }}
       style={{

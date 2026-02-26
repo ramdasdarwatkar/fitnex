@@ -15,42 +15,7 @@ export interface EnrichedRoutine extends Routine {
   exercises: RoutineExercise[]; // Added for direct access
 }
 
-let isRoutineSynced = false;
-
 export const RoutineService = {
-  async syncRoutine(user_id: string, force = false) {
-    if (isRoutineSynced && !force) return;
-
-    const [r, re] = await Promise.all([
-      supabase
-        .from("routines")
-        .select("*")
-        .or(`created_by.eq.${user_id},is_public.eq.true`)
-        .eq("status", true)
-        .order("name", { ascending: true }),
-      supabase.from("routine_exercises").select("*"),
-    ]);
-
-    if (r.error || re.error) {
-      console.error("Sync Error:", r.error || re.error);
-      return;
-    }
-
-    await db.transaction(
-      "rw",
-      [db.routines, db.routine_exercises],
-      async () => {
-        await db.routines.clear();
-        await db.routine_exercises.clear();
-        if (r.data) await db.routines.bulkPut(r.data as Routine[]);
-        if (re.data)
-          await db.routine_exercises.bulkPut(re.data as RoutineExercise[]);
-      },
-    );
-
-    isRoutineSynced = true;
-  },
-
   async getRoutinesWithMeta(): Promise<EnrichedRoutine[]> {
     const [routines, rEx, exMuscles, muscles] = await Promise.all([
       db.routines.filter((r) => r.status !== false).toArray(),
@@ -187,9 +152,5 @@ export const RoutineService = {
 
     if (error) throw error;
     if (data) await db.routines.put(data as Routine);
-  },
-
-  resetLock() {
-    isRoutineSynced = false;
   },
 };

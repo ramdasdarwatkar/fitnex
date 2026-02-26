@@ -54,15 +54,4 @@ export const AnalyticsService = {
       return null;
     }
   },
-
-  /**
-   * Forces a refresh of the local stats cache.
-   */
-  async invalidateStatsCache(): Promise<void> {
-    try {
-      await db.customized_stats.clear();
-    } catch (err: unknown) {
-      console.error("Failed to clear stats cache:", err);
-    }
-  },
 };

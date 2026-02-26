@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { BodyMap } from "./BodyMap";
-import { LibraryService } from "../../../services/LibraryService";
 import { MuscleService } from "../../../services/MuscleService";
 
 interface BodyMapCardProps {

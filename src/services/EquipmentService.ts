@@ -5,4 +5,8 @@ export const EquipmentService = {
   async getAllEquipments(): Promise<Equipment[]> {
     return await db.equipment.toArray();
   },
+
+  async getEquipmentById(id: number): Promise<Equipment | undefined> {
+    return await db.equipment.get(id);
+  },
 };

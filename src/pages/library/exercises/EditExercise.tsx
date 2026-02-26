@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { SubPageLayout } from "../../../components/layout/SubPageLayout";
-import { LibraryService } from "../../../services/LibraryService";
 import { db } from "../../../db/database";
 import { type Muscle, type Equipment } from "../../../types/database.types";
 import {
@@ -28,7 +27,6 @@ interface ExerciseForm {
   stabilizerMuscles: string[];
 }
 
-// Interface to represent the raw data shape from the DB/Service
 interface RawExerciseData {
   id?: string;
   name?: string;
@@ -46,6 +44,21 @@ interface RawExerciseData {
   stabilizerMuscles?: string[];
 }
 
+interface SelectProps {
+  label: string;
+  value: string | number;
+  options: { id: string | number; name: string }[];
+  onChange: (val: string) => void;
+}
+
+interface TagRowProps {
+  label: string;
+  items: string[];
+  muscles: Muscle[];
+  onRemove: (id: string) => void;
+  colorClass: string;
+}
+
 // --- 2. MAIN COMPONENT ---
 
 export const EditExercise = () => {
@@ -56,7 +69,7 @@ export const EditExercise = () => {
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [search, setSearch] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [form, setForm] = useState<ExerciseForm>({
     name: "",
@@ -116,16 +129,25 @@ export const EditExercise = () => {
     load();
   }, [id]);
 
+  const searchResults = useMemo(() => {
+    if (searchQuery.length < 2) return [];
+    return muscles
+      .filter((m) => m.name.toLowerCase().includes(searchQuery.toLowerCase()))
+      .slice(0, 5);
+  }, [searchQuery, muscles]);
+
   const addMuscle = (
     mId: string,
     role: "primary" | "secondary" | "stabilizer",
   ) => {
     const key = `${role}Muscles` as keyof ExerciseForm;
+    // Explicitly cast to string[] to satisfy the compiler
     const currentList = form[key] as string[];
+
     if (!currentList.includes(mId)) {
       setForm((prev) => ({ ...prev, [key]: [...currentList, mId] }));
     }
-    setSearch("");
+    setSearchQuery("");
   };
 
   const handleUpdate = async () => {
@@ -145,17 +167,17 @@ export const EditExercise = () => {
 
   return (
     <SubPageLayout title="Update Exercise">
-      <div className="flex flex-col gap-10 pb-48 px-2 animate-in fade-in duration-500">
-        {/* PUBLIC/PRIVATE TOGGLE */}
-        <div className="bg-bg-surface p-1.5 rounded-[2.5rem] flex relative border border-border-color shadow-inner">
+      <div className="flex flex-col gap-6 pb-40 max-w-2xl mx-auto animate-in fade-in duration-500">
+        {/* VISIBILITY SELECTOR */}
+        <div className="bg-bg-surface p-1 rounded-xl flex relative border border-border-color shadow-sm">
           <div
-            className={`absolute top-1.5 bottom-1.5 w-[calc(50%-6px)] bg-bg-main rounded-[2.2rem] shadow-xl transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) ${
+            className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-bg-main rounded-lg shadow-sm transition-all duration-300 ease-out ${
               form.isPublic ? "translate-x-full" : "translate-x-0"
             }`}
           />
           <button
-            onClick={() => setForm((prev) => ({ ...prev, isPublic: false }))}
-            className="flex-1 py-4 z-10 flex items-center justify-center gap-2 text-[10px] font-black uppercase italic tracking-widest transition-colors"
+            onClick={() => setForm({ ...form, isPublic: false })}
+            className="flex-1 py-2.5 z-10 flex items-center justify-center gap-2 text-xs font-bold transition-colors"
           >
             <Lock
               size={14}
@@ -168,8 +190,8 @@ export const EditExercise = () => {
             </span>
           </button>
           <button
-            onClick={() => setForm((prev) => ({ ...prev, isPublic: true }))}
-            className="flex-1 py-4 z-10 flex items-center justify-center gap-2 text-[10px] font-black uppercase italic tracking-widest transition-colors"
+            onClick={() => setForm({ ...form, isPublic: true })}
+            className="flex-1 py-2.5 z-10 flex items-center justify-center gap-2 text-xs font-bold transition-colors"
           >
             <Globe
               size={14}
@@ -186,41 +208,39 @@ export const EditExercise = () => {
         </div>
 
         {/* IDENTITY */}
-        <div className="space-y-3 px-1">
-          <label className="text-[10px] font-black uppercase text-text-muted ml-6 tracking-[0.3em]">
+        <div className="space-y-1.5">
+          <label className="text-[11px] font-bold uppercase text-text-muted ml-1 tracking-wider">
             Identity
           </label>
           <input
-            className="w-full bg-bg-surface border border-border-color p-7 rounded-[3rem] text-text-main font-black uppercase italic outline-none focus:ring-2 ring-brand-primary transition-all shadow-sm"
+            className="w-full bg-bg-surface border border-border-color p-4 rounded-xl text-text-main font-medium outline-none focus:ring-2 ring-brand-primary/10 transition-all"
             value={form.name}
-            onChange={(e) =>
-              setForm((prev) => ({ ...prev, name: e.target.value }))
-            }
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
           />
         </div>
 
-        {/* DROPDOWNS */}
-        <div className="grid grid-cols-1 gap-8 px-1">
-          <SelectField
+        {/* SELECTS */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <CustomSelect
             label="Category"
             value={form.category}
             options={muscles.filter((m) => !m.parent)}
-            onChange={(v) => setForm((prev) => ({ ...prev, category: v }))}
+            onChange={(val) => setForm({ ...form, category: val })}
           />
-          <SelectField
+          <CustomSelect
             label="Equipment"
             value={form.equipmentId}
             options={equipment}
-            onChange={(v) => setForm((prev) => ({ ...prev, equipmentId: v }))}
+            onChange={(val) => setForm({ ...form, equipmentId: val })}
           />
         </div>
 
-        {/* TRACKING */}
-        <div className="space-y-5 px-1">
-          <label className="text-[10px] font-black uppercase text-text-muted ml-6 tracking-[0.3em]">
+        {/* METRICS */}
+        <div className="space-y-3">
+          <label className="text-[11px] font-bold uppercase text-text-muted ml-1 tracking-wider">
             Metrics
           </label>
-          <div className="flex flex-wrap gap-2.5 px-2">
+          <div className="flex flex-wrap gap-2">
             {["reps", "weight", "bodyweight", "distance", "duration"].map(
               (opt) => {
                 const isActive = form.tracking.includes(opt);
@@ -228,17 +248,17 @@ export const EditExercise = () => {
                   <button
                     key={opt}
                     onClick={() =>
-                      setForm((prev) => ({
-                        ...prev,
+                      setForm({
+                        ...form,
                         tracking: isActive
-                          ? prev.tracking.filter((t) => t !== opt)
-                          : [...prev.tracking, opt],
-                      }))
+                          ? form.tracking.filter((t) => t !== opt)
+                          : [...form.tracking, opt],
+                      })
                     }
-                    className={`px-7 py-3.5 rounded-4xl text-[10px] font-black uppercase italic border transition-all duration-300 ${
+                    className={`px-5 py-2 rounded-lg text-xs font-bold border transition-all duration-200 ${
                       isActive
-                        ? "bg-brand-primary border-transparent text-bg-main shadow-lg shadow-brand-primary/20 scale-105"
-                        : "bg-bg-surface border-border-color text-text-muted hover:border-text-muted"
+                        ? "bg-brand-primary border-brand-primary text-bg-main shadow-md"
+                        : "bg-bg-surface border-border-color text-text-muted hover:border-text-main"
                     }`}
                   >
                     {opt}
@@ -249,100 +269,113 @@ export const EditExercise = () => {
           </div>
         </div>
 
-        {/* BIOMECHANICS */}
-        <div className="space-y-8 px-1">
-          <div className="space-y-3">
-            <label className="text-[10px] font-black uppercase text-text-muted ml-6 tracking-[0.3em]">
+        {/* BIOMECHANICS SEARCH */}
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold uppercase text-text-muted ml-1 tracking-wider">
               Biomechanics
             </label>
             <div className="relative">
               <Search
-                className="absolute left-7 top-1/2 -translate-y-1/2 text-text-muted opacity-50"
-                size={20}
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted"
+                size={18}
               />
               <input
-                className="w-full bg-bg-surface border border-border-color p-7 pl-16 rounded-[3rem] text-sm text-text-main outline-none shadow-inner focus:border-text-muted transition-all"
-                placeholder="Modify muscle focus..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                className="w-full bg-bg-surface border border-border-color p-4 pl-12 rounded-xl text-sm text-text-main outline-none focus:border-text-muted transition-all"
+                placeholder="Find target muscle..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
-              {search.length > 1 && (
-                <div className="absolute top-[110%] left-0 right-0 bg-bg-surface border border-border-color rounded-[2.5rem] z-50 shadow-2xl overflow-hidden animate-in slide-in-from-top-2 duration-300">
-                  {muscles
-                    .filter((m) =>
-                      m.name.toLowerCase().includes(search.toLowerCase()),
-                    )
-                    .slice(0, 5)
-                    .map((m) => (
-                      <div
-                        key={m.id}
-                        className="flex items-center justify-between p-6 border-b border-border-color/50 last:border-0 hover:bg-bg-main/50 transition-colors"
-                      >
-                        <span className="text-xs font-black uppercase italic text-text-main">
-                          {m.name}
-                        </span>
-                        <div className="flex gap-2">
-                          <QuickAddBtn
-                            label="Pri"
-                            className="bg-brand-primary"
-                            onClick={() => addMuscle(m.id, "primary")}
-                          />
-                          <QuickAddBtn
-                            label="Sec"
-                            className="bg-blue-500"
-                            onClick={() => addMuscle(m.id, "secondary")}
-                          />
-                        </div>
+              {searchResults.length > 0 && (
+                <div className="absolute top-[110%] left-0 right-0 bg-bg-surface border border-border-color rounded-xl z-50 shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2">
+                  {searchResults.map((m) => (
+                    <div
+                      key={m.id}
+                      className="flex items-center justify-between p-3 border-b border-border-color/50 last:border-0 hover:bg-bg-main transition-colors"
+                    >
+                      <span className="text-sm font-semibold text-text-main">
+                        {m.name}
+                      </span>
+                      <div className="flex gap-1.5">
+                        <QuickAddBtn
+                          label="Pri"
+                          className="bg-brand-primary"
+                          onClick={() => addMuscle(m.id, "primary")}
+                        />
+                        <QuickAddBtn
+                          label="Sec"
+                          className="bg-brand-info"
+                          onClick={() => addMuscle(m.id, "secondary")}
+                        />
+                        <QuickAddBtn
+                          label="Stb"
+                          className="bg-brand-success"
+                          onClick={() => addMuscle(m.id, "stabilizer")}
+                        />
                       </div>
-                    ))}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
           </div>
 
-          <div className="space-y-6">
-            <MuscleRow
+          {/* ACTIVE SELECTIONS (Tag Row Design) */}
+          <div className="space-y-3">
+            <MuscleTagRow
               label="Primary Focus"
               items={form.primaryMuscles}
               muscles={muscles}
               onRemove={(id) =>
-                setForm((prev) => ({
-                  ...prev,
-                  primaryMuscles: prev.primaryMuscles.filter((m) => m !== id),
+                setForm((f) => ({
+                  ...f,
+                  primaryMuscles: f.primaryMuscles.filter((m) => m !== id),
                 }))
               }
-              color="text-brand-primary"
+              colorClass="text-brand-primary"
             />
-            <MuscleRow
+            <MuscleTagRow
               label="Secondary Support"
               items={form.secondaryMuscles}
               muscles={muscles}
               onRemove={(id) =>
-                setForm((prev) => ({
-                  ...prev,
-                  secondaryMuscles: prev.secondaryMuscles.filter(
+                setForm((f) => ({
+                  ...f,
+                  secondaryMuscles: f.secondaryMuscles.filter((m) => m !== id),
+                }))
+              }
+              colorClass="text-brand-info"
+            />
+            <MuscleTagRow
+              label="Stabilizers"
+              items={form.stabilizerMuscles}
+              muscles={muscles}
+              onRemove={(id) =>
+                setForm((f) => ({
+                  ...f,
+                  stabilizerMuscles: f.stabilizerMuscles.filter(
                     (m) => m !== id,
                   ),
                 }))
               }
-              color="text-blue-500"
+              colorClass="text-brand-success"
             />
           </div>
         </div>
 
-        {/* CTA */}
-        <div className="fixed bottom-10 left-6 right-6 z-60">
+        {/* ACTION BUTTON */}
+        <div className="fixed bottom-8 left-4 right-4 z-40 md:relative md:bottom-0 md:left-0 md:right-0">
           <button
+            disabled={saving || !form.name || !form.category}
             onClick={handleUpdate}
-            disabled={saving}
-            className="w-full py-7 bg-text-main text-bg-main rounded-[3rem] font-black uppercase italic tracking-[0.2em] shadow-2xl flex items-center justify-center gap-3 active:scale-95 transition-all disabled:opacity-30 disabled:grayscale"
+            className="w-full py-4 bg-text-main text-bg-main rounded-xl font-bold uppercase tracking-widest shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-30"
           >
             {saving ? (
-              <Loader2 className="animate-spin" size={22} />
+              <Loader2 className="animate-spin" size={20} />
             ) : (
-              <Save size={22} />
+              <Save size={20} />
             )}
-            Commit Changes
+            {saving ? "Commiting..." : "Commit Changes"}
           </button>
         </div>
       </div>
@@ -350,27 +383,20 @@ export const EditExercise = () => {
   );
 };
 
-// --- HELPERS ---
+// --- REFINED HELPERS ---
 
-interface SelectProps {
-  label: string;
-  value: string;
-  options: (Muscle | Equipment)[];
-  onChange: (val: string) => void;
-}
-
-const SelectField = ({ label, value, options, onChange }: SelectProps) => (
-  <div className="space-y-3">
-    <label className="text-[10px] font-black uppercase text-text-muted ml-6 tracking-[0.3em]">
+const CustomSelect = ({ label, value, options, onChange }: SelectProps) => (
+  <div className="space-y-1.5">
+    <label className="text-[11px] font-bold uppercase text-text-muted ml-1 tracking-wider">
       {label}
     </label>
     <div className="relative">
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full bg-bg-surface border border-border-color p-7 rounded-[3rem] text-[13px] font-black uppercase italic text-text-main appearance-none outline-none focus:border-text-muted transition-all shadow-sm"
+        className="w-full bg-bg-surface border border-border-color p-3.5 rounded-xl text-sm font-semibold text-text-main appearance-none outline-none focus:border-text-muted transition-all shadow-sm"
       >
-        <option value="">Select {label}</option>
+        <option value="">Select...</option>
         {options.map((o) => (
           <option key={o.id} value={o.id.toString()}>
             {o.name}
@@ -378,8 +404,8 @@ const SelectField = ({ label, value, options, onChange }: SelectProps) => (
         ))}
       </select>
       <ChevronDown
-        className="absolute right-8 top-1/2 -translate-y-1/2 text-text-main pointer-events-none opacity-30"
-        size={20}
+        size={16}
+        className="absolute right-4 top-1/2 -translate-y-1/2 text-text-main opacity-30 pointer-events-none"
       />
     </div>
   </div>
@@ -396,47 +422,41 @@ const QuickAddBtn = ({
 }) => (
   <button
     onClick={onClick}
-    className={`${className} text-[9px] font-black uppercase px-4 py-2 rounded-xl text-bg-main shadow-lg active:scale-90 transition-all`}
+    className={`${className} text-[10px] font-bold px-3 py-1.5 rounded-lg text-bg-main shadow hover:brightness-110 active:scale-90 transition-all`}
   >
     {label}
   </button>
 );
 
-const MuscleRow = ({
+const MuscleTagRow = ({
   label,
   items,
   muscles,
   onRemove,
-  color,
-}: {
-  label: string;
-  items: string[];
-  muscles: Muscle[];
-  onRemove: (id: string) => void;
-  color: string;
-}) => {
+  colorClass,
+}: TagRowProps) => {
   if (items.length === 0) return null;
   return (
-    <div className="space-y-3 animate-in slide-in-from-left-2 duration-300">
-      <span
-        className={`text-[10px] font-black uppercase italic tracking-[0.2em] ml-4 ${color}`}
+    <div className="space-y-2 animate-in slide-in-from-left-2 duration-300">
+      <p
+        className={`text-[10px] font-bold uppercase tracking-wider ml-1 ${colorClass}`}
       >
         {label}
-      </span>
-      <div className="flex flex-wrap gap-2.5">
+      </p>
+      <div className="flex flex-wrap gap-2">
         {items.map((id) => (
           <div
             key={id}
-            className="flex items-center gap-3 bg-bg-surface border border-border-color px-5 py-3 rounded-2xl shadow-sm hover:border-text-muted transition-colors"
+            className="flex items-center gap-2 bg-bg-surface border border-border-color px-3 py-1.5 rounded-lg shadow-sm"
           >
-            <span className="text-[12px] font-black uppercase italic text-text-main">
+            <span className="text-xs font-semibold text-text-main">
               {muscles.find((m) => m.id === id)?.name}
             </span>
             <button
               onClick={() => onRemove(id)}
-              className="text-text-muted hover:text-brand-danger transition-colors"
+              className="text-text-muted hover:text-brand-error transition-colors"
             >
-              <X size={16} />
+              <X size={14} />
             </button>
           </div>
         ))}

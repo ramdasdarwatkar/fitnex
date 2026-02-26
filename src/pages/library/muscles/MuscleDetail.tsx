@@ -1,7 +1,6 @@
 import { useEffect, useState, type ChangeEvent } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { SubPageLayout } from "../../../components/layout/SubPageLayout";
-import { LibraryService } from "../../../services/LibraryService";
 import {
   Save,
   Trash2,

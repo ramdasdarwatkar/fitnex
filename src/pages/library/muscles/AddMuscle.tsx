@@ -1,7 +1,6 @@
 import { useEffect, useState, type ChangeEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { SubPageLayout } from "../../../components/layout/SubPageLayout";
-import { LibraryService } from "../../../services/LibraryService";
 import { Plus, GitMerge, ChevronDown, Loader2 } from "lucide-react";
 import type { Muscle } from "../../../types/database.types";
 import { MuscleService } from "../../../services/MuscleService";

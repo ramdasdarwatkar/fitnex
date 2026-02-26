@@ -7,10 +7,6 @@ import {
 } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { SubPageLayout } from "../../../components/layout/SubPageLayout";
-import {
-  LibraryService,
-  type EnrichedExercise,
-} from "../../../services/LibraryService";
 import { RoutineService } from "../../../services/RoutineService";
 import {
   Check,
@@ -27,7 +23,10 @@ import { ExercisePicker } from "../exercises/ExercisePicker";
 
 // 1. Strict Interfaces
 import { useAuth } from "../../../hooks/useAuth";
-import { ExerciseService } from "../../../services/ExerciseService";
+import {
+  ExerciseService,
+  type EnrichedExercise,
+} from "../../../services/ExerciseService";
 
 export interface SelectedExercise extends Partial<EnrichedExercise> {
   id: string; // The specific junction ID or a generated local ID
@@ -354,6 +353,7 @@ export const RoutineDetail = () => {
         <ExercisePicker
           onClose={() => setShowPicker(false)}
           onAdd={handleAddExercises}
+          excludedIds={selectedExercises.map((ex) => ex.exercise_id)}
         />
       )}
 

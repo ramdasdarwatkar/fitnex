@@ -290,15 +290,6 @@ export interface AthleteSummary {
   created_at: string;
 }
 
-/** v_latest_personal_records */
-export interface LatestPersonalRecord {
-  user_id: string;
-  exercise_id: string;
-  value: number;
-  value_type: string;
-  record_date: string;
-}
-
 /** get_user_stats_between (RPC Function) */
 export interface CustomizedStats {
   user_id: string;
@@ -390,7 +381,7 @@ export interface Database {
     Views: {
       v_user_dashboard: { Row: AthleteSummary };
       v_latest_body_metrics: { Row: BodyMetrics };
-      v_latest_personal_records: { Row: LatestPersonalRecord };
+      v_latest_personal_records: { Row: PersonalRecord };
       v_latest_athlete_level: {
         Row: AthleteLevel;
       };

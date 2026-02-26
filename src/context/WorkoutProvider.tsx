@@ -4,6 +4,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { WorkoutService } from "../services/WorkoutService";
 import { WorkoutContext, type WorkoutContextType } from "./WorkoutTypes";
 import type { LocalWorkoutLog } from "../types/database.types";
+import { WorkoutLogsService } from "../services/WorkoutLogsService";
 
 export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -18,7 +19,9 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const activeLogs = useLiveQuery(
     () =>
-      activeWorkout ? WorkoutService.getWorkoutLogsQuery(activeWorkout.id) : [],
+      activeWorkout
+        ? WorkoutLogsService.getWorkoutLogsQuery(activeWorkout.id)
+        : [],
     [activeWorkout],
   );
 

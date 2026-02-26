@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Save,
@@ -6,18 +6,16 @@ import {
   X,
   Globe,
   Lock,
-  ChevronRight,
+  ChevronDown,
   Loader2,
 } from "lucide-react";
 import { SubPageLayout } from "../../../components/layout/SubPageLayout";
 import { useAuth } from "../../../hooks/useAuth";
 import { db } from "../../../db/database";
-import { LibraryService } from "../../../services/LibraryService";
 import { type Equipment, type Muscle } from "../../../types/database.types";
 import { ExerciseService } from "../../../services/ExerciseService";
 
-// --- 1. STRICT INTERFACES ---
-
+// --- 1. STRICT INTERFACES (UNCHANGED) ---
 interface ExerciseForm {
   name: string;
   isPublic: boolean;
@@ -30,7 +28,6 @@ interface ExerciseForm {
 }
 
 // --- 2. MAIN COMPONENT ---
-
 export const AddExercise = () => {
   const navigate = useNavigate();
   const { user_id } = useAuth();
@@ -55,6 +52,14 @@ export const AddExercise = () => {
     db.muscles.toArray().then((data) => setMuscles(data));
     db.equipment.toArray().then((data) => setEquipment(data));
   }, []);
+
+  // Performance optimized filtering
+  const searchResults = useMemo(() => {
+    if (searchQuery.length < 2) return [];
+    return muscles
+      .filter((m) => m.name.toLowerCase().includes(searchQuery.toLowerCase()))
+      .slice(0, 5);
+  }, [searchQuery, muscles]);
 
   const handleSave = async () => {
     if (!form.name || !form.category || !user_id) return;
@@ -85,17 +90,17 @@ export const AddExercise = () => {
 
   return (
     <SubPageLayout title="Create Exercise">
-      <div className="flex flex-col gap-10 pb-48 px-2 animate-in fade-in duration-500">
-        {/* VISIBILITY SELECTOR */}
-        <div className="bg-bg-surface p-1.5 rounded-[2.5rem] flex relative border border-border-color shadow-inner">
+      <div className="flex flex-col gap-6 pb-40 max-w-2xl mx-auto animate-in fade-in duration-500">
+        {/* VISIBILITY SELECTOR - Refined Toggle */}
+        <div className="bg-bg-surface p-1 rounded-xl flex relative border border-border-color shadow-sm">
           <div
-            className={`absolute top-1.5 bottom-1.5 w-[calc(50%-6px)] bg-bg-main rounded-[2.2rem] shadow-xl transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) ${
+            className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-bg-main rounded-lg shadow-sm transition-all duration-300 ease-out ${
               form.isPublic ? "translate-x-full" : "translate-x-0"
             }`}
           />
           <button
             onClick={() => setForm({ ...form, isPublic: false })}
-            className="flex-1 py-4 z-10 flex items-center justify-center gap-2 text-[10px] font-black uppercase italic tracking-widest transition-colors"
+            className="flex-1 py-2.5 z-10 flex items-center justify-center gap-2 text-xs font-bold transition-colors"
           >
             <Lock
               size={14}
@@ -109,7 +114,7 @@ export const AddExercise = () => {
           </button>
           <button
             onClick={() => setForm({ ...form, isPublic: true })}
-            className="flex-1 py-4 z-10 flex items-center justify-center gap-2 text-[10px] font-black uppercase italic tracking-widest transition-colors"
+            className="flex-1 py-2.5 z-10 flex items-center justify-center gap-2 text-xs font-bold transition-colors"
           >
             <Globe
               size={14}
@@ -126,20 +131,20 @@ export const AddExercise = () => {
         </div>
 
         {/* EXERCISE NAME */}
-        <div className="space-y-3">
-          <label className="text-[10px] font-black uppercase text-text-muted ml-6 tracking-[0.3em]">
+        <div className="space-y-1.5">
+          <label className="text-[11px] font-bold uppercase text-text-muted ml-1 tracking-wider">
             Identity
           </label>
           <input
-            className="w-full bg-bg-surface border border-border-color p-7 rounded-[3rem] text-text-main font-black uppercase italic outline-none focus:ring-2 ring-brand-primary transition-all placeholder:opacity-20 shadow-sm"
-            placeholder="E.G. ZOTTMAN CURLS"
+            className="w-full bg-bg-surface border border-border-color p-4 rounded-xl text-text-main font-medium outline-none focus:ring-2 ring-brand-primary/10 transition-all placeholder:opacity-40"
+            placeholder="e.g. Zottman Curls"
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
           />
         </div>
 
-        {/* SELECTS */}
-        <div className="grid grid-cols-1 gap-8">
+        {/* SELECTS - Grid for performance & space */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <CustomSelect
             label="Main Category"
             value={form.category}
@@ -155,11 +160,11 @@ export const AddExercise = () => {
         </div>
 
         {/* TRACKING OPTIONS */}
-        <div className="space-y-5">
-          <label className="text-[10px] font-black uppercase text-text-muted ml-6 tracking-[0.3em]">
+        <div className="space-y-3">
+          <label className="text-[11px] font-bold uppercase text-text-muted ml-1 tracking-wider">
             Metrics
           </label>
-          <div className="flex flex-wrap gap-2.5 px-2">
+          <div className="flex flex-wrap gap-2">
             {["reps", "weight", "bodyweight", "distance", "duration"].map(
               (opt) => {
                 const isActive = form.tracking.includes(opt);
@@ -174,10 +179,10 @@ export const AddExercise = () => {
                           : [...form.tracking, opt],
                       })
                     }
-                    className={`px-7 py-3.5 rounded-4xl text-[10px] font-black uppercase italic border transition-all duration-300 ${
+                    className={`px-5 py-2 rounded-lg text-xs font-bold border transition-all duration-200 ${
                       isActive
-                        ? "bg-brand-primary border-transparent text-bg-main shadow-lg shadow-brand-primary/20 scale-105"
-                        : "bg-bg-surface border-border-color text-text-muted hover:border-text-muted"
+                        ? "bg-brand-primary border-brand-primary text-bg-main shadow-md"
+                        : "bg-bg-surface border-border-color text-text-muted hover:border-text-main"
                     }`}
                   >
                     {opt}
@@ -189,64 +194,60 @@ export const AddExercise = () => {
         </div>
 
         {/* MUSCLE SEARCH */}
-        <div className="space-y-8">
-          <div className="space-y-3">
-            <label className="text-[10px] font-black uppercase text-text-muted ml-6 tracking-[0.3em]">
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold uppercase text-text-muted ml-1 tracking-wider">
               Biomechanics
             </label>
             <div className="relative">
               <Search
-                className="absolute left-7 top-1/2 -translate-y-1/2 text-text-muted opacity-50"
-                size={20}
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted"
+                size={18}
               />
               <input
-                className="w-full bg-bg-surface border border-border-color p-7 pl-16 rounded-[3rem] text-sm text-text-main outline-none shadow-inner focus:border-text-muted transition-all"
+                className="w-full bg-bg-surface border border-border-color p-4 pl-12 rounded-xl text-sm text-text-main outline-none focus:border-text-muted transition-all"
                 placeholder="Find target muscle..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
-              {searchQuery.length > 1 && (
-                <div className="absolute top-[110%] left-0 right-0 bg-bg-surface border border-border-color rounded-[2.5rem] z-50 shadow-2xl overflow-hidden animate-in slide-in-from-top-2 duration-300">
-                  {muscles
-                    .filter((m) =>
-                      m.name.toLowerCase().includes(searchQuery.toLowerCase()),
-                    )
-                    .slice(0, 5)
-                    .map((m) => (
-                      <div
-                        key={m.id}
-                        className="flex items-center justify-between p-6 border-b border-border-color/50 last:border-0 hover:bg-bg-main/50 transition-colors"
-                      >
-                        <span className="text-xs font-black uppercase italic text-text-main">
-                          {m.name}
-                        </span>
-                        <div className="flex gap-2">
-                          <QuickAddBtn
-                            label="Pri"
-                            className="bg-brand-primary"
-                            onClick={() => addMuscle(m.id, "primary")}
-                          />
-                          <QuickAddBtn
-                            label="Sec"
-                            className="bg-blue-500"
-                            onClick={() => addMuscle(m.id, "secondary")}
-                          />
-                          <QuickAddBtn
-                            label="Stb"
-                            className="bg-brand-success"
-                            onClick={() => addMuscle(m.id, "stabilizer")}
-                          />
-                        </div>
+              {searchResults.length > 0 && (
+                <div className="absolute top-[110%] left-0 right-0 bg-bg-surface border border-border-color rounded-xl z-50 shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2">
+                  {searchResults.map((m) => (
+                    <div
+                      key={m.id}
+                      className="flex items-center justify-between p-3 border-b border-border-color/50 last:border-0 hover:bg-bg-main transition-colors"
+                    >
+                      <span className="text-sm font-semibold text-text-main">
+                        {m.name}
+                      </span>
+                      <div className="flex gap-1.5">
+                        <QuickAddBtn
+                          label="Pri"
+                          className="bg-brand-primary"
+                          onClick={() => addMuscle(m.id, "primary")}
+                        />
+                        <QuickAddBtn
+                          label="Sec"
+                          className="bg-brand-info"
+                          onClick={() => addMuscle(m.id, "secondary")}
+                        />
+                        <QuickAddBtn
+                          label="Stb"
+                          className="bg-brand-success"
+                          onClick={() => addMuscle(m.id, "stabilizer")}
+                        />
                       </div>
-                    ))}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
           </div>
 
-          <div className="space-y-6">
+          {/* ACTIVE SELECTIONS */}
+          <div className="space-y-3">
             <MuscleTagRow
-              label="Primary Focus"
+              label="Primary"
               items={form.primaryMuscles}
               muscles={muscles}
               onRemove={(id) =>
@@ -258,7 +259,7 @@ export const AddExercise = () => {
               colorClass="text-brand-primary"
             />
             <MuscleTagRow
-              label="Secondary Support"
+              label="Secondary"
               items={form.secondaryMuscles}
               muscles={muscles}
               onRemove={(id) =>
@@ -269,7 +270,7 @@ export const AddExercise = () => {
                   ),
                 })
               }
-              colorClass="text-blue-500"
+              colorClass="text-brand-info"
             />
             <MuscleTagRow
               label="Stabilizers"
@@ -289,16 +290,16 @@ export const AddExercise = () => {
         </div>
 
         {/* ACTION BUTTON */}
-        <div className="fixed bottom-10 left-6 right-6 z-60">
+        <div className="fixed bottom-8 left-4 right-4 z-40 md:relative md:bottom-0 md:left-0 md:right-0">
           <button
             disabled={isSaving || !form.name || !form.category}
             onClick={handleSave}
-            className="w-full py-7 bg-text-main text-bg-main rounded-[3rem] font-black uppercase italic tracking-[0.2em] shadow-2xl flex items-center justify-center gap-3 active:scale-95 transition-all disabled:opacity-30 disabled:grayscale"
+            className="w-full py-4 bg-text-main text-bg-main rounded-xl font-bold uppercase tracking-widest shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-30"
           >
             {isSaving ? (
-              <Loader2 className="animate-spin" size={22} />
+              <Loader2 className="animate-spin" size={20} />
             ) : (
-              <Save size={22} />
+              <Save size={20} />
             )}
             {isSaving ? "Finalizing..." : "Initialize Exercise"}
           </button>
@@ -308,7 +309,7 @@ export const AddExercise = () => {
   );
 };
 
-// --- HELPER COMPONENTS ---
+// --- REFINED HELPER COMPONENTS ---
 
 interface SelectProps {
   label: string;
@@ -318,26 +319,27 @@ interface SelectProps {
 }
 
 const CustomSelect = ({ label, value, options, onChange }: SelectProps) => (
-  <div className="space-y-3">
-    <label className="text-[10px] font-black uppercase text-text-muted ml-6 tracking-[0.3em]">
+  <div className="space-y-1.5">
+    <label className="text-[11px] font-bold uppercase text-text-muted ml-1 tracking-wider">
       {label}
     </label>
     <div className="relative">
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full bg-bg-surface border border-border-color p-7 rounded-[3rem] text-[13px] font-black uppercase italic text-text-main appearance-none outline-none focus:border-text-muted transition-all shadow-sm"
+        className="w-full bg-bg-surface border border-border-color p-3.5 rounded-xl text-sm font-semibold text-text-main appearance-none outline-none focus:border-text-muted transition-all shadow-sm"
       >
-        <option value="">Select {label}</option>
+        <option value="">Select...</option>
         {options.map((o) => (
           <option key={o.id} value={o.id.toString()}>
             {o.name}
           </option>
         ))}
       </select>
-      <div className="absolute right-8 top-1/2 -translate-y-1/2 pointer-events-none opacity-30">
-        <ChevronRight size={18} className="rotate-90 text-text-main" />
-      </div>
+      <ChevronDown
+        size={16}
+        className="absolute right-4 top-1/2 -translate-y-1/2 text-text-main opacity-30 pointer-events-none"
+      />
     </div>
   </div>
 );
@@ -353,7 +355,7 @@ const QuickAddBtn = ({
 }) => (
   <button
     onClick={onClick}
-    className={`${className} text-[9px] font-black uppercase px-4 py-2 rounded-xl text-bg-main shadow-lg active:scale-90 transition-all`}
+    className={`${className} text-[10px] font-bold px-3 py-1.5 rounded-lg text-bg-main shadow hover:brightness-110 active:scale-90 transition-all`}
   >
     {label}
   </button>
@@ -376,26 +378,26 @@ const MuscleTagRow = ({
 }: TagRowProps) => {
   if (items.length === 0) return null;
   return (
-    <div className="space-y-3 animate-in slide-in-from-left-2 duration-300">
+    <div className="space-y-2 animate-in slide-in-from-left-2 duration-300">
       <p
-        className={`text-[10px] font-black uppercase tracking-[0.2em] italic ml-4 ${colorClass}`}
+        className={`text-[10px] font-bold uppercase tracking-wider ml-1 ${colorClass}`}
       >
         {label}
       </p>
-      <div className="flex flex-wrap gap-2.5">
+      <div className="flex flex-wrap gap-2">
         {items.map((id) => (
           <div
             key={id}
-            className="flex items-center gap-3 bg-bg-surface border border-border-color px-5 py-3 rounded-2xl shadow-sm hover:border-text-muted transition-colors"
+            className="flex items-center gap-2 bg-bg-surface border border-border-color px-3 py-1.5 rounded-lg shadow-sm"
           >
-            <span className="text-[12px] font-black uppercase italic text-text-main">
+            <span className="text-xs font-semibold text-text-main">
               {muscles.find((m) => m.id === id)?.name}
             </span>
             <button
               onClick={() => onRemove(id)}
-              className="text-text-muted hover:text-brand-danger transition-colors"
+              className="text-text-muted hover:text-brand-error transition-colors"
             >
-              <X size={16} />
+              <X size={14} />
             </button>
           </div>
         ))}
