@@ -1,10 +1,4 @@
-import {
-  useEffect,
-  useState,
-  useMemo,
-  type ChangeEvent,
-  type ReactNode,
-} from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { SubPageLayout } from "../../../components/layout/SubPageLayout";
 import { RoutineService } from "../../../services/RoutineService";
@@ -12,59 +6,79 @@ import {
   Check,
   Plus,
   Minus,
-  MoveVertical,
-  Trash2,
   AlertCircle,
   Lock,
   Globe,
   Loader2,
+  Clock,
+  Hash,
+  GripVertical,
+  X,
+  Edit3,
+  Trash2,
 } from "lucide-react";
 import { ExercisePicker } from "../exercises/ExercisePicker";
 
-// 1. Strict Interfaces
+// DND Kit
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+
 import { useAuth } from "../../../hooks/useAuth";
 import {
   ExerciseService,
   type EnrichedExercise,
 } from "../../../services/ExerciseService";
 
-export interface SelectedExercise extends Partial<EnrichedExercise> {
-  id: string; // The specific junction ID or a generated local ID
-  exercise_id: string;
-  name?: string;
+// --- 1. STRICT INTERFACES ---
+
+export interface SelectedExercise extends EnrichedExercise {
+  tempId: string;
   target_sets: number;
   target_reps: number;
+  target_duration?: number;
 }
 
-/**
- * STRICT DATABASE INTERFACE
- * Replaced [key: string]: any with explicit properties to satisfy the linter
- * and the React Compiler's static analysis.
- */
+type TargetMetricKey = "target_sets" | "target_reps" | "target_duration";
+
 interface RoutineExerciseDB {
-  id?: string;
   exercise_id: string;
-  name?: string;
-  target_sets?: number | null;
-  target_reps?: number | null;
-  exercise_order?: number;
-  is_synced?: number;
+  target_sets: number | null;
+  target_reps: number | null;
+  target_duration?: number | null;
 }
 
-interface PrivacyProps {
+interface SortableExerciseItemProps {
+  ex: SelectedExercise;
+  index: number;
+  onRemove: () => void;
+  onUpdate: (field: TargetMetricKey, val: number) => void;
+  isEditing: boolean;
+}
+
+interface PrivacyToggleProps {
   active: boolean;
   label: string;
-  icon: ReactNode;
+  icon: React.ReactNode;
   onClick: () => void;
   primary?: boolean;
 }
 
-interface CounterProps {
-  label: string;
-  value: number;
-  onDec: () => void;
-  onInc: () => void;
-}
+// --- 2. MAIN COMPONENT ---
 
 export const RoutineDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -73,6 +87,7 @@ export const RoutineDetail = () => {
 
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
 
@@ -83,6 +98,13 @@ export const RoutineDetail = () => {
   const [selectedExercises, setSelectedExercises] = useState<
     SelectedExercise[]
   >([]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -99,23 +121,24 @@ export const RoutineDetail = () => {
           setDescription(details.description || "");
           setIsPublic(details.is_public);
 
-          // MAPPING: Convert DB rows to SelectedExercise objects
           const mapped = details.exercises.map(
-            (ex: RoutineExerciseDB): SelectedExercise => ({
-              ...ex,
-              id: ex.id || ex.exercise_id || crypto.randomUUID(),
-              exercise_id: ex.exercise_id,
-              target_sets: ex.target_sets ?? 3,
-              target_reps: ex.target_reps ?? 10,
-            }),
+            (ex: RoutineExerciseDB): SelectedExercise => {
+              const baseEx = fullLibrary.find((l) => l.id === ex.exercise_id);
+              return {
+                ...(baseEx || ({} as EnrichedExercise)),
+                tempId: crypto.randomUUID(),
+                exercise_id: ex.exercise_id,
+                target_sets: ex.target_sets ?? 3,
+                target_reps: ex.target_reps ?? 10,
+                target_duration: ex.target_duration ?? undefined,
+              } as SelectedExercise;
+            },
           );
-
           setSelectedExercises(mapped);
         }
         if (isMounted) setLibrary(fullLibrary);
-      } catch (err: unknown) {
-        // FIXED: 'err' used for debugging to satisfy linter
-        console.error("RoutineDetail Load Error:", err);
+      } catch (err) {
+        console.error("Load failed:", err);
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -126,45 +149,16 @@ export const RoutineDetail = () => {
     };
   }, [id]);
 
-  const muscleFocus = useMemo(() => {
-    const counts: Record<string, number> = {};
-    selectedExercises.forEach((ex: SelectedExercise) => {
-      const targetId = ex.exercise_id || ex.id;
-      const baseEx = library.find((l) => l.id === targetId);
-      baseEx?.all_muscles
-        ?.filter((m) => m.role === "primary")
-        .forEach((m) => {
-          counts[m.name] = (counts[m.name] || 0) + 1;
-        });
-    });
-    return Object.entries(counts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 3);
-  }, [selectedExercises, library]);
-
-  const handleAddExercises = (ids: string[]) => {
-    const newItems: SelectedExercise[] = ids.map((exId) => {
-      const ex = library.find((l) => l.id === exId);
-      return {
-        ...(ex || {}),
-        id: crypto.randomUUID(),
-        exercise_id: exId,
-        target_sets: 3,
-        target_reps: 10,
-      } as SelectedExercise;
-    });
-    setSelectedExercises((prev) => [...prev, ...newItems]);
-    setShowPicker(false);
-  };
-
-  const updateTarget = (
-    index: number,
-    field: "target_sets" | "target_reps",
-    val: number,
-  ) => {
-    setSelectedExercises((prev) =>
-      prev.map((ex, i) => (i === index ? { ...ex, [field]: val } : ex)),
-    );
+  const handleDragEnd = (event: DragEndEvent) => {
+    if (!isEditing) return;
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      setSelectedExercises((items) => {
+        const oldIndex = items.findIndex((i) => i.tempId === active.id);
+        const newIndex = items.findIndex((i) => i.tempId === over.id);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
   };
 
   const onUpdate = async () => {
@@ -179,16 +173,16 @@ export const RoutineDetail = () => {
           is_public: isPublic,
           updated_at: new Date().toISOString(),
         },
-        selectedExercises.map((ex: SelectedExercise) => ({
+        selectedExercises.map((ex) => ({
           exercise_id: ex.exercise_id || ex.id,
           target_sets: ex.target_sets,
           target_reps: ex.target_reps,
+          target_duration: ex.target_duration,
         })),
       );
-      navigate(-1);
-    } catch (err: unknown) {
-      console.error("Update failed:", err);
-      alert("Error updating routine.");
+      setIsEditing(false);
+    } catch (err) {
+      console.error(err);
     } finally {
       setProcessing(false);
     }
@@ -202,26 +196,29 @@ export const RoutineDetail = () => {
     );
 
   return (
-    <SubPageLayout title="Edit Routine">
+    <SubPageLayout title={isEditing ? "Edit Routine" : "Routine Detail"}>
       <div className="flex-1 flex flex-col gap-6 pb-32 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        {/* INFO CARD */}
-        <div className="bg-bg-surface border border-border-color p-6 rounded-[2.2rem] shadow-xl space-y-6">
-          <input
-            type="text"
-            value={name}
-            onChange={(e: ChangeEvent<HTMLInputElement>) =>
-              setName(e.target.value)
-            }
-            className="w-full bg-transparent text-2xl font-black italic text-text-main outline-none uppercase tracking-tighter"
-          />
+        {/* HEADER CARD */}
+        <div className="bg-bg-surface border border-border-color/60 p-6 rounded-2xl space-y-6 shadow-sm">
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold uppercase tracking-widest text-text-muted ml-1">
+              Title
+            </label>
+            <input
+              disabled={!isEditing}
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full bg-transparent text-2xl font-bold text-text-main outline-none uppercase tracking-tight disabled:opacity-100"
+            />
+          </div>
 
           <textarea
+            disabled={!isEditing}
             value={description}
-            onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
-              setDescription(e.target.value)
-            }
-            placeholder="ROUTINE DESCRIPTION"
-            className="w-full bg-bg-main border border-border-color rounded-2xl p-4 text-xs font-bold text-text-main outline-none resize-none h-24 placeholder:text-text-muted/20"
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="NOTES..."
+            className="w-full bg-bg-main/50 border border-border-color/40 rounded-xl p-4 text-xs font-semibold text-text-main outline-none resize-none h-20 disabled:opacity-60"
           />
 
           <div className="flex gap-2">
@@ -229,148 +226,274 @@ export const RoutineDetail = () => {
               active={!isPublic}
               label="Private"
               icon={<Lock size={12} />}
-              onClick={() => setIsPublic(false)}
+              onClick={() => isEditing && setIsPublic(false)}
             />
             <PrivacyToggle
               active={isPublic}
               label="Public"
               icon={<Globe size={12} />}
               primary
-              onClick={() => setIsPublic(true)}
+              onClick={() => isEditing && setIsPublic(true)}
             />
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {muscleFocus.map(([mName]) => (
-              <span
-                key={mName}
-                className="text-[8px] font-black uppercase px-3 py-1.5 bg-brand-primary/10 text-brand-primary rounded-full border border-brand-primary/20"
-              >
-                {mName}
-              </span>
-            ))}
           </div>
         </div>
 
-        {/* ADD ACTION */}
-        <button
-          onClick={() => setShowPicker(true)}
-          className="w-full bg-bg-surface border border-border-color rounded-2xl py-6 px-6 flex items-center gap-4 text-text-muted active:scale-[0.98] transition-all group"
-        >
-          <div className="w-8 h-8 rounded-full bg-bg-main flex items-center justify-center border border-border-color group-hover:border-brand-primary/40 transition-colors">
+        {isEditing && (
+          <button
+            onClick={() => setShowPicker(true)}
+            className="w-full bg-bg-surface border border-dashed border-border-color rounded-xl py-5 flex items-center justify-center gap-3 text-text-muted active:scale-[0.98] transition-all"
+          >
             <Plus size={18} className="text-brand-primary" />
-          </div>
-          <span className="text-xs font-black uppercase italic tracking-widest">
-            Add Exercises
-          </span>
-        </button>
+            <span className="text-xs font-bold uppercase tracking-widest">
+              Add Exercises
+            </span>
+          </button>
+        )}
 
-        {/* LIST SECTION */}
-        <div className="space-y-3">
-          {selectedExercises.map((ex: SelectedExercise, idx: number) => (
-            <div
-              key={`${ex.id}-${idx}`}
-              className="bg-bg-surface border border-border-color rounded-[1.8rem] p-5 flex flex-col gap-5 shadow-sm"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <MoveVertical size={16} className="text-text-muted/40" />
-                  <span className="text-sm font-black uppercase italic text-text-main">
-                    {ex.name ||
-                      library.find((l) => l.id === ex.exercise_id)?.name}
-                  </span>
-                </div>
-                <button
-                  onClick={() =>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={selectedExercises.map((e) => e.tempId)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="space-y-3">
+              {selectedExercises.map((ex, idx) => (
+                <SortableExerciseItem
+                  key={ex.tempId}
+                  ex={ex}
+                  index={idx}
+                  isEditing={isEditing}
+                  onRemove={() =>
                     setSelectedExercises((prev) =>
                       prev.filter((_, i) => i !== idx),
                     )
                   }
-                  className="w-9 h-9 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500 active:scale-90 transition-all"
-                >
-                  <Minus size={16} strokeWidth={3} />
-                </button>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <Counter
-                  label="Sets"
-                  value={ex.target_sets}
-                  onDec={() =>
-                    updateTarget(
-                      idx,
-                      "target_sets",
-                      Math.max(1, ex.target_sets - 1),
-                    )
-                  }
-                  onInc={() =>
-                    updateTarget(idx, "target_sets", ex.target_sets + 1)
-                  }
+                  onUpdate={(field, val) => {
+                    setSelectedExercises((prev) =>
+                      prev.map((item, i) =>
+                        i === idx ? { ...item, [field]: val } : item,
+                      ),
+                    );
+                  }}
                 />
-                <Counter
-                  label="Reps"
-                  value={ex.target_reps}
-                  onDec={() =>
-                    updateTarget(
-                      idx,
-                      "target_reps",
-                      Math.max(1, ex.target_reps - 1),
-                    )
-                  }
-                  onInc={() =>
-                    updateTarget(idx, "target_reps", ex.target_reps + 1)
-                  }
-                />
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </SortableContext>
+        </DndContext>
 
-        {/* SAVE/DELETE ACTIONS */}
-        <div className="flex flex-col gap-3">
-          <button
-            onClick={onUpdate}
-            disabled={processing}
-            className="w-full py-6 bg-brand-primary text-black font-black uppercase italic rounded-4xl shadow-xl shadow-brand-primary/20 active:scale-[0.98] transition-all flex items-center justify-center gap-3 tracking-widest disabled:opacity-50"
-          >
-            {processing ? (
-              <Loader2 className="animate-spin" />
-            ) : (
-              <Check size={20} strokeWidth={4} />
-            )}
-            <span>{processing ? "Updating..." : "Update Template"}</span>
-          </button>
-          <button
-            onClick={() => setShowModal(true)}
-            className="w-full py-6 bg-red-500/10 text-red-500 font-black uppercase italic rounded-4xl flex items-center justify-center gap-3 border border-red-500/20 active:scale-95 transition-all"
-          >
-            <Trash2 size={20} /> Archive Routine
-          </button>
+        {/* DYNAMIC ACTION BUTTONS */}
+        <div className="flex flex-col gap-3 mt-4">
+          {isEditing ? (
+            <>
+              <button
+                onClick={onUpdate}
+                disabled={
+                  processing || !name.trim() || selectedExercises.length === 0
+                }
+                className="w-full h-14 bg-brand-primary text-bg-main font-bold uppercase tracking-widest rounded-xl shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-3"
+              >
+                {processing ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Check size={20} strokeWidth={3} />
+                )}
+                <span>Update Template</span>
+              </button>
+              <button
+                onClick={() => setIsEditing(false)}
+                className="w-full py-4 bg-bg-surface text-text-muted font-bold uppercase text-[10px] tracking-widest rounded-xl border border-border-color/40"
+              >
+                Discard Changes
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => setIsEditing(true)}
+                className="w-full h-14 bg-text-main text-bg-main font-bold uppercase tracking-widest rounded-xl shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-3"
+              >
+                <Edit3 size={18} />
+                <span>Modify Routine</span>
+              </button>
+              <button
+                onClick={() => setShowModal(true)}
+                className="w-full py-4 bg-bg-surface text-brand-error font-bold uppercase text-[10px] tracking-widest rounded-xl border border-brand-error/10 active:scale-95 transition-all"
+              >
+                <Trash2 size={16} className="inline mr-2" />
+                Archive Routine
+              </button>
+            </>
+          )}
         </div>
       </div>
 
       {showPicker && (
         <ExercisePicker
           onClose={() => setShowPicker(false)}
-          onAdd={handleAddExercises}
-          excludedIds={selectedExercises.map((ex) => ex.exercise_id)}
+          onAdd={(ids) => {
+            const newItems = ids.map((id) => {
+              const ex = library.find((l) => l.id === id);
+              return {
+                ...(ex || {}),
+                tempId: crypto.randomUUID(),
+                exercise_id: id,
+                target_sets: 3,
+                target_reps: ex?.reps ? 10 : 0,
+                target_duration: ex?.duration ? 30 : undefined,
+              } as SelectedExercise;
+            });
+            setSelectedExercises((prev) => [...prev, ...newItems]);
+            setShowPicker(false);
+          }}
+          excludedIds={selectedExercises.map((e) => e.exercise_id || e.id)}
         />
       )}
 
       <ConfirmModal
         isOpen={showModal}
-        onConfirm={() => {
-          RoutineService.archiveRoutine(id!)
-            .then(() => navigate(-1))
-            .catch((err: unknown) => console.error("Archive Error:", err));
-        }}
+        onConfirm={() =>
+          RoutineService.archiveRoutine(id!).then(() => navigate(-1))
+        }
         onCancel={() => setShowModal(false)}
       />
     </SubPageLayout>
   );
 };
 
-/* --- UI COMPONENTS --- */
+// --- 3. SUB-COMPONENTS ---
+
+const SortableExerciseItem = ({
+  ex,
+  index,
+  onRemove,
+  onUpdate,
+  isEditing,
+}: SortableExerciseItemProps) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: ex.tempId,
+    disabled: !isEditing,
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : 0,
+    position: "relative" as const,
+  };
+
+  const metrics = [
+    {
+      key: "target_sets" as const,
+      label: "Sets",
+      icon: <Hash size={10} />,
+      show: true,
+    },
+    {
+      key: "target_reps" as const,
+      label: "Reps",
+      icon: <Hash size={10} />,
+      show: !!ex.reps,
+    },
+    {
+      key: "target_duration" as const,
+      label: "min",
+      icon: <Clock size={10} />,
+      show: !!ex.duration,
+    },
+  ].filter((m) => m.show);
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`bg-bg-surface border rounded-2xl p-4 space-y-4 shadow-sm transition-all ${isDragging ? "border-brand-primary ring-4 ring-brand-primary/10 shadow-2xl scale-[1.02]" : "border-border-color/60"}`}
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3 overflow-hidden">
+          {isEditing && (
+            <div
+              {...attributes}
+              {...listeners}
+              className="cursor-grab active:cursor-grabbing p-1 text-text-muted/30 hover:text-brand-primary transition-colors"
+            >
+              <GripVertical size={16} />
+            </div>
+          )}
+          <div className="w-6 h-6 rounded-lg bg-bg-main border border-border-color/40 flex items-center justify-center text-[10px] font-bold text-text-muted shrink-0">
+            {index + 1}
+          </div>
+          <span className="text-sm font-bold uppercase text-text-main truncate tracking-tight">
+            {ex.name}
+          </span>
+        </div>
+        {isEditing && (
+          <button
+            onClick={onRemove}
+            className="w-8 h-8 rounded-lg bg-brand-error/10 text-brand-error flex items-center justify-center active:scale-90 transition-transform"
+          >
+            <X size={14} />
+          </button>
+        )}
+      </div>
+
+      <div
+        className="grid gap-2"
+        style={{
+          gridTemplateColumns: `repeat(${metrics.length}, minmax(0, 1fr))`,
+        }}
+      >
+        {metrics.map((m) => {
+          const val = ex[m.key] ?? 0;
+          return (
+            <div key={m.key} className="space-y-1.5 text-center">
+              <div className="flex items-center gap-1 justify-center opacity-40">
+                {m.icon}
+                <span className="text-[8px] font-bold uppercase tracking-widest">
+                  {m.label}
+                </span>
+              </div>
+              <div
+                className={`flex items-center justify-between bg-bg-main/40 border border-border-color/40 rounded-xl p-1 ${!isEditing ? "opacity-80" : ""}`}
+              >
+                {isEditing && (
+                  <button
+                    onClick={() => onUpdate(m.key, Math.max(0, val - 1))}
+                    className="w-7 h-7 flex items-center justify-center text-text-muted active:scale-75 transition-transform"
+                  >
+                    <Minus size={12} />
+                  </button>
+                )}
+                <span
+                  className={`text-xs font-bold text-text-main tabular-nums ${!isEditing ? "w-full py-1.5" : ""}`}
+                >
+                  {val}
+                </span>
+                {isEditing && (
+                  <button
+                    onClick={() => onUpdate(m.key, val + 1)}
+                    className="w-7 h-7 flex items-center justify-center text-text-muted active:scale-75 transition-transform"
+                  >
+                    <Plus size={12} />
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
 
 const PrivacyToggle = ({
   active,
@@ -378,47 +501,14 @@ const PrivacyToggle = ({
   icon,
   onClick,
   primary,
-}: PrivacyProps) => (
+}: PrivacyToggleProps) => (
   <button
     type="button"
     onClick={onClick}
-    className={`flex-1 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-2 ${
-      active
-        ? primary
-          ? "bg-brand-primary text-black border-brand-primary shadow-lg shadow-brand-primary/20"
-          : "bg-text-main text-bg-main border-text-main shadow-lg"
-        : "border-border-color text-text-muted"
-    }`}
+    className={`flex-1 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest border transition-all flex items-center justify-center gap-2 ${active ? (primary ? "bg-brand-primary text-bg-main border-brand-primary" : "bg-text-main text-bg-main border-text-main") : "border-border-color/60 text-text-muted opacity-60"}`}
   >
     {icon} {label}
   </button>
-);
-
-const Counter = ({ label, value, onDec, onInc }: CounterProps) => (
-  <div className="bg-bg-main/50 border border-border-color rounded-2xl p-3 flex items-center justify-between">
-    <span className="text-[9px] font-black uppercase text-text-muted ml-1">
-      {label}
-    </span>
-    <div className="flex items-center gap-3 bg-bg-surface p-1 rounded-xl border border-border-color/50">
-      <button
-        type="button"
-        onClick={onDec}
-        className="w-8 h-8 rounded-lg flex items-center justify-center text-text-main active:bg-bg-main transition-colors"
-      >
-        <Minus size={14} />
-      </button>
-      <span className="text-sm font-black text-text-main tabular-nums min-w-6 text-center">
-        {value}
-      </span>
-      <button
-        type="button"
-        onClick={onInc}
-        className="w-8 h-8 rounded-lg flex items-center justify-center text-text-main active:bg-bg-main transition-colors"
-      >
-        <Plus size={14} />
-      </button>
-    </div>
-  </div>
 );
 
 const ConfirmModal = ({
@@ -434,29 +524,27 @@ const ConfirmModal = ({
   return (
     <div className="fixed inset-0 z-100 flex items-center justify-center p-6">
       <div
-        className="absolute inset-0 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300"
+        className="absolute inset-0 bg-bg-main/80 backdrop-blur-sm animate-in fade-in"
         onClick={onCancel}
       />
-      <div className="relative w-full max-w-sm bg-bg-surface border border-border-color rounded-[2.5rem] p-8 text-center animate-in zoom-in-95 shadow-2xl">
-        <div className="w-16 h-16 rounded-2xl bg-red-500/10 flex items-center justify-center text-red-500 mb-6 mx-auto">
-          <AlertCircle size={32} />
-        </div>
-        <h3 className="text-2xl font-black uppercase italic text-text-main mb-2 tracking-tighter">
-          Archive <span className="text-red-500">Routine?</span>
+      <div className="relative w-full max-w-xs bg-bg-surface border border-border-color rounded-4xl p-8 text-center animate-in zoom-in-95 shadow-2xl">
+        <AlertCircle className="mx-auto text-brand-error mb-4" size={40} />
+        <h3 className="text-xl font-bold uppercase text-text-main mb-2 tracking-tight">
+          Archive Routine?
         </h3>
-        <p className="text-sm font-bold text-text-muted leading-relaxed mb-8 italic">
-          This will hide the template from your library.
+        <p className="text-xs font-semibold text-text-muted mb-8 leading-relaxed">
+          This template will be hidden from your routine library.
         </p>
         <div className="flex flex-col gap-3">
           <button
             onClick={onConfirm}
-            className="w-full py-5 bg-red-500 text-white rounded-2xl font-black uppercase italic tracking-widest active:scale-95 shadow-lg shadow-red-500/30"
+            className="w-full py-4 bg-brand-error text-bg-main rounded-xl font-bold uppercase tracking-widest active:scale-95 transition-all"
           >
-            Archive Now
+            Confirm Archive
           </button>
           <button
             onClick={onCancel}
-            className="w-full py-4 bg-transparent text-text-muted font-black uppercase italic text-[10px] tracking-widest"
+            className="w-full py-4 text-text-muted font-bold uppercase text-[10px] tracking-widest"
           >
             Cancel
           </button>

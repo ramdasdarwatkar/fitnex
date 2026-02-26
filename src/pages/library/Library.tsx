@@ -7,12 +7,6 @@ import { MusclesTab } from "./muscles/MusclesTab";
 import { ExercisesTab } from "./exercises/ExecisesTab";
 import { RoutinesTab } from "./routines/RoutinesTab";
 
-/**
- * 1. PERSISTENCE ENGINE
- * We move the variable into a small manager object.
- * This satisfies the compiler because we are calling a method,
- * not performing a direct assignment in the render path.
- */
 const LibraryState = {
   activeTab: "muscles" as "muscles" | "exercises" | "routines",
   setTab(tab: "muscles" | "exercises" | "routines") {
@@ -23,12 +17,10 @@ const LibraryState = {
 export const Library = () => {
   const navigate = useNavigate();
 
-  // Initialize state from the singleton
   const [activeTab, setActiveTab] = useState(LibraryState.activeTab);
   const [searchQuery, setSearchQuery] = useState("");
 
   const handleTabChange = (tab: typeof LibraryState.activeTab) => {
-    // Update the singleton and the local state
     LibraryState.setTab(tab);
     setActiveTab(tab);
     setSearchQuery("");
@@ -50,18 +42,18 @@ export const Library = () => {
 
   return (
     <div className="flex-1 flex flex-col bg-bg-main min-h-screen pt-safe">
-      {/* TABS HEADER */}
+      {/* TABS HEADER - Normalized to rounded-xl */}
       <div className="sticky top-0 z-30 bg-bg-main pt-6 pb-2">
-        <div className="flex bg-bg-surface p-1.5 rounded-[1.8rem] border border-border-color shadow-sm">
+        <div className="flex bg-bg-surface p-1.5 rounded-xl border border-border-color shadow-sm">
           {tabs.map((tab) => {
             const isActive = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
                 onClick={() => handleTabChange(tab.id)}
-                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-[1.4rem] transition-all duration-300 ${
+                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all duration-300 ${
                   isActive
-                    ? "bg-brand-primary text-black shadow-lg shadow-brand-primary/20"
+                    ? "bg-brand-primary text-bg-main shadow-md shadow-brand-primary/10"
                     : "text-text-muted active:scale-95 hover:text-text-main"
                 }`}
               >
@@ -87,13 +79,13 @@ export const Library = () => {
               placeholder={`Search ${activeTab}...`}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-bg-surface border border-border-color rounded-2xl py-4 pl-12 pr-4 text-sm font-bold text-text-main outline-none focus:border-brand-primary transition-all placeholder:text-text-muted/50"
+              className="w-full bg-bg-surface border border-border-color rounded-xl py-4 pl-12 pr-4 text-sm font-bold text-text-main outline-none focus:border-brand-primary transition-all placeholder:text-text-muted/50"
             />
           </div>
 
           <button
             onClick={() => navigate(`/library/${activeTab}/add`)}
-            className="h-14.5 w-14.5 bg-brand-primary text-black rounded-2xl flex items-center justify-center active:scale-90 transition-all shadow-lg shadow-brand-primary/20 shrink-0"
+            className="h-14 w-14 bg-brand-primary text-bg-main rounded-xl flex items-center justify-center active:scale-90 transition-all shadow-md shadow-brand-primary/10 shrink-0"
           >
             <Plus size={24} strokeWidth={3} />
           </button>

@@ -30,8 +30,6 @@ export const AddMuscle = () => {
 
     setLoading(true);
     try {
-      // In our Local-First engine, this writes to Dexie with is_synced: 0
-      // and triggers SyncManager.reconcile()
       await MuscleService.addMuscle(form.name.trim(), form.parent_id || null);
       navigate(-1);
     } catch (err: unknown) {
@@ -46,11 +44,11 @@ export const AddMuscle = () => {
   return (
     <SubPageLayout title="New Muscle">
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        {/* FORM CONTAINER */}
-        <div className="bg-bg-surface border border-border-color p-6 rounded-[2.5rem] space-y-8 shadow-xl">
-          {/* MUSCLE NAME INPUT */}
+        {/* FORM CONTAINER - Updated to rounded-2xl */}
+        <div className="bg-bg-surface border border-border-color/60 p-6 rounded-2xl space-y-8 shadow-xl">
+          {/* MUSCLE NAME INPUT - Updated Typography and Rounding */}
           <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-widest text-text-muted ml-1">
+            <label className="text-[10px] font-bold uppercase tracking-widest text-text-muted ml-1">
               Muscle Name
             </label>
             <input
@@ -61,13 +59,13 @@ export const AddMuscle = () => {
                 setForm({ ...form, name: e.target.value })
               }
               placeholder="e.g. Upper Chest"
-              className="w-full bg-bg-main border border-border-color rounded-2xl py-5 px-5 text-2xl font-black italic text-text-main outline-none focus:border-brand-primary transition-all placeholder:text-text-muted/20"
+              className="w-full bg-bg-main border border-border-color/60 rounded-xl py-4 px-5 text-xl font-bold text-text-main outline-none focus:border-brand-primary/50 focus:ring-4 focus:ring-brand-primary/5 transition-all placeholder:text-text-muted/20"
             />
           </div>
 
-          {/* PARENT SELECT */}
+          {/* PARENT SELECT - Updated Typography and Rounding */}
           <div className="relative space-y-2">
-            <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-text-muted ml-1">
+            <label className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-text-muted ml-1">
               <GitMerge size={12} className="text-brand-primary" />
               Parent Group
             </label>
@@ -77,7 +75,7 @@ export const AddMuscle = () => {
                 onChange={(e: ChangeEvent<HTMLSelectElement>) =>
                   setForm({ ...form, parent_id: e.target.value })
                 }
-                className="w-full bg-bg-main border border-border-color rounded-2xl py-5 px-5 text-xs font-black uppercase text-text-main outline-none appearance-none focus:border-brand-primary transition-all pr-12"
+                className="w-full bg-bg-main border border-border-color/60 rounded-xl py-4 px-5 text-xs font-bold uppercase tracking-wide text-text-main outline-none appearance-none focus:border-brand-primary/50 focus:ring-4 focus:ring-brand-primary/5 transition-all pr-12"
               >
                 <option value="">No Parent (Primary)</option>
                 {muscles.map((m) => (
@@ -94,21 +92,21 @@ export const AddMuscle = () => {
           </div>
         </div>
 
-        {/* ACTION BUTTON */}
+        {/* ACTION BUTTON - Updated to rounded-xl and bold typography */}
         <button
           onClick={onSave}
           disabled={loading || !form.name.trim()}
-          className="w-full py-6 bg-brand-primary text-black font-black uppercase italic tracking-widest rounded-4xl flex items-center justify-center gap-3 active:scale-[0.98] transition-all disabled:opacity-30 shadow-lg shadow-brand-primary/20"
+          className="w-full py-4 bg-brand-primary text-black font-bold uppercase tracking-widest rounded-xl flex items-center justify-center gap-3 active:scale-[0.98] transition-all disabled:opacity-30 shadow-lg shadow-brand-primary/20"
         >
           {loading ? (
             <Loader2 className="animate-spin" size={22} />
           ) : (
-            <Plus size={24} strokeWidth={3} />
+            <Plus size={20} strokeWidth={3} />
           )}
           <span>{loading ? "Syncing..." : "Add to Library"}</span>
         </button>
 
-        <p className="text-center text-[9px] font-bold text-text-muted uppercase tracking-[0.2em] opacity-50">
+        <p className="text-center text-[9px] font-bold text-text-muted uppercase tracking-[0.2em] opacity-40">
           Created muscles are available across all exercises.
         </p>
       </div>

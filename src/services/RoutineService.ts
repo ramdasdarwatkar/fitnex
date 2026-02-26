@@ -90,6 +90,7 @@ export const RoutineService = {
       exercise_id: ex.id,
       target_sets: ex.target_sets,
       target_reps: ex.target_reps,
+      target_duration: ex.target_duration,
       exercise_order: index,
     }));
 
@@ -126,6 +127,7 @@ export const RoutineService = {
       exercise_id: ex.exercise_id || ex.id,
       target_sets: ex.target_sets,
       target_reps: ex.target_reps,
+      target_duration: ex.target_duration,
       exercise_order: index,
     }));
 

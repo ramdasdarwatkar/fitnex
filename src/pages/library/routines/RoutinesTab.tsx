@@ -39,7 +39,6 @@ export const RoutinesTab = ({ search }: RoutinesTabProps) => {
   const handleStartRoutine = async (routine: EnrichedRoutine) => {
     if (!user_id) return;
 
-    // 1. If a workout is already running, resume it
     if (isOngoing) {
       resumeSession();
       return;
@@ -51,7 +50,6 @@ export const RoutinesTab = ({ search }: RoutinesTabProps) => {
       return;
     }
 
-    // 2. Map routine exercises to initial logs (Strictly typed)
     const logs = exercises.map((ex, idx) => ({
       exercise_id: ex.exercise_id,
       reps: ex.target_reps || 10,
@@ -60,7 +58,6 @@ export const RoutinesTab = ({ search }: RoutinesTabProps) => {
       exercise_order: ex.exercise_order ?? idx,
     }));
 
-    // 3. Create the record in Dexie
     try {
       await WorkoutService.startNewWorkout(user_id, routine.id, logs);
       resumeSession();
@@ -86,8 +83,8 @@ export const RoutinesTab = ({ search }: RoutinesTabProps) => {
     <div className="flex-1 flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
       {filtered.length === 0 ? (
         <div className="text-center py-20 opacity-30">
-          <ClipboardList size={48} className="mx-auto mb-4" />
-          <p className="text-[10px] font-black uppercase tracking-widest">
+          <ClipboardList size={48} className="mx-auto mb-4 text-text-muted" />
+          <p className="text-[10px] font-black uppercase tracking-widest text-text-muted">
             No Routines Found
           </p>
         </div>
@@ -95,7 +92,7 @@ export const RoutinesTab = ({ search }: RoutinesTabProps) => {
         filtered.map((route) => (
           <div
             key={route.id}
-            className="bg-bg-surface border border-border-color rounded-[2.2rem] p-6 space-y-5 shadow-xl transition-all hover:border-border-color-hover"
+            className="bg-bg-surface border border-border-color rounded-xl p-6 space-y-5 shadow-xl transition-all hover:border-border-color-hover"
           >
             {/* Routine Header */}
             <div
@@ -103,7 +100,8 @@ export const RoutinesTab = ({ search }: RoutinesTabProps) => {
               onClick={() => navigate(`/library/routines/${route.id}`)}
             >
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-bg-main flex items-center justify-center text-brand-primary border border-border-color group-hover:border-brand-primary/30 transition-all">
+                {/* Icon Box: Matches ExerciseTab icon rounding */}
+                <div className="w-12 h-12 rounded-[1.4rem] bg-bg-main flex items-center justify-center text-brand-primary border border-border-color group-hover:border-brand-primary/30 transition-all">
                   <ClipboardList size={22} />
                 </div>
                 <div>
@@ -121,7 +119,7 @@ export const RoutinesTab = ({ search }: RoutinesTabProps) => {
               />
             </div>
 
-            {/* Muscle Groups Tags */}
+            {/* Tags: Matches ExerciseTab tag style */}
             <div className="flex flex-wrap gap-2">
               {route.muscles.length > 0 ? (
                 route.muscles.map((m) => (
@@ -139,13 +137,13 @@ export const RoutinesTab = ({ search }: RoutinesTabProps) => {
               )}
             </div>
 
-            {/* Action Button */}
+            {/* Action Button: Strictly rounded-[1.4rem] and font-black italic */}
             <button
               onClick={() => handleStartRoutine(route)}
               className={`w-full py-5 rounded-[1.4rem] flex items-center justify-center gap-2 transition-all font-black uppercase italic text-[11px] tracking-widest active:scale-95 shadow-lg ${
                 isOngoing
-                  ? "bg-bg-main text-text-muted border border-border-color cursor-not-allowed"
-                  : "bg-brand-primary text-black shadow-brand-primary/20"
+                  ? "bg-bg-main text-text-muted border border-border-color cursor-not-allowed opacity-50"
+                  : "bg-brand-primary text-bg-main shadow-brand-primary/20"
               }`}
             >
               <Play size={14} fill="currentColor" />

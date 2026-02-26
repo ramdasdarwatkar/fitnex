@@ -1,10 +1,4 @@
-import {
-  useEffect,
-  useState,
-  useMemo,
-  type ChangeEvent,
-  type ReactNode,
-} from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { SubPageLayout } from "../../../components/layout/SubPageLayout";
 import { RoutineService } from "../../../services/RoutineService";
@@ -12,14 +6,35 @@ import {
   Check,
   Plus,
   Minus,
-  MoveVertical,
   Lock,
   Globe,
   Loader2,
+  Clock,
+  Hash,
+  GripVertical,
+  X,
 } from "lucide-react";
 import { ExercisePicker } from "../exercises/ExercisePicker";
 
-// 1. Strict Interfaces
+// DND Kit
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+
 import type { Routine } from "../../../types/database.types";
 import { useAuth } from "../../../hooks/useAuth";
 import {
@@ -27,26 +42,33 @@ import {
   type EnrichedExercise,
 } from "../../../services/ExerciseService";
 
+// --- 1. STRICT INTERFACES ---
+
 export interface SelectedExercise extends EnrichedExercise {
+  tempId: string;
   target_sets: number;
   target_reps: number;
+  target_duration?: number;
 }
 
-// Sub-Component Interfaces
+type TargetMetricKey = "target_sets" | "target_reps" | "target_duration";
+
+interface SortableExerciseItemProps {
+  ex: SelectedExercise;
+  index: number;
+  onRemove: () => void;
+  onUpdate: (field: TargetMetricKey, val: number) => void;
+}
+
 interface PrivacyToggleProps {
   active: boolean;
   label: string;
-  icon: ReactNode;
+  icon: React.ReactNode;
   onClick: () => void;
   primary?: boolean;
 }
 
-interface CounterProps {
-  label: string;
-  value: number;
-  onDec: () => void;
-  onInc: () => void;
-}
+// --- 2. MAIN COMPONENT ---
 
 export const AddRoutine = () => {
   const navigate = useNavigate();
@@ -62,65 +84,48 @@ export const AddRoutine = () => {
     SelectedExercise[]
   >([]);
 
-  useEffect(() => {
-    let isMounted = true;
-    ExerciseService.getExercisesWithMeta().then((data) => {
-      if (isMounted) setLibrary(data);
-    });
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
 
-  const muscleFocus = useMemo(() => {
-    const counts: Record<string, number> = {};
-    selectedExercises.forEach((ex) => {
-      ex.all_muscles
-        ?.filter((m) => m.role === "primary")
-        .forEach((m) => {
-          counts[m.name] = (counts[m.name] || 0) + 1;
-        });
-    });
-    return Object.entries(counts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 3);
-  }, [selectedExercises]);
+  useEffect(() => {
+    ExerciseService.getExercisesWithMeta().then(setLibrary);
+  }, []);
 
   const handleAddExercises = (ids: string[]) => {
     const newItems: SelectedExercise[] = ids.map((id) => {
       const ex = library.find((l) => l.id === id);
       return {
         ...(ex || ({} as EnrichedExercise)),
+        tempId: crypto.randomUUID(),
         target_sets: 3,
-        target_reps: 10,
+        target_reps: ex?.reps ? 10 : 0,
+        target_duration: ex?.duration ? 30 : undefined,
       } as SelectedExercise;
     });
     setSelectedExercises((prev) => [...prev, ...newItems]);
     setShowPicker(false);
   };
 
-  const removeExercise = (index: number) => {
-    setSelectedExercises((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const updateTarget = (
-    index: number,
-    field: "target_sets" | "target_reps",
-    val: number,
-  ) => {
-    setSelectedExercises((prev) =>
-      prev.map((ex, i) => (i === index ? { ...ex, [field]: val } : ex)),
-    );
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      setSelectedExercises((items) => {
+        const oldIndex = items.findIndex((i) => i.tempId === active.id);
+        const newIndex = items.findIndex((i) => i.tempId === over.id);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
   };
 
   const onSave = async () => {
     if (!name.trim() || !user_id || selectedExercises.length === 0 || loading)
       return;
-
     setLoading(true);
     try {
-      const now = new Date().toISOString();
-
       const routinePayload: Routine = {
         id: crypto.randomUUID(),
         name: name.trim(),
@@ -128,14 +133,12 @@ export const AddRoutine = () => {
         is_public: isPublic,
         created_by: user_id,
         status: true,
-        updated_at: now,
+        updated_at: new Date().toISOString(),
       };
-
       await RoutineService.addRoutine(routinePayload, selectedExercises);
       navigate(-1);
-    } catch (err: unknown) {
-      console.error("Save Routine Error:", err);
-      alert("Error saving routine.");
+    } catch (err) {
+      console.error("Save Error:", err);
     } finally {
       setLoading(false);
     }
@@ -144,27 +147,22 @@ export const AddRoutine = () => {
   return (
     <SubPageLayout title="New Routine">
       <div className="flex-1 flex flex-col gap-6 pb-32 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="bg-bg-surface border border-border-color p-6 rounded-[2.2rem] space-y-6 shadow-xl">
+        {/* IDENTITY CARD */}
+        <div className="bg-bg-surface border border-border-color/60 p-6 rounded-2xl space-y-6 shadow-sm">
           <input
             autoFocus
             type="text"
             value={name}
-            onChange={(e: ChangeEvent<HTMLInputElement>) =>
-              setName(e.target.value)
-            }
+            onChange={(e) => setName(e.target.value)}
             placeholder="ROUTINE NAME"
-            className="w-full bg-transparent text-2xl font-black italic text-text-main outline-none uppercase tracking-tighter"
+            className="w-full bg-transparent text-2xl font-bold text-text-main outline-none uppercase tracking-tight placeholder:opacity-20"
           />
-
           <textarea
             value={description}
-            onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
-              setDescription(e.target.value)
-            }
-            placeholder="DESCRIPTION (OPTIONAL)"
-            className="w-full bg-bg-main border border-border-color rounded-2xl p-4 text-xs font-bold text-text-main outline-none resize-none h-24"
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="NOTES..."
+            className="w-full bg-bg-main/50 border border-border-color/40 rounded-xl p-4 text-xs font-semibold text-text-main outline-none resize-none h-20"
           />
-
           <div className="flex gap-2">
             <PrivacyToggle
               active={!isPublic}
@@ -180,99 +178,65 @@ export const AddRoutine = () => {
               onClick={() => setIsPublic(true)}
             />
           </div>
-
-          {muscleFocus.length > 0 && (
-            <div className="flex flex-wrap gap-2 pt-2">
-              {muscleFocus.map(([mName]) => (
-                <span
-                  key={mName}
-                  className="text-[8px] font-black uppercase px-3 py-1.5 bg-brand-primary/10 text-brand-primary rounded-full border border-brand-primary/20"
-                >
-                  {mName}
-                </span>
-              ))}
-            </div>
-          )}
         </div>
 
+        {/* ADD ACTION */}
         <button
           onClick={() => setShowPicker(true)}
-          className="w-full bg-bg-surface border border-border-color rounded-2xl py-6 px-6 flex items-center gap-4 text-text-muted active:scale-[0.98] transition-all group"
+          className="w-full bg-bg-surface border border-dashed border-border-color rounded-xl py-5 flex items-center justify-center gap-3 text-text-muted active:scale-[0.98] transition-all"
         >
-          <div className="w-8 h-8 rounded-full bg-bg-main flex items-center justify-center border border-border-color group-hover:border-brand-primary/40">
-            <Plus size={18} className="text-brand-primary" />
-          </div>
-          <span className="text-xs font-black uppercase italic tracking-widest">
+          <Plus size={18} className="text-brand-primary" />
+          <span className="text-xs font-bold uppercase tracking-widest">
             Add Exercises
           </span>
         </button>
 
-        <div className="space-y-3">
-          {selectedExercises.map((ex, idx) => (
-            <div
-              key={`${ex.id}-${idx}`}
-              className="bg-bg-surface border border-border-color rounded-4xl p-5 flex flex-col gap-5 shadow-sm"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <MoveVertical size={16} className="text-text-muted/40" />
-                  <span className="text-sm font-black uppercase italic text-text-main">
-                    {ex.name}
-                  </span>
-                </div>
-                <button
-                  onClick={() => removeExercise(idx)}
-                  className="w-9 h-9 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500"
-                >
-                  <Minus size={16} strokeWidth={3} />
-                </button>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <Counter
-                  label="Sets"
-                  value={ex.target_sets}
-                  onDec={() =>
-                    updateTarget(
-                      idx,
-                      "target_sets",
-                      Math.max(1, ex.target_sets - 1),
+        {/* SORTABLE LIST */}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={selectedExercises.map((e) => e.tempId)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="space-y-4">
+              {selectedExercises.map((ex, idx) => (
+                <SortableExerciseItem
+                  key={ex.tempId}
+                  ex={ex}
+                  index={idx}
+                  onRemove={() =>
+                    setSelectedExercises((prev) =>
+                      prev.filter((_, i) => i !== idx),
                     )
                   }
-                  onInc={() =>
-                    updateTarget(idx, "target_sets", ex.target_sets + 1)
-                  }
+                  onUpdate={(field, val) => {
+                    setSelectedExercises((prev) =>
+                      prev.map((item, i) =>
+                        i === idx ? { ...item, [field]: val } : item,
+                      ),
+                    );
+                  }}
                 />
-                <Counter
-                  label="Reps"
-                  value={ex.target_reps}
-                  onDec={() =>
-                    updateTarget(
-                      idx,
-                      "target_reps",
-                      Math.max(1, ex.target_reps - 1),
-                    )
-                  }
-                  onInc={() =>
-                    updateTarget(idx, "target_reps", ex.target_reps + 1)
-                  }
-                />
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </SortableContext>
+        </DndContext>
 
+        {/* CREATE BUTTON */}
         <button
           onClick={onSave}
           disabled={loading || !name || selectedExercises.length === 0}
-          className="w-full py-6 bg-brand-primary text-black font-black uppercase italic rounded-4xl shadow-xl shadow-brand-primary/20 active:scale-[0.98] transition-all flex items-center justify-center gap-3 tracking-widest mt-4 disabled:opacity-30"
+          className="w-full h-14 bg-brand-primary text-bg-main font-bold uppercase tracking-widest rounded-xl shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-3 mt-4 disabled:opacity-30"
         >
           {loading ? (
             <Loader2 className="animate-spin" />
           ) : (
-            <Check size={24} strokeWidth={4} />
+            <Check size={20} strokeWidth={3} />
           )}
-          <span>{loading ? "Creating..." : "Create Template"}</span>
+          <span>Create Template</span>
         </button>
       </div>
 
@@ -280,14 +244,143 @@ export const AddRoutine = () => {
         <ExercisePicker
           onClose={() => setShowPicker(false)}
           onAdd={handleAddExercises}
-          excludedIds={selectedExercises.map((ex) => ex.id)}
+          excludedIds={selectedExercises.map((e) => e.id)}
         />
       )}
     </SubPageLayout>
   );
 };
 
-/** SUB-COMPONENTS **/
+// --- 3. SORTABLE ITEM ---
+
+const SortableExerciseItem = ({
+  ex,
+  index,
+  onRemove,
+  onUpdate,
+}: SortableExerciseItemProps) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: ex.tempId,
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : 0,
+    position: "relative" as const,
+  };
+
+  // Mandatory Sets + Optional Reps/Duration
+  const metrics = [
+    {
+      key: "target_sets" as const,
+      label: "Sets",
+      icon: <Hash size={10} />,
+      show: true,
+    },
+    {
+      key: "target_reps" as const,
+      label: "Reps",
+      icon: <Hash size={10} />,
+      show: !!ex.reps,
+    },
+    {
+      key: "target_duration" as const,
+      label: "min",
+      icon: <Clock size={10} />,
+      show: !!ex.duration,
+    },
+  ].filter((m) => m.show);
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`bg-bg-surface border rounded-2xl p-4 space-y-4 shadow-sm transition-all ${
+        isDragging
+          ? "border-brand-primary ring-4 ring-brand-primary/10 shadow-2xl scale-[1.02]"
+          : "border-border-color/60"
+      }`}
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3 overflow-hidden">
+          <div
+            {...attributes}
+            {...listeners}
+            className="cursor-grab active:cursor-grabbing p-1 text-text-muted/30 hover:text-brand-primary transition-colors"
+          >
+            <GripVertical size={16} />
+          </div>
+          <div className="w-6 h-6 rounded-lg bg-bg-main border border-border-color/40 flex items-center justify-center text-[10px] font-bold text-text-muted shrink-0">
+            {index + 1}
+          </div>
+          <span className="text-sm font-bold uppercase text-text-main truncate tracking-tight">
+            {ex.name}
+          </span>
+        </div>
+        <button
+          onClick={onRemove}
+          className="w-8 h-8 rounded-lg bg-brand-error/10 text-brand-error flex items-center justify-center transition-colors active:scale-90"
+        >
+          <X size={14} />
+        </button>
+      </div>
+
+      {/* HORIZONTAL GRID: Labels above boxes */}
+      <div
+        className="grid gap-2"
+        style={{
+          gridTemplateColumns: `repeat(${metrics.length}, minmax(0, 1fr))`,
+        }}
+      >
+        {metrics.map((m) => {
+          const value = ex[m.key] ?? 0;
+          return (
+            <div key={m.key} className="space-y-1.5 text-center">
+              <div className="flex items-center gap-1 justify-center opacity-40">
+                {m.icon}
+                <span className="text-[8px] font-black uppercase tracking-widest">
+                  {m.label}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between bg-bg-main/40 border border-border-color/40 rounded-xl p-1">
+                <button
+                  type="button"
+                  onClick={() => onUpdate(m.key, Math.max(0, value - 1))}
+                  className="w-7 h-7 flex items-center justify-center text-text-muted hover:text-text-main active:scale-75 transition-transform"
+                >
+                  <Minus size={12} />
+                </button>
+
+                <span className="text-xs font-black text-text-main tabular-nums">
+                  {value}
+                </span>
+
+                <button
+                  type="button"
+                  onClick={() => onUpdate(m.key, value + 1)}
+                  className="w-7 h-7 flex items-center justify-center text-text-muted hover:text-text-main active:scale-75 transition-transform"
+                >
+                  <Plus size={12} />
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+// --- 4. HELPERS ---
 
 const PrivacyToggle = ({
   active,
@@ -299,41 +392,14 @@ const PrivacyToggle = ({
   <button
     type="button"
     onClick={onClick}
-    className={`flex-1 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-2 ${
+    className={`flex-1 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest border transition-all flex items-center justify-center gap-2 ${
       active
         ? primary
-          ? "bg-brand-primary text-black border-brand-primary"
-          : "bg-text-main text-bg-main border-text-main"
-        : "border-border-color text-text-muted"
+          ? "bg-brand-primary text-bg-main border-brand-primary shadow-sm shadow-brand-primary/10"
+          : "bg-text-main text-bg-main border-text-main shadow-sm"
+        : "border-border-color/60 text-text-muted opacity-60"
     }`}
   >
     {icon} {label}
   </button>
-);
-
-const Counter = ({ label, value, onDec, onInc }: CounterProps) => (
-  <div className="bg-bg-main/50 border border-border-color rounded-2xl p-3 flex items-center justify-between">
-    <span className="text-[9px] font-black uppercase text-text-muted">
-      {label}
-    </span>
-    <div className="flex items-center gap-3 bg-bg-surface p-1 rounded-xl border border-border-color/50">
-      <button
-        type="button"
-        onClick={onDec}
-        className="w-8 h-8 rounded-lg flex items-center justify-center text-text-main active:bg-bg-main transition-colors"
-      >
-        <Minus size={14} />
-      </button>
-      <span className="text-sm font-black text-text-main tabular-nums min-w-6 text-center">
-        {value}
-      </span>
-      <button
-        type="button"
-        onClick={onInc}
-        className="w-8 h-8 rounded-lg flex items-center justify-center text-text-main active:bg-bg-main transition-colors"
-      >
-        <Plus size={14} />
-      </button>
-    </div>
-  </div>
 );
