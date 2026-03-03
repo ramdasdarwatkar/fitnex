@@ -8,6 +8,8 @@ import type {
   AthleteLevel,
 } from "../types/database.types";
 import { useAuth } from "./useAuth";
+import { AthleteService } from "../services/AthleteService";
+import { AppSettingsService } from "../services/AppSettingsService";
 
 /**
  * Result interface for the saveOnboarding function
@@ -36,12 +38,14 @@ export const useOnboarding = () => {
         UserProfileService.saveLocalProfile(profile),
         BodyMetricsService.saveLocalMetrics(metrics),
         AthleteLevelService.saveLocalLevel(level),
+        AppSettingsService.saveLocalAppSettings(user_id),
       ]);
 
       // 2. Immediate Background Reconciliation
       // If online, this pushes the local 'dirty' rows to Supabase.
       if (window.navigator.onLine) {
         await SyncManager.reconcile();
+        await AthleteService.syncSummary(user_id);
       }
 
       return { success: true };

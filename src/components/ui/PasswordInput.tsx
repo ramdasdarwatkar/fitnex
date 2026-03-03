@@ -12,56 +12,57 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
     const [isVisible, setIsVisible] = useState(false);
 
     const toggleVisibility = (e: React.MouseEvent) => {
-      e.preventDefault(); // Prevents form submission or focus loss
+      e.preventDefault();
       setIsVisible(!isVisible);
     };
 
     return (
       <div className="mb-6 w-full group relative text-left">
-        {/* Label Header */}
+        {/* Label Header: Fitnex Italic Branding */}
         <div className="flex justify-between items-center mb-2 px-1">
-          <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-text-muted group-focus-within:text-brand-primary transition-colors duration-300">
+          <label className="block text-[10px] font-black uppercase italic tracking-[0.2em] text-text-muted group-focus-within:text-brand-primary transition-colors duration-300">
             {label}
           </label>
         </div>
 
         <div className="relative flex items-center">
-          {/* LEFT ICON: Lock (Pinned to the left) */}
-          <div className="absolute left-5 z-20 text-text-dim group-focus-within:text-brand-primary transition-colors duration-300 pointer-events-none">
+          {/* LEFT ICON: Lock */}
+          <div className="absolute left-5 z-20 text-text-muted/60 group-focus-within:text-brand-primary transition-colors duration-300 pointer-events-none">
             <Lock size={18} strokeWidth={2.5} />
           </div>
 
-          {/* THE INPUT FIELD */}
+          {/* THE INPUT FIELD: Standard XL Rounding & Thin Border */}
           <input
             {...props}
             ref={ref}
             type={isVisible ? "text" : "password"}
             className={`
-              w-full h-14 bg-bg-surface rounded-[1.25rem] 
-              pl-14 pr-14 /* Space for Lock on left, Eye on right */
-              text-text-main text-[15px] font-semibold 
-              placeholder:text-text-dim/30
+              w-full h-14 bg-bg-surface rounded-xl 
+              pl-14 pr-14
+              text-text-main text-[15px] font-bold 
+              placeholder:text-text-muted/30
               transition-all duration-300 ease-out
-              outline-none ring-0 border-2
+              outline-none border
               
-              /* State Logic */
+              /* Shield & Glow Logic */
               ${
                 error
-                  ? "border-rose-500/40 bg-rose-500/2 shadow-[0_0_20px_rgba(244,63,94,0.1)]"
-                  : "border-border-color/10 hover:border-border-color focus:border-brand-primary bg-bg-surface"
+                  ? "border-rose-500/50 bg-rose-500/5 focus:ring-rose-500/10"
+                  : "border-border-color/40 focus:border-brand-primary/50 focus:ring-brand-primary/5 bg-bg-surface"
               }
 
-              /* Glow & Interaction */
-              focus:shadow-[0_0_25px_-5px_rgba(var(--brand-primary-rgb),0.25)]
+              /* The 'Shiny' Focus Ring */
+              focus:ring-4
+              
               ${className}
             `}
           />
 
-          {/* RIGHT ICON: Toggle Button (Pinned to the right) */}
+          {/* RIGHT ICON: Toggle Button */}
           <button
             type="button"
             onClick={toggleVisibility}
-            className="absolute right-4 z-20 p-2 rounded-xl text-text-dim hover:text-text-main hover:bg-bg-surface-soft transition-all active:scale-90"
+            className="absolute right-4 z-20 p-2 rounded-lg text-text-muted/60 hover:text-text-main hover:bg-bg-main transition-all active:scale-90"
             tabIndex={-1}
           >
             {isVisible ? (
@@ -72,14 +73,14 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
           </button>
         </div>
 
-        {/* Error Logic */}
+        {/* Error Logic: Animated & Italic */}
         <AnimatePresence>
           {error && (
             <motion.p
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="mt-2.5 ml-1 text-[11px] font-bold text-rose-500 flex items-center gap-1.5 overflow-hidden"
+              className="mt-2 ml-1 text-[10px] font-bold text-rose-500 flex items-center gap-1.5 overflow-hidden uppercase tracking-wider italic"
             >
               <span className="w-1 h-1 rounded-full bg-rose-500" />
               {error}

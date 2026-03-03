@@ -4,10 +4,7 @@ import { DateUtils } from "../util/dateUtils";
 
 export const PersonalRecordService = {
   async checkPR(userId: string, exerciseId: string, weight: number) {
-    console.log("userid", userId);
-    console.log("exerciseId", exerciseId);
-    console.log("weight", weight);
-    const existingPR = await db.personal_records.get(exerciseId);
+    const existingPR = await db.personal_records.get([userId, exerciseId]);
 
     if (!existingPR || weight > existingPR.value) {
       const now = DateUtils.getISTDate();
@@ -17,9 +14,9 @@ export const PersonalRecordService = {
         value: weight,
         value_type: "weight",
         record_date: now,
+        created_at: DateUtils.getISTDate(),
       };
       await db.personal_records.put(newPR);
-      //await supabase.from("personal_record").insert(newPR);
       return true;
     }
     return false;

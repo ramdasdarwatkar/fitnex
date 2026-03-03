@@ -12,9 +12,10 @@ import {
   PencilLine,
   X,
 } from "lucide-react";
-
 import type { Muscle } from "../../../types/database.types";
 import { MuscleService } from "../../../services/MuscleService";
+
+// --- CONFIRM MODAL ---
 
 interface ConfirmModalProps {
   isOpen: boolean;
@@ -25,40 +26,64 @@ interface ConfirmModalProps {
 const ConfirmModal = ({ isOpen, onConfirm, onCancel }: ConfirmModalProps) => {
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 z-100 flex items-center justify-center p-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
       <div
-        className="absolute inset-0 bg-bg-main/80 backdrop-blur-sm animate-in fade-in duration-200"
+        className="absolute inset-0 bg-bg-main/80 backdrop-blur-md animate-in fade-in duration-200"
         onClick={onCancel}
       />
-      <div className="relative w-full max-w-sm bg-bg-surface border border-border-color rounded-xl p-8 shadow-2xl animate-in zoom-in-95 duration-200 text-center">
-        <div className="w-16 h-16 rounded-xl bg-brand-error/10 flex items-center justify-center text-brand-error mx-auto mb-6">
-          <AlertCircle size={32} />
+      <div
+        className="relative w-full max-w-sm bg-bg-surface border border-border-color/40
+                   rounded-2xl p-8 card-glow animate-in zoom-in-95 duration-200 text-center"
+      >
+        <div
+          className="w-12 h-12 rounded-2xl flex items-center justify-center mb-6 mx-auto"
+          style={{
+            background: "var(--danger-bg)",
+            border: "1px solid var(--danger-border)",
+            color: "var(--brand-danger)",
+          }}
+        >
+          <AlertCircle size={22} />
         </div>
-        <h3 className="text-2xl font-black uppercase italic text-text-main mb-2 tracking-tighter">
-          Archive <span className="text-brand-error">Muscle?</span>
+
+        <h3 className="text-xl font-black uppercase italic text-text-main mb-2 tracking-tighter">
+          Archive Muscle?
         </h3>
-        <p className="text-[11px] font-bold uppercase tracking-widest text-text-muted leading-relaxed mb-8">
+        <p
+          className="text-[10px] font-black uppercase italic tracking-[0.2em]
+                      text-text-muted/60 leading-relaxed mb-8 px-4"
+        >
           This muscle will be hidden from the library but preserved in your
           workout history.
         </p>
+
         <div className="flex flex-col gap-3">
           <button
             onClick={onConfirm}
-            className="w-full py-4 bg-brand-error text-bg-main rounded-xl font-black uppercase italic tracking-widest active:scale-[0.98] transition-all"
+            className="w-full py-4 rounded-2xl font-black uppercase italic
+                       tracking-widest active:scale-[0.98] transition-all"
+            style={{
+              background: "var(--brand-danger)",
+              color: "var(--color-on-brand)",
+              boxShadow: "0 4px 16px var(--danger-border)",
+            }}
           >
             Confirm Archive
           </button>
           <button
             onClick={onCancel}
-            className="w-full py-3 bg-transparent text-text-muted font-black uppercase italic text-[10px] tracking-widest"
+            className="w-full py-3 text-text-muted/50 font-black uppercase italic
+                       text-[10px] tracking-widest hover:text-text-main transition-colors"
           >
-            Cancel
+            Go Back
           </button>
         </div>
       </div>
     </div>
   );
 };
+
+// --- MAIN COMPONENT ---
 
 export const MuscleDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -82,7 +107,6 @@ export const MuscleDetail = () => {
           MuscleService.getMuscleById(id),
           MuscleService.getActiveMuscles(),
         ]);
-
         if (isMounted && target) {
           const initialData = {
             name: target.name,
@@ -116,8 +140,7 @@ export const MuscleDetail = () => {
       setOriginalForm(form);
       setIsEditing(false);
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : "Update failed";
-      alert(errorMsg);
+      alert(err instanceof Error ? err.message : "Update failed");
     } finally {
       setProcessing(false);
     }
@@ -135,7 +158,7 @@ export const MuscleDetail = () => {
       await MuscleService.archiveMuscle(id);
       navigate(-1);
     } catch (err) {
-      console.log(err);
+      console.error(err);
       alert("Could not archive muscle.");
     } finally {
       setProcessing(false);
@@ -145,21 +168,92 @@ export const MuscleDetail = () => {
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center py-20">
-        <Loader2 className="animate-spin text-brand-primary" size={32} />
+        <Loader2 className="animate-spin text-brand-primary" size={30} />
       </div>
     );
   }
 
+  const footer = isEditing ? (
+    <div className="flex flex-col gap-3">
+      <button
+        onClick={onUpdate}
+        disabled={processing || !form.name.trim()}
+        className="w-full h-16 bg-brand-primary rounded-2xl font-black uppercase italic
+                   tracking-[0.3em] flex items-center justify-center gap-3
+                   active:scale-[0.98] transition-all disabled:opacity-30"
+        style={{
+          color: "var(--color-on-brand)",
+          boxShadow: "0 4px 24px var(--glow-primary)",
+        }}
+      >
+        {processing ? (
+          <Loader2 className="animate-spin" size={22} />
+        ) : (
+          <Save size={22} strokeWidth={2.5} />
+        )}
+        <span>Save Changes</span>
+      </button>
+
+      <button
+        onClick={onCancelEdit}
+        disabled={processing}
+        className="w-full py-4 bg-bg-surface text-text-muted/50 font-black uppercase italic
+                   text-[10px] tracking-[0.3em] rounded-2xl flex items-center justify-center
+                   gap-2 border border-border-color/40 active:scale-[0.98] transition-all"
+      >
+        <X size={16} /> Discard
+      </button>
+    </div>
+  ) : (
+    <div className="flex flex-col gap-3">
+      <button
+        onClick={() => setIsEditing(true)}
+        className="w-full h-16 bg-bg-surface border border-border-color/40 rounded-2xl
+                   font-black uppercase italic tracking-[0.3em] card-glow
+                   text-text-main flex items-center justify-center gap-3
+                   active:scale-[0.98] transition-all
+                   hover:border-brand-primary/30 hover:text-brand-primary"
+      >
+        <PencilLine size={20} />
+        <span>Modify Details</span>
+      </button>
+
+      <button
+        onClick={() => setShowModal(true)}
+        className="w-full py-4 rounded-2xl font-black uppercase italic text-[10px]
+                   tracking-[0.3em] flex items-center justify-center gap-2
+                   active:scale-[0.98] transition-all"
+        style={{
+          color: "var(--brand-danger)",
+          background: "var(--danger-bg)",
+          border: "1px solid var(--danger-border)",
+        }}
+      >
+        <Trash2 size={15} /> Archive Record
+      </button>
+    </div>
+  );
+
   return (
-    <SubPageLayout title={isEditing ? "Edit Muscle" : "Muscle Detail"}>
-      <div className="flex flex-col gap-6 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        {/* EDIT CARD */}
-        <div className="bg-bg-surface border border-border-color p-6 rounded-xl space-y-8 shadow-sm">
-          <div className="space-y-1">
-            <label className="text-[10px] font-black uppercase italic tracking-widest text-text-muted ml-1">
-              <Target size={12} className="inline mr-1.5 text-brand-primary" />
-              Display Name
-            </label>
+    <SubPageLayout
+      title={isEditing ? "Modify Muscle" : "Muscle Detail"}
+      footer={footer}
+    >
+      <div
+        className="flex flex-col gap-6 pt-2 pb-4
+                      animate-in fade-in slide-in-from-bottom-2 duration-500"
+      >
+        {/* ── DATA CARD ── */}
+        <div className="bg-bg-surface border border-border-color/40 rounded-2xl p-6 space-y-6 card-glow">
+          {/* Name */}
+          <div className="space-y-1.5">
+            <p
+              className="flex items-center gap-1.5 text-[9.5px] font-black uppercase italic
+                          tracking-[0.3em] text-text-muted/50"
+            >
+              <Target size={12} className="text-brand-primary/60" />
+              Display Label
+            </p>
             <input
               type="text"
               disabled={!isEditing}
@@ -167,22 +261,26 @@ export const MuscleDetail = () => {
               onChange={(e: ChangeEvent<HTMLInputElement>) =>
                 setForm({ ...form, name: e.target.value })
               }
-              className={`w-full bg-bg-main border rounded-xl py-4 px-5 text-xl font-black italic text-text-main outline-none transition-all uppercase tracking-tighter ${
-                isEditing
-                  ? "border-brand-primary/50 ring-4 ring-brand-primary/5"
-                  : "border-border-color/40 opacity-60"
-              }`}
+              className={`w-full bg-bg-main border rounded-2xl py-3.5 px-5 text-2xl font-black
+                          italic text-text-main outline-none transition-colors
+                          uppercase tracking-tighter
+                          ${
+                            isEditing
+                              ? "border-brand-primary/40 focus:border-brand-primary/60"
+                              : "border-border-color/20 opacity-50"
+                          }`}
             />
           </div>
 
-          <div className="relative space-y-1">
-            <label className="text-[10px] font-black uppercase italic tracking-widest text-text-muted ml-1">
-              <GitMerge
-                size={12}
-                className="inline mr-1.5 text-brand-primary"
-              />
-              Parent Group
-            </label>
+          {/* Parent group */}
+          <div className="space-y-1.5">
+            <p
+              className="flex items-center gap-1.5 text-[9.5px] font-black uppercase italic
+                          tracking-[0.3em] text-text-muted/50"
+            >
+              <GitMerge size={13} className="text-brand-primary/60" />
+              System Group
+            </p>
             <div className="relative">
               <select
                 disabled={!isEditing}
@@ -190,72 +288,28 @@ export const MuscleDetail = () => {
                 onChange={(e: ChangeEvent<HTMLSelectElement>) =>
                   setForm({ ...form, parent_id: e.target.value })
                 }
-                className={`w-full bg-bg-main border rounded-xl py-4 px-5 text-[11px] font-black uppercase italic tracking-wide text-text-main outline-none appearance-none pr-12 transition-all ${
-                  isEditing
-                    ? "border-brand-primary/50 ring-4 ring-brand-primary/5"
-                    : "border-border-color/40 opacity-60"
-                }`}
+                className={`w-full bg-bg-main border rounded-2xl py-3.5 px-5 pr-11
+                            text-[11px] font-black uppercase italic tracking-[0.25em]
+                            text-text-main outline-none appearance-none transition-colors
+                            ${
+                              isEditing
+                                ? "border-brand-primary/40"
+                                : "border-border-color/20 opacity-50"
+                            }`}
               >
-                <option value="">No Parent (Primary)</option>
+                <option value="">No parent (primary group)</option>
                 {muscles.map((m) => (
                   <option key={m.id} value={m.id}>
-                    {m.name.toUpperCase()}
+                    {m.name}
                   </option>
                 ))}
               </select>
-              {isEditing && (
-                <ChevronDown
-                  size={18}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none"
-                />
-              )}
+              <ChevronDown
+                size={15}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted/40 pointer-events-none"
+              />
             </div>
           </div>
-        </div>
-
-        {/* ACTIONS */}
-        <div className="flex flex-col gap-3">
-          {!isEditing ? (
-            <>
-              <button
-                onClick={() => setIsEditing(true)}
-                className="w-full h-14 bg-text-main text-bg-main font-black uppercase italic tracking-widest rounded-xl flex items-center justify-center gap-3 active:scale-[0.98] shadow-lg transition-all"
-              >
-                <PencilLine size={18} />
-                Modify Details
-              </button>
-
-              <button
-                onClick={() => setShowModal(true)}
-                className="w-full py-4 bg-bg-surface text-brand-error font-black uppercase italic text-[10px] tracking-widest rounded-xl flex items-center justify-center gap-2 border border-brand-error/20 active:scale-[0.98] transition-all"
-              >
-                <Trash2 size={16} /> Archive Muscle
-              </button>
-            </>
-          ) : (
-            <>
-              <button
-                onClick={onUpdate}
-                disabled={processing || !form.name.trim()}
-                className="w-full h-14 bg-brand-primary text-bg-main font-black uppercase italic tracking-widest rounded-xl flex items-center justify-center gap-3 active:scale-[0.98] shadow-md shadow-brand-primary/20 transition-all disabled:opacity-50"
-              >
-                {processing ? (
-                  <Loader2 className="animate-spin" size={20} />
-                ) : (
-                  <Save size={20} />
-                )}
-                Update Changes
-              </button>
-
-              <button
-                onClick={onCancelEdit}
-                disabled={processing}
-                className="w-full py-4 bg-bg-surface text-text-muted font-black uppercase italic text-[10px] tracking-widest rounded-xl flex items-center justify-center gap-2 border border-border-color active:scale-[0.98] transition-all"
-              >
-                <X size={18} /> Cancel
-              </button>
-            </>
-          )}
         </div>
       </div>
 

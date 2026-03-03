@@ -15,7 +15,8 @@ import { db } from "../../../db/database";
 import { type Equipment, type Muscle } from "../../../types/database.types";
 import { ExerciseService } from "../../../services/ExerciseService";
 
-// --- 1. STRICT INTERFACES (UNCHANGED) ---
+// --- TYPES ---
+
 interface ExerciseForm {
   name: string;
   isPublic: boolean;
@@ -27,7 +28,29 @@ interface ExerciseForm {
   stabilizerMuscles: string[];
 }
 
-// --- 2. MAIN COMPONENT ---
+// Muscle role token map — drives colors for both buttons and tags
+const ROLE_TOKENS = {
+  primary: {
+    label: "Pri",
+    color: "var(--brand-primary)",
+    glow: "var(--glow-primary)",
+  },
+  secondary: {
+    label: "Sec",
+    color: "var(--brand-secondary)",
+    glow: "rgba(56,189,248,0.3)",
+  },
+  stabilizer: {
+    label: "Stb",
+    color: "var(--brand-streak)",
+    glow: "var(--glow-streak)",
+  },
+} as const;
+
+type MuscleRole = keyof typeof ROLE_TOKENS;
+
+// --- MAIN COMPONENT ---
+
 export const AddExercise = () => {
   const navigate = useNavigate();
   const { user_id } = useAuth();
@@ -49,21 +72,18 @@ export const AddExercise = () => {
   });
 
   useEffect(() => {
-    db.muscles.toArray().then((data) => setMuscles(data));
-    db.equipment.toArray().then((data) => setEquipment(data));
+    db.muscles.toArray().then(setMuscles);
+    db.equipment.toArray().then(setEquipment);
   }, []);
 
-  // Performance optimized filtering
   const searchResults = useMemo(() => {
     if (searchQuery.length < 2) return [];
-    return muscles
-      .filter((m) => m.name.toLowerCase().includes(searchQuery.toLowerCase()))
-      .slice(0, 5);
+    const q = searchQuery.toLowerCase();
+    return muscles.filter((m) => m.name.toLowerCase().includes(q)).slice(0, 5);
   }, [searchQuery, muscles]);
 
   const handleSave = async () => {
     if (!form.name || !form.category || !user_id) return;
-
     setIsSaving(true);
     try {
       await ExerciseService.saveExercise(form, user_id);
@@ -75,76 +95,96 @@ export const AddExercise = () => {
     }
   };
 
-  const addMuscle = (
-    id: string,
-    role: "primary" | "secondary" | "stabilizer",
-  ) => {
+  const addMuscle = (id: string, role: MuscleRole) => {
     const key = `${role}Muscles` as keyof ExerciseForm;
-    const currentList = form[key] as string[];
-
-    if (!currentList.includes(id)) {
-      setForm({ ...form, [key]: [...currentList, id] });
+    const current = form[key] as string[];
+    if (!current.includes(id)) {
+      setForm({ ...form, [key]: [...current, id] });
     }
     setSearchQuery("");
   };
 
+  const removeMuscle = (id: string, role: MuscleRole) => {
+    const key = `${role}Muscles` as keyof ExerciseForm;
+    const current = form[key] as string[];
+    setForm({ ...form, [key]: current.filter((m) => m !== id) });
+  };
+
+  const saveButton = (
+    <button
+      disabled={isSaving || !form.name || !form.category}
+      onClick={handleSave}
+      className="w-full h-16 bg-brand-primary rounded-2xl font-black uppercase italic
+                 tracking-[0.25em] flex items-center justify-center gap-3
+                 active:scale-[0.98] transition-all disabled:opacity-30"
+      style={{
+        color: "var(--color-on-brand)",
+        boxShadow: "0 4px 24px var(--glow-primary)",
+      }}
+    >
+      {isSaving ? (
+        <Loader2 className="animate-spin" size={22} />
+      ) : (
+        <Save size={22} strokeWidth={2.5} />
+      )}
+      <span>{isSaving ? "Saving..." : "Create Exercise"}</span>
+    </button>
+  );
+
   return (
-    <SubPageLayout title="Create Exercise">
-      <div className="flex flex-col gap-6 pb-40 max-w-2xl mx-auto animate-in fade-in duration-500">
-        {/* VISIBILITY SELECTOR - Refined Toggle */}
-        <div className="bg-bg-surface p-1 rounded-xl flex relative border border-border-color shadow-sm">
+    <SubPageLayout title="Create Exercise" footer={saveButton}>
+      <div className="flex flex-col gap-6 pt-2 pb-4 animate-in fade-in duration-500">
+        {/* ── VISIBILITY TOGGLE ── */}
+        <div className="bg-bg-surface p-1 rounded-2xl flex relative border border-border-color/40 card-glow">
+          {/* Sliding indicator */}
           <div
-            className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-bg-main rounded-lg shadow-sm transition-all duration-300 ease-out ${
-              form.isPublic ? "translate-x-full" : "translate-x-0"
-            }`}
+            className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-bg-main rounded-xl
+                        border border-border-color/40 transition-all duration-300 ease-out
+                        ${form.isPublic ? "translate-x-[calc(100%+4px)]" : "translate-x-0"}`}
           />
-          <button
-            onClick={() => setForm({ ...form, isPublic: false })}
-            className="flex-1 py-2.5 z-10 flex items-center justify-center gap-2 text-xs font-bold transition-colors"
-          >
-            <Lock
-              size={14}
-              className={!form.isPublic ? "text-text-main" : "text-text-muted"}
-            />
-            <span
-              className={!form.isPublic ? "text-text-main" : "text-text-muted"}
-            >
-              Private
-            </span>
-          </button>
-          <button
-            onClick={() => setForm({ ...form, isPublic: true })}
-            className="flex-1 py-2.5 z-10 flex items-center justify-center gap-2 text-xs font-bold transition-colors"
-          >
-            <Globe
-              size={14}
-              className={
-                form.isPublic ? "text-brand-success" : "text-text-muted"
-              }
-            />
-            <span
-              className={form.isPublic ? "text-text-main" : "text-text-muted"}
-            >
-              Public
-            </span>
-          </button>
+          {[
+            { value: false, label: "Private", icon: <Lock size={13} /> },
+            { value: true, label: "Public", icon: <Globe size={13} /> },
+          ].map(({ value, label, icon }) => {
+            const isActive = form.isPublic === value;
+            return (
+              <button
+                key={label}
+                onClick={() => setForm({ ...form, isPublic: value })}
+                className={`flex-1 py-3 z-10 flex items-center justify-center gap-2
+                            text-[10px] font-black uppercase italic tracking-widest
+                            transition-colors duration-300
+                            ${
+                              isActive
+                                ? value
+                                  ? "text-brand-primary"
+                                  : "text-text-main"
+                                : "text-text-muted/40"
+                            }`}
+              >
+                {icon}
+                <span>{label}</span>
+              </button>
+            );
+          })}
         </div>
 
-        {/* EXERCISE NAME */}
+        {/* ── EXERCISE NAME ── */}
         <div className="space-y-1.5">
-          <label className="text-[11px] font-bold uppercase text-text-muted ml-1 tracking-wider">
-            Identity
-          </label>
+          <FieldLabel>Identity</FieldLabel>
           <input
-            className="w-full bg-bg-surface border border-border-color p-4 rounded-xl text-text-main font-medium outline-none focus:ring-2 ring-brand-primary/10 transition-all placeholder:opacity-40"
+            className="w-full bg-bg-surface border border-border-color/40 px-5 py-4 rounded-2xl
+                       text-text-main font-black italic outline-none text-lg tracking-tight
+                       focus:border-brand-primary/40 transition-colors
+                       placeholder:text-text-muted/20 card-glow"
             placeholder="e.g. Zottman Curls"
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
           />
         </div>
 
-        {/* SELECTS - Grid for performance & space */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* ── CATEGORY & EQUIPMENT ── */}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <CustomSelect
             label="Main Category"
             value={form.category}
@@ -152,18 +192,16 @@ export const AddExercise = () => {
             onChange={(val) => setForm({ ...form, category: val })}
           />
           <CustomSelect
-            label="Equipment Used"
+            label="Equipment"
             value={form.equipmentId}
             options={equipment}
             onChange={(val) => setForm({ ...form, equipmentId: val })}
           />
         </div>
 
-        {/* TRACKING OPTIONS */}
+        {/* ── TRACKING METRICS ── */}
         <div className="space-y-3">
-          <label className="text-[11px] font-bold uppercase text-text-muted ml-1 tracking-wider">
-            Metrics
-          </label>
+          <FieldLabel>Metrics</FieldLabel>
           <div className="flex flex-wrap gap-2">
             {["reps", "weight", "bodyweight", "distance", "duration"].map(
               (opt) => {
@@ -179,11 +217,21 @@ export const AddExercise = () => {
                           : [...form.tracking, opt],
                       })
                     }
-                    className={`px-5 py-2 rounded-lg text-xs font-bold border transition-all duration-200 ${
+                    className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase italic
+                              border transition-all duration-200
+                              ${
+                                isActive
+                                  ? "bg-brand-primary border-transparent scale-[1.03]"
+                                  : "bg-bg-surface border-border-color/40 text-text-muted/60 hover:border-brand-primary/30"
+                              }`}
+                    style={
                       isActive
-                        ? "bg-brand-primary border-brand-primary text-bg-main shadow-md"
-                        : "bg-bg-surface border-border-color text-text-muted hover:border-text-main"
-                    }`}
+                        ? {
+                            color: "var(--color-on-brand)",
+                            boxShadow: "0 2px 10px var(--glow-primary)",
+                          }
+                        : undefined
+                    }
                   >
                     {opt}
                   </button>
@@ -193,49 +241,60 @@ export const AddExercise = () => {
           </div>
         </div>
 
-        {/* MUSCLE SEARCH */}
+        {/* ── MUSCLE SEARCH ── */}
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <label className="text-[11px] font-bold uppercase text-text-muted ml-1 tracking-wider">
-              Biomechanics
-            </label>
+            <FieldLabel>Biomechanics</FieldLabel>
             <div className="relative">
               <Search
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted"
-                size={18}
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted/40 pointer-events-none"
+                size={16}
               />
               <input
-                className="w-full bg-bg-surface border border-border-color p-4 pl-12 rounded-xl text-sm text-text-main outline-none focus:border-text-muted transition-all"
+                className="w-full bg-bg-surface border border-border-color/40 px-4 py-3.5 pl-11
+                           rounded-2xl text-sm font-black italic text-text-main outline-none
+                           focus:border-brand-primary/40 transition-colors card-glow"
                 placeholder="Find target muscle..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
+
+              {/* Dropdown results */}
               {searchResults.length > 0 && (
-                <div className="absolute top-[110%] left-0 right-0 bg-bg-surface border border-border-color rounded-xl z-50 shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2">
+                <div
+                  className="absolute top-[calc(100%+6px)] left-0 right-0 bg-bg-surface
+                             border border-border-color/40 rounded-2xl z-50 overflow-hidden
+                             animate-in fade-in slide-in-from-top-1 duration-200"
+                  style={{ boxShadow: "0 8px 32px var(--shadow-sm)" }}
+                >
                   {searchResults.map((m) => (
                     <div
                       key={m.id}
-                      className="flex items-center justify-between p-3 border-b border-border-color/50 last:border-0 hover:bg-bg-main transition-colors"
+                      className="flex items-center justify-between px-4 py-3
+                                 border-b border-border-color/10 last:border-0
+                                 hover:bg-bg-main transition-colors"
                     >
-                      <span className="text-sm font-semibold text-text-main">
+                      <span className="text-[11px] font-black uppercase italic text-text-main tracking-wide">
                         {m.name}
                       </span>
                       <div className="flex gap-1.5">
-                        <QuickAddBtn
-                          label="Pri"
-                          className="bg-brand-primary"
-                          onClick={() => addMuscle(m.id, "primary")}
-                        />
-                        <QuickAddBtn
-                          label="Sec"
-                          className="bg-brand-info"
-                          onClick={() => addMuscle(m.id, "secondary")}
-                        />
-                        <QuickAddBtn
-                          label="Stb"
-                          className="bg-brand-success"
-                          onClick={() => addMuscle(m.id, "stabilizer")}
-                        />
+                        {(Object.keys(ROLE_TOKENS) as MuscleRole[]).map(
+                          (role) => (
+                            <button
+                              key={role}
+                              onClick={() => addMuscle(m.id, role)}
+                              className="text-[9px] font-black uppercase italic px-2.5 py-1.5
+                                       rounded-lg active:scale-90 transition-all"
+                              style={{
+                                background: ROLE_TOKENS[role].color,
+                                color: "var(--color-on-brand)",
+                                boxShadow: `0 0 8px ${ROLE_TOKENS[role].glow}`,
+                              }}
+                            >
+                              {ROLE_TOKENS[role].label}
+                            </button>
+                          ),
+                        )}
                       </div>
                     </div>
                   ))}
@@ -244,72 +303,36 @@ export const AddExercise = () => {
             </div>
           </div>
 
-          {/* ACTIVE SELECTIONS */}
+          {/* Active muscle selections */}
           <div className="space-y-3">
-            <MuscleTagRow
-              label="Primary"
-              items={form.primaryMuscles}
-              muscles={muscles}
-              onRemove={(id) =>
-                setForm({
-                  ...form,
-                  primaryMuscles: form.primaryMuscles.filter((m) => m !== id),
-                })
-              }
-              colorClass="text-brand-primary"
-            />
-            <MuscleTagRow
-              label="Secondary"
-              items={form.secondaryMuscles}
-              muscles={muscles}
-              onRemove={(id) =>
-                setForm({
-                  ...form,
-                  secondaryMuscles: form.secondaryMuscles.filter(
-                    (m) => m !== id,
-                  ),
-                })
-              }
-              colorClass="text-brand-info"
-            />
-            <MuscleTagRow
-              label="Stabilizers"
-              items={form.stabilizerMuscles}
-              muscles={muscles}
-              onRemove={(id) =>
-                setForm({
-                  ...form,
-                  stabilizerMuscles: form.stabilizerMuscles.filter(
-                    (m) => m !== id,
-                  ),
-                })
-              }
-              colorClass="text-brand-success"
-            />
+            {(Object.keys(ROLE_TOKENS) as MuscleRole[]).map((role) => {
+              const items = form[`${role}Muscles`] as string[];
+              if (items.length === 0) return null;
+              return (
+                <MuscleTagRow
+                  key={role}
+                  label={role}
+                  items={items}
+                  muscles={muscles}
+                  color={ROLE_TOKENS[role].color}
+                  onRemove={(id) => removeMuscle(id, role)}
+                />
+              );
+            })}
           </div>
-        </div>
-
-        {/* ACTION BUTTON */}
-        <div className="fixed bottom-8 left-4 right-4 z-40 md:relative md:bottom-0 md:left-0 md:right-0">
-          <button
-            disabled={isSaving || !form.name || !form.category}
-            onClick={handleSave}
-            className="w-full py-4 bg-text-main text-bg-main rounded-xl font-bold uppercase tracking-widest shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-30"
-          >
-            {isSaving ? (
-              <Loader2 className="animate-spin" size={20} />
-            ) : (
-              <Save size={20} />
-            )}
-            {isSaving ? "Finalizing..." : "Initialize Exercise"}
-          </button>
         </div>
       </div>
     </SubPageLayout>
   );
 };
 
-// --- REFINED HELPER COMPONENTS ---
+// --- SUB-COMPONENTS ---
+
+const FieldLabel = ({ children }: { children: React.ReactNode }) => (
+  <p className="text-[9.5px] font-black uppercase italic text-text-muted/50 tracking-[0.25em]">
+    {children}
+  </p>
+);
 
 interface SelectProps {
   label: string;
@@ -320,14 +343,15 @@ interface SelectProps {
 
 const CustomSelect = ({ label, value, options, onChange }: SelectProps) => (
   <div className="space-y-1.5">
-    <label className="text-[11px] font-bold uppercase text-text-muted ml-1 tracking-wider">
-      {label}
-    </label>
+    <FieldLabel>{label}</FieldLabel>
     <div className="relative">
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full bg-bg-surface border border-border-color p-3.5 rounded-xl text-sm font-semibold text-text-main appearance-none outline-none focus:border-text-muted transition-all shadow-sm"
+        className="w-full bg-bg-surface border border-border-color/40 px-4 py-3.5 rounded-2xl
+                   text-[11px] font-black uppercase italic text-text-main
+                   appearance-none outline-none focus:border-brand-primary/40
+                   transition-colors card-glow"
       >
         <option value="">Select...</option>
         {options.map((o) => (
@@ -337,71 +361,53 @@ const CustomSelect = ({ label, value, options, onChange }: SelectProps) => (
         ))}
       </select>
       <ChevronDown
-        size={16}
-        className="absolute right-4 top-1/2 -translate-y-1/2 text-text-main opacity-30 pointer-events-none"
+        size={15}
+        className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted/40 pointer-events-none"
       />
     </div>
   </div>
-);
-
-const QuickAddBtn = ({
-  label,
-  className,
-  onClick,
-}: {
-  label: string;
-  className: string;
-  onClick: () => void;
-}) => (
-  <button
-    onClick={onClick}
-    className={`${className} text-[10px] font-bold px-3 py-1.5 rounded-lg text-bg-main shadow hover:brightness-110 active:scale-90 transition-all`}
-  >
-    {label}
-  </button>
 );
 
 interface TagRowProps {
   label: string;
   items: string[];
   muscles: Muscle[];
+  color: string;
   onRemove: (id: string) => void;
-  colorClass: string;
 }
 
 const MuscleTagRow = ({
   label,
   items,
   muscles,
+  color,
   onRemove,
-  colorClass,
-}: TagRowProps) => {
-  if (items.length === 0) return null;
-  return (
-    <div className="space-y-2 animate-in slide-in-from-left-2 duration-300">
-      <p
-        className={`text-[10px] font-bold uppercase tracking-wider ml-1 ${colorClass}`}
-      >
-        {label}
-      </p>
-      <div className="flex flex-wrap gap-2">
-        {items.map((id) => (
-          <div
-            key={id}
-            className="flex items-center gap-2 bg-bg-surface border border-border-color px-3 py-1.5 rounded-lg shadow-sm"
+}: TagRowProps) => (
+  <div className="space-y-2 animate-in slide-in-from-left-2 duration-300">
+    <p
+      className="text-[9px] font-black uppercase italic tracking-widest capitalize"
+      style={{ color }}
+    >
+      {label}
+    </p>
+    <div className="flex flex-wrap gap-2">
+      {items.map((id) => (
+        <div
+          key={id}
+          className="flex items-center gap-2 bg-bg-surface border border-border-color/40
+                     px-3 py-1.5 rounded-xl card-glow"
+        >
+          <span className="text-[10px] font-black uppercase italic text-text-main tracking-tight">
+            {muscles.find((m) => m.id === id)?.name ?? id}
+          </span>
+          <button
+            onClick={() => onRemove(id)}
+            className="text-text-muted/40 hover:text-brand-danger transition-colors"
           >
-            <span className="text-xs font-semibold text-text-main">
-              {muscles.find((m) => m.id === id)?.name}
-            </span>
-            <button
-              onClick={() => onRemove(id)}
-              className="text-text-muted hover:text-brand-error transition-colors"
-            >
-              <X size={14} />
-            </button>
-          </div>
-        ))}
-      </div>
+            <X size={13} />
+          </button>
+        </div>
+      ))}
     </div>
-  );
-};
+  </div>
+);

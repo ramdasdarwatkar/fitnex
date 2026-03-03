@@ -25,7 +25,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { db } from "../../db/database";
 import { ExerciseCard } from "../workout/components/ExerciseCard";
 
-// --- 1. STRICT DOMAIN INTERFACES ---
+// --- INTERFACES ---
 
 interface PRRecord {
   record_date: string;
@@ -68,7 +68,7 @@ interface TooltipProps {
   payload?: TooltipEntry[];
 }
 
-// --- 2. UTILITY LOGIC ---
+// --- UTILS ---
 
 const getUnitData = (value: number, type: string) => {
   const t = type?.toLowerCase();
@@ -85,45 +85,52 @@ const getUnitData = (value: number, type: string) => {
   return { val: value.toString(), unit: "kg" };
 };
 
+// --- CUSTOM TOOLTIP ---
+
 const CustomTooltip = ({ active, payload }: TooltipProps) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="bg-bg-surface border border-border-color p-4 rounded-2xl shadow-2xl backdrop-blur-xl ring-0">
-        <p className="text-[10px] font-black uppercase italic text-text-muted mb-3 tracking-widest">
-          {payload[0].payload.fullDate}
-        </p>
-        <div className="space-y-3">
-          {payload.map((entry, idx) => {
-            const { val, unit } = getUnitData(entry.value, entry.name);
-            return (
-              <div
-                key={idx}
-                className="flex items-center justify-between gap-8"
-              >
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-2 h-2 rounded-full"
-                    style={{ backgroundColor: entry.color }}
-                  />
-                  <span className="text-[9px] font-black uppercase italic text-text-main">
-                    {entry.name}
-                  </span>
-                </div>
-                <span className="text-sm font-black text-brand-primary italic">
-                  {val}
-                  {unit}
+  if (!active || !payload?.length) return null;
+  return (
+    <div
+      className="bg-bg-surface border border-border-color/60 p-4 rounded-2xl backdrop-blur-xl"
+      style={{
+        boxShadow: "0 8px 32px var(--shadow-sm), 0 0 0 1px var(--border-color)",
+      }}
+    >
+      <p className="text-[9px] font-black uppercase italic text-text-muted/60 mb-3 tracking-[0.2em]">
+        {payload[0].payload.fullDate}
+      </p>
+      <div className="space-y-2.5">
+        {payload.map((entry, idx) => {
+          const { val, unit } = getUnitData(entry.value, entry.name);
+          return (
+            <div key={idx} className="flex items-center justify-between gap-8">
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-1.5 h-1.5 rounded-full"
+                  style={{
+                    backgroundColor: entry.color,
+                    boxShadow: `0 0 6px ${entry.color}`,
+                  }}
+                />
+                <span className="text-[10px] font-black uppercase italic text-text-muted/70 tracking-tight">
+                  {entry.name}
                 </span>
               </div>
-            );
-          })}
-        </div>
+              <span className="text-[13px] font-black text-brand-primary italic tabular-nums">
+                {val}
+                <span className="text-[9px] ml-1 text-text-muted/50 uppercase">
+                  {unit}
+                </span>
+              </span>
+            </div>
+          );
+        })}
       </div>
-    );
-  }
-  return null;
+    </div>
+  );
 };
 
-// --- 3. MAIN COMPONENT ---
+// --- MAIN COMPONENT ---
 
 export const ExerciseProgressPage = () => {
   const { id: exerciseId } = useParams<{ id: string }>();
@@ -158,8 +165,10 @@ export const ExerciseProgressPage = () => {
     init();
   }, [exerciseId, user_id]);
 
+  // Fixed toggle logic — early return on already-open hides without re-fetching
   const handleShowHistory = async () => {
-    if (showHistory || !user_id || !exerciseId) return setShowHistory(false);
+    if (showHistory) return setShowHistory(false);
+    if (!user_id || !exerciseId) return;
     setHistoryLoading(true);
     try {
       const history = await WorkoutService.getExerciseHistory(
@@ -182,7 +191,7 @@ export const ExerciseProgressPage = () => {
 
     const data: ChartPoint[] = allDates.map((dateStr) => {
       const point: ChartPoint = {
-        fullDate: format(new Date(dateStr), "MMM dd, yy"),
+        fullDate: format(new Date(dateStr), "MMM dd, yyyy"),
         date: format(new Date(dateStr), "MMM dd"),
       };
       types.forEach((type) => {
@@ -195,17 +204,20 @@ export const ExerciseProgressPage = () => {
       });
       return point;
     });
+
     return { chartData: data, activeTypes: types };
   }, [rawPrs]);
 
-  const bestStats = useMemo(() => {
-    return activeTypes.map((type) => {
-      const max = Math.max(
-        ...rawPrs.filter((p) => p.value_type === type).map((p) => p.value),
-      );
-      return { type, ...getUnitData(max, type) };
-    });
-  }, [rawPrs, activeTypes]);
+  const bestStats = useMemo(
+    () =>
+      activeTypes.map((type) => {
+        const max = Math.max(
+          ...rawPrs.filter((p) => p.value_type === type).map((p) => p.value),
+        );
+        return { type, ...getUnitData(max, type) };
+      }),
+    [rawPrs, activeTypes],
+  );
 
   if (loading)
     return (
@@ -215,52 +227,101 @@ export const ExerciseProgressPage = () => {
     );
 
   return (
-    <SubPageLayout title="Performance Lab">
-      <style>{`
-        .recharts-surface, .recharts-wrapper { outline: none !important; }
-        .line-glow-primary { filter: drop-shadow(0px 0px 6px var(--brand-primary)); }
-        .line-glow-secondary { filter: drop-shadow(0px 0px 6px #3b82f6); }
-      `}</style>
+    <SubPageLayout title="Telemetry Lab">
+      <div className="flex flex-col gap-6 pb-40 animate-in fade-in duration-700">
+        {/* ── CHART CARD ── */}
+        <div className="bg-bg-surface border border-border-color/40 rounded-2xl p-6 relative overflow-hidden card-glow">
+          {/* Decorative glow */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-brand-primary opacity-5 blur-3xl rounded-full -mr-12 -mt-12 pointer-events-none" />
 
-      <div className="flex flex-col gap-6 pb-32 px-1 animate-in fade-in duration-500">
-        {/* CHART CARD */}
-        <div className="bg-bg-surface border border-border-color rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden">
-          <div className="flex flex-col gap-4 mb-10 border-b border-border-color/50 pb-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-brand-primary/10 flex items-center justify-center text-brand-primary">
-                  <Trophy size={20} />
-                </div>
-                <h2 className="text-lg font-black uppercase italic text-text-main leading-tight max-w-37.5 truncate">
+          {/* Header */}
+          <div className="flex flex-col gap-5 mb-8 pb-6 border-b border-border-color/20">
+            <div className="flex items-center gap-4">
+              <div
+                className="w-11 h-11 rounded-2xl bg-brand-primary/10 flex items-center justify-center
+                           text-brand-primary border border-brand-primary/20"
+                style={{ boxShadow: "0 0 16px var(--glow-primary)" }}
+              >
+                <Trophy size={22} />
+              </div>
+              <div className="space-y-0.5">
+                <h2 className="text-xl font-black uppercase italic text-text-main leading-none tracking-tight">
                   {exerciseName}
                 </h2>
+                <p className="text-[9px] font-black uppercase tracking-[0.3em] text-text-muted/40 italic">
+                  Biometric Scaling
+                </p>
               </div>
-              <div className="flex gap-4">
-                {bestStats.map((s, i) => (
-                  <div key={i} className="text-right">
-                    <p className="text-[8px] font-black uppercase text-text-muted tracking-widest italic leading-none">
-                      {s.type}
-                    </p>
-                    <p
-                      className={`text-xl font-black italic leading-none mt-1.5 ${i === 0 ? "text-brand-primary" : "text-blue-400"}`}
-                    >
-                      {s.val}
-                      <span className="text-[8px] ml-0.5 uppercase">
-                        {s.unit}
-                      </span>
-                    </p>
-                  </div>
-                ))}
-              </div>
+            </div>
+
+            {/* Peak stats */}
+            <div className="flex gap-6">
+              {bestStats.map((s, i) => (
+                <div key={i} className="space-y-0.5">
+                  <p className="text-[9px] font-black uppercase text-text-muted/40 tracking-widest italic">
+                    Peak {s.type}
+                  </p>
+                  <p
+                    className="text-2xl font-black italic leading-none tabular-nums"
+                    style={{
+                      color:
+                        i === 0
+                          ? "var(--brand-primary)"
+                          : "var(--brand-secondary)",
+                      textShadow:
+                        i === 0
+                          ? "0 0 20px var(--glow-primary)"
+                          : "0 0 20px var(--glow-secondary)",
+                    }}
+                  >
+                    {s.val}
+                    <span className="text-[10px] ml-1 uppercase font-black text-text-muted/40">
+                      {s.unit}
+                    </span>
+                  </p>
+                </div>
+              ))}
             </div>
           </div>
 
-          <div className="h-64 -mx-4">
+          {/* Chart */}
+          <div className="h-64 -mx-2">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData}>
+                <defs>
+                  <linearGradient id="colorMain" x1="0" y1="0" x2="0" y2="1">
+                    <stop
+                      offset="5%"
+                      stopColor="var(--brand-primary)"
+                      stopOpacity={0.12}
+                    />
+                    <stop
+                      offset="95%"
+                      stopColor="var(--brand-primary)"
+                      stopOpacity={0}
+                    />
+                  </linearGradient>
+                  {/* Glow filters using fixed rgba — no missing tokens */}
+                  <filter id="glowPrimary">
+                    <feGaussianBlur stdDeviation="3" result="blur" />
+                    <feComposite
+                      in="SourceGraphic"
+                      in2="blur"
+                      operator="over"
+                    />
+                  </filter>
+                  <filter id="glowSecondary">
+                    <feGaussianBlur stdDeviation="3" result="blur" />
+                    <feComposite
+                      in="SourceGraphic"
+                      in2="blur"
+                      operator="over"
+                    />
+                  </filter>
+                </defs>
                 <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="rgba(255,255,255,0.05)"
+                  strokeDasharray="4 4"
+                  stroke="rgba(255,255,255,0.03)"
                   vertical={false}
                 />
                 <XAxis dataKey="date" hide />
@@ -271,12 +332,12 @@ export const ExerciseProgressPage = () => {
                 />
                 <YAxis
                   yAxisId="right"
-                  orientation="right"
                   hide
                   domain={["auto", "auto"]}
+                  orientation="right"
                 />
                 <Tooltip
-                  cursor={{ stroke: "rgba(255,255,255,0.1)", strokeWidth: 2 }}
+                  cursor={{ stroke: "var(--glow-primary)", strokeWidth: 1 }}
                   content={<CustomTooltip />}
                 />
 
@@ -285,15 +346,15 @@ export const ExerciseProgressPage = () => {
                   type="monotone"
                   dataKey={activeTypes[0]}
                   stroke="var(--brand-primary)"
-                  strokeWidth={4}
-                  fill="transparent"
-                  className="line-glow-primary"
+                  strokeWidth={3}
+                  fill="url(#colorMain)"
+                  filter="url(#glowPrimary)"
                   connectNulls
-                  dot={{ r: 4, fill: "var(--brand-primary)", strokeWidth: 0 }}
+                  dot={{ r: 3, fill: "var(--brand-primary)", strokeWidth: 0 }}
                   activeDot={{
                     r: 6,
                     stroke: "var(--bg-surface)",
-                    strokeWidth: 3,
+                    strokeWidth: 2,
                     fill: "var(--brand-primary)",
                   }}
                 />
@@ -303,17 +364,21 @@ export const ExerciseProgressPage = () => {
                     yAxisId="right"
                     type="monotone"
                     dataKey={activeTypes[1]}
-                    stroke="#3b82f6"
-                    strokeWidth={4}
+                    stroke="var(--brand-secondary)"
+                    strokeWidth={3}
                     fill="transparent"
-                    className="line-glow-secondary"
+                    filter="url(#glowSecondary)"
                     connectNulls
-                    dot={{ r: 4, fill: "#3b82f6", strokeWidth: 0 }}
+                    dot={{
+                      r: 3,
+                      fill: "var(--brand-secondary)",
+                      strokeWidth: 0,
+                    }}
                     activeDot={{
                       r: 6,
                       stroke: "var(--bg-surface)",
-                      strokeWidth: 3,
-                      fill: "#3b82f6",
+                      strokeWidth: 2,
+                      fill: "var(--brand-secondary)",
                     }}
                   />
                 )}
@@ -322,35 +387,41 @@ export const ExerciseProgressPage = () => {
           </div>
         </div>
 
-        {/* HISTORY TRIGGER */}
+        {/* ── HISTORY TOGGLE BUTTON ── */}
         <button
           onClick={handleShowHistory}
-          className="w-full bg-bg-surface border border-border-color rounded-4xl py-6 flex items-center justify-center gap-3 active:scale-[0.98] transition-all shadow-lg"
+          className="w-full bg-bg-surface border border-border-color/40 rounded-2xl py-5
+                     flex items-center justify-center gap-3
+                     active:scale-[0.98] transition-all card-glow group"
         >
           {historyLoading ? (
-            <Loader2 className="animate-spin text-text-muted" size={18} />
+            <Loader2 className="animate-spin text-brand-primary" size={20} />
           ) : (
             <>
               <HistoryIcon
                 size={18}
                 className={
-                  showHistory ? "text-brand-primary" : "text-text-muted"
+                  showHistory
+                    ? "text-brand-primary"
+                    : "text-text-muted/40 group-hover:text-brand-primary transition-colors"
                 }
               />
-              <span className="text-[10px] font-black uppercase tracking-widest text-text-main">
-                {showHistory ? "Hide Records" : "View History"}
+              <span className="text-[11px] font-black uppercase italic tracking-[0.3em] text-text-main">
+                {showHistory ? "Hide Archive" : "Access Log Archive"}
               </span>
               <ChevronDown
                 size={16}
-                className={`text-text-muted transition-transform duration-300 ${showHistory ? "rotate-180" : ""}`}
+                className={`text-text-muted/30 transition-transform duration-300 ${
+                  showHistory ? "rotate-180 text-brand-primary" : ""
+                }`}
               />
             </>
           )}
         </button>
 
-        {/* HISTORY LIST */}
+        {/* ── SESSION HISTORY ── */}
         {showHistory && (
-          <div className="space-y-4 px-1 pb-10 animate-in slide-in-from-top-2 duration-300">
+          <div className="space-y-3 animate-in slide-in-from-top-2 duration-500">
             {sessionHistory.length > 0 ? (
               sessionHistory.map((w) => {
                 const isExpanded = expandedWorkoutId === w.id;
@@ -365,69 +436,101 @@ export const ExerciseProgressPage = () => {
                 );
 
                 return (
-                  <div key={w.id} className="flex flex-col">
-                    <div
+                  <div key={w.id}>
+                    <button
                       onClick={() =>
                         setExpandedWorkoutId(isExpanded ? null : w.id)
                       }
-                      className={`bg-bg-surface/50 border rounded-[1.8rem] p-5 flex items-center justify-between transition-all duration-300 ${isExpanded ? "border-brand-primary/40 bg-bg-surface shadow-xl" : "border-border-color"}`}
+                      className={`w-full bg-bg-surface border p-5 flex items-center justify-between
+                                  transition-all duration-300 rounded-2xl card-glow ${
+                                    isExpanded
+                                      ? "border-brand-primary/40"
+                                      : "border-border-color/40 hover:border-border-color/80"
+                                  }`}
+                      style={
+                        isExpanded
+                          ? { boxShadow: "0 0 20px var(--glow-primary)" }
+                          : undefined
+                      }
                     >
+                      {/* Date badge + info */}
                       <div className="flex items-center gap-4">
-                        <div className="text-center bg-bg-main p-2 rounded-xl min-w-11.25 border border-border-color">
-                          <p className="text-xs font-black text-text-main tabular-nums">
+                        <div
+                          className="text-center bg-bg-main p-3 rounded-xl min-w-[52px]
+                                     border border-border-color/30"
+                        >
+                          <p className="text-[15px] font-black italic text-text-main tabular-nums leading-none">
                             {format(new Date(w.start_time), "dd")}
                           </p>
-                          <p className="text-[8px] font-bold text-text-muted uppercase">
+                          <p className="text-[9px] font-black text-brand-primary uppercase italic mt-0.5 tracking-widest">
                             {format(new Date(w.start_time), "MMM")}
                           </p>
                         </div>
-                        <div>
-                          <p className="text-xs font-black text-text-main uppercase italic truncate max-w-37.5">
+                        <div className="text-left space-y-1">
+                          <p className="text-[13px] font-black text-text-main uppercase italic tracking-tight truncate max-w-44">
                             {w.workout_name}
                           </p>
-                          <p className="text-[9px] font-bold text-text-muted uppercase tracking-tight">
-                            {w.logs?.length || 0} Sets • Peak: {summary.val}
-                            {summary.unit}
-                          </p>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[9px] font-black text-text-muted/40 uppercase italic tracking-widest">
+                              {w.logs?.length || 0} sets
+                            </span>
+                            <span className="text-text-muted/20">·</span>
+                            <span className="text-[9px] font-black text-brand-primary uppercase italic tracking-widest">
+                              Peak {summary.val}
+                              {summary.unit}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                      <ChevronRight
-                        size={14}
-                        className={`text-text-muted transition-transform ${isExpanded ? "rotate-90 text-brand-primary" : ""}`}
-                      />
-                    </div>
 
+                      <ChevronRight
+                        size={16}
+                        className={`text-text-muted/20 transition-transform duration-300 shrink-0 ${
+                          isExpanded ? "rotate-90 text-brand-primary" : ""
+                        }`}
+                      />
+                    </button>
+
+                    {/* Expandable sets detail */}
                     <div
-                      className={`grid transition-[grid-template-rows] duration-500 ease-in-out ${isExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
+                      className={`grid transition-all duration-400 ease-in-out ${
+                        isExpanded
+                          ? "grid-rows-[1fr] opacity-100 mt-2"
+                          : "grid-rows-[0fr] opacity-0"
+                      }`}
                     >
                       <div className="overflow-hidden">
-                        <div className="pt-4 px-2">
-                          <ExerciseCard
-                            name=""
-                            // DATA NORMALIZATION: Map optional/null fields to 0 for strict LogRow compatibility
-                            rows={w.logs.map((log) => ({
-                              ...log,
-                              weight: log.weight ?? 0,
-                              reps: log.reps ?? 0,
-                              distance: log.distance ?? 0,
-                              duration: log.duration ?? 0,
-                              set_number: log.set_number ?? 1,
-                            }))}
-                            fv={(v: string | number | undefined) =>
-                              v?.toString() || "-"
-                            }
-                          />
-                        </div>
+                        <ExerciseCard
+                          name=""
+                          rows={w.logs.map((log) => ({
+                            ...log,
+                            weight: log.weight ?? 0,
+                            reps: log.reps ?? 0,
+                            distance: log.distance ?? 0,
+                            duration: log.duration ?? 0,
+                            set_number: log.set_number ?? 1,
+                          }))}
+                          fv={(v: string | number | undefined) =>
+                            v?.toString() || "-"
+                          }
+                        />
                       </div>
                     </div>
                   </div>
                 );
               })
             ) : (
-              <div className="py-20 flex flex-col items-center justify-center opacity-20">
-                <Dumbbell size={40} className="mb-4 text-text-muted" />
-                <p className="text-[10px] font-black uppercase tracking-widest text-text-main">
-                  No history found
+              <div
+                className="py-20 flex flex-col items-center justify-center
+                              border border-dashed border-border-color/30 rounded-2xl"
+              >
+                <Dumbbell
+                  size={40}
+                  strokeWidth={1}
+                  className="text-text-muted/20 mb-4"
+                />
+                <p className="text-[10px] font-black uppercase italic tracking-[0.4em] text-text-muted/20">
+                  Archive Empty
                 </p>
               </div>
             )}

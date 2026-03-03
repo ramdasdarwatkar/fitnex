@@ -215,11 +215,7 @@ export const LoginPage = () => {
       <div className="flex-1 flex flex-col relative overflow-hidden h-full">
         {/* MOBILE HEADER: Pinned tightly to notch with w-32 h-32 Logo */}
         <div className="lg:hidden shrink-0 pt-[env(safe-area-inset-top)] flex items-center justify-center">
-          <img
-            src={logoImg}
-            alt="Logo"
-            className="w-40 h-40 shadow-xl rounded-2xl"
-          />
+          <img src={logoImg} alt="Logo" className="w-40 h-40" />
         </div>
 
         {/* LoginForm Container: items-center ensures the form stays near the logo block */}

@@ -19,7 +19,6 @@ import {
 } from "lucide-react";
 import { ExercisePicker } from "../exercises/ExercisePicker";
 
-// DND Kit
 import {
   DndContext,
   closestCenter,
@@ -44,7 +43,7 @@ import {
   type EnrichedExercise,
 } from "../../../services/ExerciseService";
 
-// --- 1. STRICT INTERFACES ---
+// --- TYPES ---
 
 export interface SelectedExercise extends EnrichedExercise {
   tempId: string;
@@ -55,7 +54,6 @@ export interface SelectedExercise extends EnrichedExercise {
 
 type TargetMetricKey = "target_sets" | "target_reps" | "target_duration";
 
-// Fixed interface to allow undefined/optional values from the DB
 interface RoutineExerciseDB {
   exercise_id: string;
   target_sets?: number | null;
@@ -71,15 +69,13 @@ interface SortableExerciseItemProps {
   isEditing: boolean;
 }
 
-interface PrivacyToggleProps {
-  active: boolean;
-  label: string;
-  icon: React.ReactNode;
-  onClick: () => void;
-  primary?: boolean;
+interface ConfirmModalProps {
+  isOpen: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
 }
 
-// --- 2. MAIN COMPONENT ---
+// --- MAIN COMPONENT ---
 
 export const RoutineDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -116,12 +112,10 @@ export const RoutineDetail = () => {
           RoutineService.getRoutineDetail(id),
           ExerciseService.getExercisesWithMeta(),
         ]);
-
         if (isMounted && details) {
           setName(details.name);
           setDescription(details.description || "");
           setIsPublic(details.is_public);
-
           const mapped = details.exercises.map(
             (ex: RoutineExerciseDB): SelectedExercise => {
               const baseEx = fullLibrary.find((l) => l.id === ex.exercise_id);
@@ -189,28 +183,95 @@ export const RoutineDetail = () => {
     }
   };
 
-  if (loading)
+  if (loading) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-bg-main min-h-screen">
+      <div className="flex-1 flex items-center justify-center bg-bg-main">
         <Loader2 className="animate-spin text-brand-primary" size={32} />
       </div>
     );
+  }
+
+  // Footer varies by editing state
+  const footer = isEditing ? (
+    <div className="flex flex-col gap-3">
+      <button
+        onClick={onUpdate}
+        disabled={processing || !name.trim() || selectedExercises.length === 0}
+        className="w-full h-16 bg-brand-primary rounded-2xl font-black uppercase italic
+                   tracking-[0.3em] active:scale-[0.98] transition-all
+                   flex items-center justify-center gap-3 disabled:opacity-30"
+        style={{
+          color: "var(--color-on-brand)",
+          boxShadow: "0 4px 24px var(--glow-primary)",
+        }}
+      >
+        {processing ? (
+          <Loader2 className="animate-spin" size={22} />
+        ) : (
+          <Check size={22} strokeWidth={3.5} />
+        )}
+        <span>Save Changes</span>
+      </button>
+      <button
+        onClick={() => setIsEditing(false)}
+        className="w-full py-4 bg-bg-surface text-text-muted/60 font-black uppercase italic
+                   text-[10px] tracking-[0.3em] rounded-2xl border border-border-color/40
+                   active:scale-[0.98] transition-all"
+      >
+        Discard
+      </button>
+    </div>
+  ) : (
+    <div className="flex flex-col gap-3">
+      <button
+        onClick={() => setIsEditing(true)}
+        className="w-full h-16 bg-bg-surface border border-border-color/40 rounded-2xl
+                   font-black uppercase italic tracking-[0.3em] card-glow
+                   text-text-main active:scale-[0.98] transition-all
+                   flex items-center justify-center gap-3
+                   hover:border-brand-primary/30 hover:text-brand-primary"
+      >
+        <Edit3 size={20} />
+        <span>Modify Routine</span>
+      </button>
+      <button
+        onClick={() => setShowModal(true)}
+        className="w-full py-4 rounded-2xl font-black uppercase italic text-[10px]
+                   tracking-[0.3em] active:scale-[0.98] transition-all
+                   flex items-center justify-center gap-2"
+        style={{
+          color: "var(--brand-danger)",
+          background: "var(--danger-bg)",
+          border: "1px solid var(--danger-border)",
+        }}
+      >
+        <Trash2 size={15} />
+        <span>Archive Routine</span>
+      </button>
+    </div>
+  );
 
   return (
-    <SubPageLayout title={isEditing ? "Edit Routine" : "Routine Detail"}>
-      <div className="flex-1 flex flex-col gap-6 pb-32 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        {/* HEADER CARD */}
-        <div className="bg-bg-surface border border-border-color p-6 rounded-xl space-y-6 shadow-sm">
-          <div className="space-y-1">
-            <label className="text-[10px] font-black uppercase tracking-widest text-text-muted ml-1 italic">
-              Routine Title
-            </label>
+    <SubPageLayout
+      title={isEditing ? "Modify Routine" : "Routine Detail"}
+      footer={footer}
+    >
+      <div className="flex flex-col gap-6 pt-2 pb-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
+        {/* ── IDENTITY CARD ── */}
+        <div className="bg-bg-surface border border-border-color/40 rounded-2xl p-6 space-y-5 card-glow">
+          <div className="space-y-1.5">
+            <p className="text-[9px] font-black uppercase italic tracking-[0.3em] text-text-muted/50">
+              Routine Name
+            </p>
             <input
               disabled={!isEditing}
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full bg-transparent text-2xl font-black italic text-text-main outline-none uppercase tracking-tighter disabled:opacity-100"
+              className="w-full bg-transparent text-3xl font-black italic text-text-main
+                         outline-none uppercase tracking-tighter
+                         disabled:opacity-100 transition-colors
+                         focus:text-brand-primary"
             />
           </div>
 
@@ -218,40 +279,68 @@ export const RoutineDetail = () => {
             disabled={!isEditing}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="NOTES..."
-            className="w-full bg-bg-main/50 border border-border-color rounded-xl p-4 text-[11px] font-bold text-text-main outline-none resize-none h-20 placeholder:text-text-muted/40 uppercase tracking-widest disabled:opacity-60"
+            placeholder="Notes..."
+            className="w-full bg-bg-main/40 border border-border-color/40 rounded-xl p-4
+                       text-[12px] font-black text-text-main outline-none resize-none h-20
+                       placeholder:text-text-muted/20 uppercase tracking-widest leading-relaxed
+                       disabled:opacity-60 focus:border-brand-primary/30 transition-colors"
           />
 
-          <div className="flex gap-2">
-            <PrivacyToggle
-              active={!isPublic}
-              label="Private"
-              icon={<Lock size={12} />}
-              onClick={() => isEditing && setIsPublic(false)}
+          {/* Visibility toggle */}
+          <div
+            className={`flex bg-bg-main p-1 rounded-xl border border-border-color/40 relative
+                        ${!isEditing ? "opacity-60 pointer-events-none" : ""}`}
+          >
+            <div
+              className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-bg-surface rounded-lg
+                          border border-border-color/40 transition-all duration-300 ease-out
+                          ${isPublic ? "translate-x-[calc(100%+4px)]" : "translate-x-0"}`}
             />
-            <PrivacyToggle
-              active={isPublic}
-              label="Public"
-              icon={<Globe size={12} />}
-              primary
-              onClick={() => isEditing && setIsPublic(true)}
-            />
+            {[
+              { value: false, label: "Private", icon: <Lock size={12} /> },
+              { value: true, label: "Public", icon: <Globe size={12} /> },
+            ].map(({ value, label, icon }) => {
+              const isActive = isPublic === value;
+              return (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => setIsPublic(value)}
+                  className={`flex-1 py-3 z-10 flex items-center justify-center gap-2
+                              text-[10px] font-black uppercase italic tracking-widest
+                              transition-colors duration-200
+                              ${
+                                isActive
+                                  ? value
+                                    ? "text-brand-primary"
+                                    : "text-text-main"
+                                  : "text-text-muted/40"
+                              }`}
+                >
+                  {icon} {label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
+        {/* ── ADD BUTTON (edit mode only) ── */}
         {isEditing && (
           <button
             onClick={() => setShowPicker(true)}
-            className="w-full bg-bg-surface border border-dashed border-border-color rounded-xl py-5 flex items-center justify-center gap-3 text-text-muted active:scale-[0.98] transition-all"
+            className="w-full bg-bg-surface border-2 border-dashed border-border-color/40
+                       rounded-2xl py-5 flex items-center justify-center gap-3
+                       text-text-muted/40 hover:text-brand-primary hover:border-brand-primary/40
+                       active:scale-[0.98] transition-all"
           >
-            <Plus size={18} className="text-brand-primary" />
-            <span className="text-[11px] font-black uppercase italic tracking-widest">
+            <Plus size={18} className="text-brand-primary animate-pulse" />
+            <span className="text-[11px] font-black uppercase italic tracking-[0.3em]">
               Add Exercises
             </span>
           </button>
         )}
 
-        {/* SORTABLE LIST */}
+        {/* ── SORTABLE LIST ── */}
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -261,7 +350,7 @@ export const RoutineDetail = () => {
             items={selectedExercises.map((e) => e.tempId)}
             strategy={verticalListSortingStrategy}
           >
-            <div className="space-y-4">
+            <div className="space-y-3">
               {selectedExercises.map((ex, idx) => (
                 <SortableExerciseItem
                   key={ex.tempId}
@@ -273,75 +362,30 @@ export const RoutineDetail = () => {
                       prev.filter((_, i) => i !== idx),
                     )
                   }
-                  onUpdate={(field, val) => {
+                  onUpdate={(field, val) =>
                     setSelectedExercises((prev) =>
                       prev.map((item, i) =>
                         i === idx ? { ...item, [field]: val } : item,
                       ),
-                    );
-                  }}
+                    )
+                  }
                 />
               ))}
             </div>
           </SortableContext>
         </DndContext>
-
-        {/* DYNAMIC ACTION BUTTONS */}
-        <div className="flex flex-col gap-3 mt-4">
-          {isEditing ? (
-            <>
-              <button
-                onClick={onUpdate}
-                disabled={
-                  processing || !name.trim() || selectedExercises.length === 0
-                }
-                className="w-full h-14 bg-brand-primary text-bg-main font-black uppercase italic tracking-widest rounded-xl shadow-md shadow-brand-primary/20 active:scale-[0.98] transition-all flex items-center justify-center gap-3"
-              >
-                {processing ? (
-                  <Loader2 className="animate-spin" />
-                ) : (
-                  <Check size={20} strokeWidth={3} />
-                )}
-                <span>Save Changes</span>
-              </button>
-              <button
-                onClick={() => setIsEditing(false)}
-                className="w-full py-4 bg-bg-surface text-text-muted font-black uppercase italic text-[10px] tracking-widest rounded-xl border border-border-color"
-              >
-                Discard Changes
-              </button>
-            </>
-          ) : (
-            <>
-              <button
-                onClick={() => setIsEditing(true)}
-                className="w-full h-14 bg-text-main text-bg-main font-black uppercase italic tracking-widest rounded-xl shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-3"
-              >
-                <Edit3 size={18} />
-                <span>Modify Routine</span>
-              </button>
-              <button
-                onClick={() => setShowModal(true)}
-                className="w-full py-4 bg-bg-surface text-brand-error font-black uppercase italic text-[10px] tracking-widest rounded-xl border border-brand-error/20 active:scale-[0.98] transition-all"
-              >
-                <Trash2 size={16} className="inline mr-2" />
-                Archive Routine
-              </button>
-            </>
-          )}
-        </div>
       </div>
 
       {showPicker && (
         <ExercisePicker
           onClose={() => setShowPicker(false)}
           onAdd={(ids) => {
-            const newItems = ids.map((id) => {
-              const ex = library.find((l) => l.id === id);
+            const newItems = ids.map((eid) => {
+              const ex = library.find((l) => l.id === eid);
               return {
                 ...(ex || {}),
                 tempId: crypto.randomUUID(),
-                exercise_id: id,
+                exercise_id: eid,
                 target_sets: 3,
                 target_reps: ex?.reps ? 10 : 0,
                 target_duration: ex?.duration ? 30 : undefined,
@@ -365,7 +409,7 @@ export const RoutineDetail = () => {
   );
 };
 
-// --- 3. SUB-COMPONENTS ---
+// --- SORTABLE ITEM ---
 
 const SortableExerciseItem = ({
   ex,
@@ -381,35 +425,36 @@ const SortableExerciseItem = ({
     transform,
     transition,
     isDragging,
-  } = useSortable({
-    id: ex.tempId,
-    disabled: !isEditing,
-  });
+  } = useSortable({ id: ex.tempId, disabled: !isEditing });
 
-  const style = {
+  const baseStyle = {
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 50 : 0,
     position: "relative" as const,
   };
 
+  const dragStyle = isDragging
+    ? { ...baseStyle, boxShadow: "0 8px 32px var(--glow-primary)" }
+    : baseStyle;
+
   const metrics = [
     {
       key: "target_sets" as const,
       label: "Sets",
-      icon: <Hash size={10} />,
+      icon: <Hash size={11} />,
       show: true,
     },
     {
       key: "target_reps" as const,
       label: "Reps",
-      icon: <Hash size={10} />,
+      icon: <Hash size={11} />,
       show: !!ex.reps,
     },
     {
       key: "target_duration" as const,
-      label: "min",
-      icon: <Clock size={10} />,
+      label: "Min",
+      icon: <Clock size={11} />,
       show: !!ex.duration,
     },
   ].filter((m) => m.show);
@@ -417,43 +462,59 @@ const SortableExerciseItem = ({
   return (
     <div
       ref={setNodeRef}
-      style={style}
-      className={`bg-bg-surface border rounded-xl p-4 space-y-4 shadow-sm transition-all ${
-        isDragging
-          ? "border-brand-primary ring-4 ring-brand-primary/10 shadow-2xl scale-[1.02]"
-          : "border-border-color"
-      }`}
+      style={dragStyle}
+      className={`bg-bg-surface border rounded-2xl p-5 space-y-4 transition-all duration-200
+                  ${
+                    isDragging
+                      ? "border-brand-primary/60 scale-[1.02]"
+                      : "border-border-color/40 card-glow"
+                  }`}
     >
+      {/* Header row */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3 overflow-hidden">
+        <div className="flex items-center gap-3 min-w-0">
           {isEditing && (
             <div
               {...attributes}
               {...listeners}
-              className="cursor-grab active:cursor-grabbing p-1 text-text-muted/30 hover:text-brand-primary transition-colors"
+              className="cursor-grab active:cursor-grabbing p-1.5 rounded-lg bg-bg-main
+                         border border-border-color/20 text-text-muted/40
+                         hover:text-brand-primary transition-colors shrink-0"
             >
-              <GripVertical size={16} />
+              <GripVertical size={15} />
             </div>
           )}
-          <div className="w-6 h-6 rounded-lg bg-bg-main border border-border-color flex items-center justify-center text-[10px] font-black italic text-text-muted shrink-0">
+          <div
+            className="w-6 h-6 rounded-lg bg-bg-main border border-border-color/40
+                          flex items-center justify-center text-[10px] font-black italic
+                          text-brand-primary/60 shrink-0"
+          >
             {index + 1}
           </div>
           <span className="text-[13px] font-black uppercase italic text-text-main truncate tracking-tight">
             {ex.name}
           </span>
         </div>
+
         {isEditing && (
           <button
             onClick={onRemove}
-            className="w-8 h-8 rounded-lg bg-brand-error/10 text-brand-error flex items-center justify-center active:scale-90 transition-transform"
+            className="w-8 h-8 rounded-xl flex items-center justify-center
+                       active:scale-90 transition-all shrink-0 ml-2"
+            style={{
+              background: "var(--danger-bg)",
+              border: "1px solid var(--danger-border)",
+              color: "var(--brand-danger)",
+            }}
           >
             <X size={14} />
           </button>
         )}
       </div>
 
+      {/* Metric steppers */}
       <div
-        className="grid gap-2"
+        className="grid gap-2.5"
         style={{
           gridTemplateColumns: `repeat(${metrics.length}, minmax(0, 1fr))`,
         }}
@@ -461,40 +522,45 @@ const SortableExerciseItem = ({
         {metrics.map((m) => {
           const val = ex[m.key] ?? 0;
           return (
-            <div key={m.key} className="space-y-1.5 text-center">
-              <div className="flex items-center gap-1 justify-center opacity-40">
+            <div key={m.key} className="space-y-2 text-center">
+              <div className="flex items-center gap-1.5 justify-center text-text-muted/40 uppercase italic">
                 {m.icon}
-                <span className="text-[8px] font-black uppercase tracking-widest">
+                <span className="text-[9px] font-black tracking-widest">
                   {m.label}
                 </span>
               </div>
               <div
-                className={`flex items-center justify-between bg-bg-main border border-border-color rounded-xl p-1 ${
-                  !isEditing ? "opacity-80" : ""
-                }`}
+                className="flex items-center justify-between bg-bg-main border border-border-color/40
+                              rounded-xl p-1"
               >
-                {isEditing && (
+                {isEditing ? (
                   <button
+                    type="button"
                     onClick={() => onUpdate(m.key, Math.max(0, val - 1))}
-                    className="w-7 h-7 flex items-center justify-center text-text-muted active:scale-75 transition-transform"
+                    className="w-8 h-8 flex items-center justify-center text-text-muted/50
+                               hover:text-text-main active:scale-75 transition-transform"
                   >
-                    <Minus size={12} />
+                    <Minus size={13} />
                   </button>
+                ) : (
+                  <div className="w-2" />
                 )}
-                <span
-                  className={`text-xs font-black italic text-text-main tabular-nums ${
-                    !isEditing ? "w-full py-1.5 text-center" : ""
-                  }`}
-                >
+
+                <span className="text-[13px] font-black italic text-text-main tabular-nums">
                   {val}
                 </span>
-                {isEditing && (
+
+                {isEditing ? (
                   <button
+                    type="button"
                     onClick={() => onUpdate(m.key, val + 1)}
-                    className="w-7 h-7 flex items-center justify-center text-text-muted active:scale-75 transition-transform"
+                    className="w-8 h-8 flex items-center justify-center text-text-muted/50
+                               hover:text-text-main active:scale-75 transition-transform"
                   >
-                    <Plus size={12} />
+                    <Plus size={13} />
                   </button>
+                ) : (
+                  <div className="w-2" />
                 )}
               </div>
             </div>
@@ -505,64 +571,60 @@ const SortableExerciseItem = ({
   );
 };
 
-const PrivacyToggle = ({
-  active,
-  label,
-  icon,
-  onClick,
-  primary,
-}: PrivacyToggleProps) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase italic tracking-widest border transition-all flex items-center justify-center gap-2 ${
-      active
-        ? primary
-          ? "bg-brand-primary text-bg-main border-brand-primary shadow-md shadow-brand-primary/10"
-          : "bg-text-main text-bg-main border-text-main shadow-sm"
-        : "border-border-color text-text-muted opacity-40"
-    }`}
-  >
-    {icon} {label}
-  </button>
-);
+// --- CONFIRM MODAL ---
 
-const ConfirmModal = ({
-  isOpen,
-  onConfirm,
-  onCancel,
-}: {
-  isOpen: boolean;
-  onConfirm: () => void;
-  onCancel: () => void;
-}) => {
+const ConfirmModal = ({ isOpen, onConfirm, onCancel }: ConfirmModalProps) => {
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 z-100 flex items-center justify-center p-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
       <div
-        className="absolute inset-0 bg-bg-main/80 backdrop-blur-sm animate-in fade-in"
+        className="absolute inset-0 bg-bg-main/80 backdrop-blur-md animate-in fade-in duration-200"
         onClick={onCancel}
       />
-      <div className="relative w-full max-w-xs bg-bg-surface border border-border-color rounded-xl p-8 text-center animate-in zoom-in-95 shadow-2xl">
-        <AlertCircle className="mx-auto text-brand-error mb-4" size={40} />
-        <h3 className="text-xl font-black uppercase italic text-text-main mb-2 tracking-tighter">
+      <div
+        className="relative w-full max-w-xs bg-bg-surface border border-border-color/40
+                   rounded-2xl p-8 text-center card-glow animate-in zoom-in-95 duration-200"
+      >
+        <div
+          className="w-12 h-12 rounded-2xl flex items-center justify-center mb-6 mx-auto"
+          style={{
+            background: "var(--danger-bg)",
+            border: "1px solid var(--danger-border)",
+            color: "var(--brand-danger)",
+          }}
+        >
+          <AlertCircle size={22} />
+        </div>
+
+        <h3 className="text-lg font-black uppercase italic text-text-main mb-2 tracking-tighter">
           Archive Routine?
         </h3>
-        <p className="text-[11px] font-bold text-text-muted mb-8 leading-relaxed uppercase tracking-wide">
-          This template will be hidden from your routine library.
+        <p
+          className="text-[11px] font-black italic text-text-muted/60 mb-8
+                      leading-relaxed uppercase tracking-[0.2em]"
+        >
+          The library entry will be hidden.
         </p>
+
         <div className="flex flex-col gap-3">
           <button
             onClick={onConfirm}
-            className="w-full py-4 bg-brand-error text-bg-main rounded-xl font-black uppercase italic tracking-widest active:scale-[0.98] transition-all"
+            className="w-full py-4 rounded-2xl font-black uppercase italic
+                       tracking-widest active:scale-[0.98] transition-all"
+            style={{
+              background: "var(--brand-danger)",
+              color: "var(--color-on-brand)",
+              boxShadow: "0 4px 16px var(--danger-border)",
+            }}
           >
             Confirm Archive
           </button>
           <button
             onClick={onCancel}
-            className="w-full py-4 text-text-muted font-black uppercase italic text-[10px] tracking-widest"
+            className="w-full py-3 text-text-muted/50 font-black uppercase italic
+                       text-[10px] tracking-widest hover:text-text-main transition-colors"
           >
-            Cancel
+            Go Back
           </button>
         </div>
       </div>

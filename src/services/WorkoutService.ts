@@ -1,6 +1,6 @@
 import { db } from "../db/database";
 import { supabase } from "../lib/supabase";
-import type { LocalWorkout, LocalWorkoutLog } from "../types/database.types";
+import type { LocalWorkout } from "../types/database.types";
 import { SyncManager } from "./SyncManager";
 import { DateUtils } from "../util/dateUtils";
 import { WorkoutLogsService } from "./WorkoutLogsService";

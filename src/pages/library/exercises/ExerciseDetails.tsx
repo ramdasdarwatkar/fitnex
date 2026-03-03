@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { ExerciseService } from "../../../services/ExerciseService";
 
-// --- 1. STRICT INTERFACES ---
+// --- TYPES ---
 
 interface MuscleLink {
   id: string;
@@ -46,7 +46,16 @@ interface MetricConfig {
   label: string;
 }
 
-// --- 2. COMPONENTS ---
+// Drives muscle role colors throughout — single source of truth
+const ROLE_TOKENS = {
+  primary: { color: "var(--brand-primary)", label: "Primary" },
+  secondary: { color: "var(--brand-secondary)", label: "Secondary" },
+  stabilizer: { color: "var(--brand-streak)", label: "Stabilizer" },
+} as const;
+
+type MuscleRole = keyof typeof ROLE_TOKENS;
+
+// --- CONFIRM MODAL ---
 
 const ConfirmModal = ({
   isOpen,
@@ -59,40 +68,62 @@ const ConfirmModal = ({
 }) => {
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 z-100 flex items-center justify-center p-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
       <div
-        className="absolute inset-0 bg-bg-main/80 backdrop-blur-sm animate-in fade-in duration-300"
+        className="absolute inset-0 bg-bg-main/80 backdrop-blur-md animate-in fade-in duration-200"
         onClick={onCancel}
       />
-      <div className="relative w-full max-w-xs bg-bg-surface border border-border-color rounded-2xl p-8 shadow-2xl animate-in zoom-in-95 duration-200">
-        <div className="w-12 h-12 rounded-xl bg-brand-error/10 flex items-center justify-center text-brand-error mb-6 mx-auto">
-          <AlertCircle size={24} />
+      <div
+        className="relative w-full max-w-xs bg-bg-surface border border-border-color/40
+                   rounded-2xl p-8 card-glow animate-in zoom-in-95 duration-200"
+      >
+        {/* Danger icon */}
+        <div
+          className="w-12 h-12 rounded-2xl flex items-center justify-center mb-6 mx-auto"
+          style={{
+            background: "var(--danger-bg)",
+            border: "1px solid var(--danger-border)",
+            color: "var(--brand-danger)",
+          }}
+        >
+          <AlertCircle size={22} />
         </div>
-        <h3 className="text-lg font-bold text-text-main mb-2 text-center">
-          Archive Exercise?
+
+        <h3 className="text-lg font-black uppercase italic text-text-main mb-2 text-center tracking-tight">
+          Archive Entry?
         </h3>
-        <p className="text-xs text-text-muted leading-relaxed mb-8 text-center px-2">
+        <p className="text-[11px] font-medium italic text-text-muted/60 leading-relaxed mb-8 text-center px-2">
           This will hide the entry from your active library. All past
           performance data remains protected.
         </p>
+
         <div className="flex flex-col gap-3">
           <button
             onClick={onConfirm}
-            className="w-full py-3 bg-brand-error text-white rounded-xl font-bold uppercase text-xs tracking-widest active:scale-95 transition-all"
+            className="w-full py-4 rounded-2xl font-black uppercase italic text-[10px]
+                       tracking-[0.2em] active:scale-95 transition-all"
+            style={{
+              background: "var(--brand-danger)",
+              color: "var(--color-on-brand)",
+              boxShadow: "0 4px 16px var(--danger-border)",
+            }}
           >
             Archive Entry
           </button>
           <button
             onClick={onCancel}
-            className="w-full py-2 text-text-muted font-bold uppercase text-[10px] tracking-widest hover:text-text-main transition-colors"
+            className="w-full py-2 text-text-muted/50 font-black uppercase italic
+                       text-[9px] tracking-[0.2em] hover:text-text-main transition-colors"
           >
-            Cancel
+            Go Back
           </button>
         </div>
       </div>
     </div>
   );
 };
+
+// --- MAIN COMPONENT ---
 
 export const ExerciseDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -132,43 +163,55 @@ export const ExerciseDetail = () => {
   if (!data) return null;
 
   return (
-    <SubPageLayout title="Details">
-      <div className="flex flex-col gap-8 pb-40 max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
-        {/* HEADER SECTION */}
-        <div className="space-y-3 pt-4">
+    <SubPageLayout title="Exercise Identity">
+      <div className="flex flex-col gap-8 pt-2 pb-32 animate-in fade-in slide-in-from-bottom-2 duration-500">
+        {/* ── HEADER ── */}
+        <div className="space-y-3">
           <div className="flex items-center gap-2">
             <div
-              className={`w-1.5 h-1.5 rounded-full ${data.status ? "bg-brand-success" : "bg-text-muted"}`}
+              className="w-1.5 h-1.5 rounded-full animate-pulse"
+              style={{
+                background: data.status
+                  ? "var(--brand-primary)"
+                  : "var(--text-muted)",
+                boxShadow: data.status ? "0 0 6px var(--glow-primary)" : "none",
+              }}
             />
-            <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">
-              {data.status ? "Active Library" : "Archived"}
+            <span className="text-[10px] font-black uppercase italic tracking-[0.3em] text-text-muted/60">
+              {data.status ? "Live Library Entry" : "Archived Record"}
             </span>
           </div>
-          <h1 className="text-4xl font-bold text-text-main tracking-tight leading-tight">
+          <h1 className="text-4xl font-black italic text-text-main tracking-tighter leading-tight uppercase">
             {data.name}
           </h1>
         </div>
 
-        {/* METRICS TRACKING */}
+        {/* ── TRACKED METRICS ── */}
         <div className="space-y-3">
-          <label className="text-[11px] font-bold uppercase text-text-muted ml-1 tracking-wider">
-            Tracked Metrics
-          </label>
+          <p className="text-[9.5px] font-black uppercase italic text-text-muted/50 tracking-[0.25em]">
+            Tracked Telemetry
+          </p>
           <div className="flex flex-wrap gap-2">
             {metrics.map((m) => {
               const isActive = data[m.id] === true;
               return (
                 <div
                   key={m.id}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all 
-                    ${
-                      isActive
-                        ? "bg-brand-primary border-brand-primary text-bg-main shadow-md"
-                        : "bg-bg-surface border-border-color opacity-30"
-                    }`}
+                  className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl border
+                              transition-all duration-200
+                              ${
+                                isActive
+                                  ? "bg-brand-primary/10 border-brand-primary/40 text-brand-primary"
+                                  : "bg-bg-surface border-border-color/20 text-text-muted/20"
+                              }`}
+                  style={
+                    isActive
+                      ? { boxShadow: "0 0 12px var(--glow-primary)" }
+                      : undefined
+                  }
                 >
-                  <m.icon size={14} strokeWidth={isActive ? 3 : 2} />
-                  <span className="text-[10px] font-bold uppercase tracking-wide">
+                  <m.icon size={13} strokeWidth={isActive ? 3 : 2} />
+                  <span className="text-[10px] font-black uppercase italic tracking-widest">
                     {m.label}
                   </span>
                 </div>
@@ -177,57 +220,60 @@ export const ExerciseDetail = () => {
           </div>
         </div>
 
-        {/* INFO GRID */}
+        {/* ── INFO GRID ── */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-bg-surface p-5 rounded-xl border border-border-color shadow-sm space-y-1">
-            <span className="text-[10px] font-bold uppercase text-text-muted tracking-wider flex items-center gap-2">
-              <Layers size={12} className="text-brand-primary" /> Category
-            </span>
-            <p className="text-sm font-semibold text-text-main">
-              {data.categoryName}
-            </p>
-          </div>
-          <div className="bg-bg-surface p-5 rounded-xl border border-border-color shadow-sm space-y-1">
-            <span className="text-[10px] font-bold uppercase text-text-muted tracking-wider flex items-center gap-2">
-              <Box size={12} className="text-brand-primary" /> Equipment
-            </span>
-            <p className="text-sm font-semibold text-text-main">
-              {data.equipmentName}
-            </p>
-          </div>
+          {[
+            { icon: Layers, label: "Category", value: data.categoryName },
+            { icon: Box, label: "Equipment", value: data.equipmentName },
+          ].map(({ icon: Icon, label, value }) => (
+            <div
+              key={label}
+              className="bg-bg-surface px-5 py-4 rounded-2xl border border-border-color/40 card-glow space-y-2"
+            >
+              <span
+                className="text-[9px] font-black uppercase italic text-brand-primary/60
+                               tracking-widest flex items-center gap-1.5"
+              >
+                <Icon size={11} /> {label}
+              </span>
+              <p className="text-[15px] font-black italic text-text-main tracking-tight uppercase">
+                {value || "—"}
+              </p>
+            </div>
+          ))}
         </div>
 
-        {/* MUSCLE INFLUENCE */}
-        <div className="bg-bg-surface border border-border-color p-6 rounded-2xl space-y-6 shadow-sm">
-          <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-text-muted">
-            <Target size={16} className="text-brand-primary" />
-            Biomechanics
+        {/* ── BIOMECHANICS ── */}
+        <div className="bg-bg-surface border border-border-color/40 rounded-2xl p-6 space-y-6 card-glow">
+          <div
+            className="flex items-center gap-2.5 text-[9.5px] font-black uppercase italic
+                          tracking-[0.3em] text-text-muted/50"
+          >
+            <Target size={14} className="text-brand-primary/70" />
+            Biomechanics Profile
           </div>
 
           <div className="space-y-6">
-            {["primary", "secondary", "stabilizer"].map((role) => {
+            {(Object.keys(ROLE_TOKENS) as MuscleRole[]).map((role) => {
               const list = data.muscles.filter((m) => m.role === role);
               if (list.length === 0) return null;
-
-              const roleColor =
-                role === "primary"
-                  ? "text-brand-primary"
-                  : role === "secondary"
-                    ? "text-brand-info"
-                    : "text-brand-success";
-
+              const { color, label } = ROLE_TOKENS[role];
               return (
-                <div key={role} className="space-y-3">
+                <div key={role} className="space-y-2.5">
                   <div
-                    className={`text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 ${roleColor}`}
+                    className="text-[9px] font-black uppercase italic tracking-widest flex items-center gap-2"
+                    style={{ color }}
                   >
-                    {role} Focus
+                    <div className="w-1 h-1 rounded-full bg-current" />
+                    {label} Focus
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {list.map((m) => (
                       <span
                         key={m.id}
-                        className="px-3 py-1.5 bg-bg-main rounded-lg text-xs font-semibold text-text-main border border-border-color"
+                        className="px-3 py-1.5 bg-bg-main rounded-xl text-[10px] font-black
+                                   uppercase italic text-text-main border border-border-color/40
+                                   tracking-wider card-glow"
                       >
                         {m.name}
                       </span>
@@ -239,27 +285,47 @@ export const ExerciseDetail = () => {
           </div>
         </div>
 
-        {/* ACTIONS */}
-        <div className="flex flex-col gap-3 mt-4">
+        {/* ── ACTIONS ── */}
+        <div className="flex flex-col gap-3">
+          {/* Primary CTA */}
           <button
             onClick={() => navigate(`/progress/exercise/${id}`)}
-            className="w-full py-4 bg-brand-primary text-bg-main rounded-xl font-bold uppercase text-xs flex items-center justify-center gap-3 shadow-lg active:scale-[0.98] transition-all"
+            className="w-full py-5 bg-brand-primary rounded-2xl font-black uppercase italic
+                       text-[11px] tracking-[0.3em] flex items-center justify-center gap-3
+                       active:scale-[0.98] transition-all"
+            style={{
+              color: "var(--color-on-brand)",
+              boxShadow: "0 4px 24px var(--glow-primary)",
+            }}
           >
-            <BarChart2 size={18} /> View Analytics
+            <BarChart2 size={20} /> Analytics
           </button>
 
           <div className="grid grid-cols-2 gap-3">
+            {/* Edit */}
             <button
               onClick={() => navigate(`/library/exercises/edit/${id}`)}
-              className="py-3.5 bg-text-main text-bg-main rounded-xl font-bold uppercase text-[10px] flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
+              className="py-4 bg-bg-surface border border-border-color/40 rounded-2xl
+                         font-black uppercase italic text-[10px] tracking-[0.2em]
+                         text-text-main flex items-center justify-center gap-2.5
+                         active:scale-[0.98] transition-all card-glow
+                         hover:border-brand-primary/30"
             >
-              <Edit3 size={16} /> Edit
+              <Edit3 size={17} /> Modify
             </button>
+
+            {/* Archive */}
             <button
               onClick={() => setShowArchiveModal(true)}
-              className="py-3.5 bg-bg-surface text-brand-error rounded-xl font-bold uppercase text-[10px] border border-border-color active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+              className="py-4 bg-bg-surface rounded-2xl font-black uppercase italic
+                         text-[10px] tracking-[0.2em] flex items-center justify-center gap-2.5
+                         active:scale-[0.98] transition-all card-glow"
+              style={{
+                color: "var(--brand-danger)",
+                border: "1px solid var(--danger-border)",
+              }}
             >
-              <Trash2 size={16} /> Archive
+              <Trash2 size={17} /> Archive
             </button>
           </div>
         </div>

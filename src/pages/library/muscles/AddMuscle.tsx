@@ -8,12 +8,10 @@ import { MuscleService } from "../../../services/MuscleService";
 export const AddMuscle = () => {
   const navigate = useNavigate();
 
-  // 1. Strict Typing for Muscle List
   const [muscles, setMuscles] = useState<Muscle[]>([]);
   const [form, setForm] = useState({ name: "", parent_id: "" });
   const [loading, setLoading] = useState(false);
 
-  // 2. Initial Data Load
   useEffect(() => {
     let isMounted = true;
     MuscleService.getActiveMuscles().then((data) => {
@@ -24,10 +22,8 @@ export const AddMuscle = () => {
     };
   }, []);
 
-  // 3. Save Logic
   const onSave = async () => {
     if (!form.name.trim() || loading) return;
-
     setLoading(true);
     try {
       await MuscleService.addMuscle(form.name.trim(), form.parent_id || null);
@@ -41,16 +37,40 @@ export const AddMuscle = () => {
     }
   };
 
+  const saveButton = (
+    <button
+      onClick={onSave}
+      disabled={loading || !form.name.trim()}
+      className="w-full h-16 bg-brand-primary rounded-2xl font-black uppercase italic
+                 tracking-[0.3em] flex items-center justify-center gap-3
+                 active:scale-[0.98] transition-all disabled:opacity-30"
+      style={{
+        color: "var(--color-on-brand)",
+        boxShadow: "0 4px 24px var(--glow-primary)",
+      }}
+    >
+      {loading ? (
+        <Loader2 className="animate-spin" size={22} />
+      ) : (
+        <Plus size={22} strokeWidth={3.5} />
+      )}
+      <span>{loading ? "Saving..." : "Add to Library"}</span>
+    </button>
+  );
+
   return (
-    <SubPageLayout title="New Muscle">
-      <div className="flex-1 flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        {/* FORM CONTAINER */}
-        <div className="bg-bg-surface border border-border-color p-6 rounded-xl space-y-8 shadow-sm">
-          {/* MUSCLE NAME INPUT */}
-          <div className="space-y-1">
-            <label className="text-[10px] font-black uppercase italic tracking-widest text-text-muted ml-1">
+    <SubPageLayout title="New Muscle" footer={saveButton}>
+      <div
+        className="flex flex-col gap-6 pt-2 pb-4
+                      animate-in fade-in slide-in-from-bottom-2 duration-500"
+      >
+        {/* ── FORM CARD ── */}
+        <div className="bg-bg-surface border border-border-color/40 rounded-2xl p-6 space-y-6 card-glow">
+          {/* Name */}
+          <div className="space-y-1.5">
+            <p className="text-[9.5px] font-black uppercase italic tracking-[0.3em] text-text-muted/50">
               Muscle Name
-            </label>
+            </p>
             <input
               autoFocus
               type="text"
@@ -58,56 +78,55 @@ export const AddMuscle = () => {
               onChange={(e: ChangeEvent<HTMLInputElement>) =>
                 setForm({ ...form, name: e.target.value })
               }
-              placeholder="E.G. UPPER CHEST..."
-              className="w-full bg-bg-main border border-border-color rounded-xl py-4 px-5 text-xl font-black italic text-text-main outline-none focus:border-brand-primary/50 transition-all placeholder:text-text-muted/20 uppercase tracking-tighter"
+              placeholder="e.g. Upper Chest"
+              className="w-full bg-bg-main border border-border-color/40 rounded-2xl py-3.5 px-5
+                         text-2xl font-black italic text-text-main outline-none
+                         focus:border-brand-primary/40 transition-colors
+                         placeholder:text-text-muted/15 uppercase tracking-tighter"
             />
           </div>
 
-          {/* PARENT SELECT */}
-          <div className="relative space-y-1">
-            <label className="flex items-center gap-2 text-[10px] font-black uppercase italic tracking-widest text-text-muted ml-1">
-              <GitMerge size={12} className="text-brand-primary" />
-              Parent Group
-            </label>
+          {/* Parent group */}
+          <div className="space-y-1.5">
+            <p
+              className="flex items-center gap-2 text-[9.5px] font-black uppercase italic
+                          tracking-[0.3em] text-text-muted/50"
+            >
+              <GitMerge size={13} className="text-brand-primary/60" />
+              Structural Group
+            </p>
             <div className="relative">
               <select
                 value={form.parent_id}
                 onChange={(e: ChangeEvent<HTMLSelectElement>) =>
                   setForm({ ...form, parent_id: e.target.value })
                 }
-                className="w-full bg-bg-main border border-border-color rounded-xl py-4 px-5 text-[11px] font-black uppercase italic tracking-wide text-text-main outline-none appearance-none focus:border-brand-primary/50 transition-all pr-12"
+                className="w-full bg-bg-main border border-border-color/40 rounded-2xl
+                           py-3.5 px-5 pr-11 text-[12px] font-black uppercase italic
+                           tracking-widest text-text-main outline-none appearance-none
+                           focus:border-brand-primary/40 transition-colors"
               >
-                <option value="">No Parent (Primary)</option>
+                <option value="">No parent (primary group)</option>
                 {muscles.map((m) => (
                   <option key={m.id} value={m.id}>
-                    {m.name.toUpperCase()}
+                    {m.name}
                   </option>
                 ))}
               </select>
               <ChevronDown
-                size={18}
-                className="absolute right-5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none"
+                size={16}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted/40 pointer-events-none"
               />
             </div>
           </div>
         </div>
 
-        {/* ACTION BUTTON */}
-        <button
-          onClick={onSave}
-          disabled={loading || !form.name.trim()}
-          className="w-full h-14 bg-brand-primary text-bg-main font-black uppercase italic tracking-widest rounded-xl flex items-center justify-center gap-3 active:scale-[0.98] transition-all disabled:opacity-30 shadow-lg shadow-brand-primary/20"
+        {/* Footnote */}
+        <p
+          className="text-center text-[9px] font-black uppercase italic text-text-muted/30
+                      tracking-[0.35em] leading-relaxed px-6"
         >
-          {loading ? (
-            <Loader2 className="animate-spin" size={22} />
-          ) : (
-            <Plus size={20} strokeWidth={4} />
-          )}
-          <span>{loading ? "Syncing..." : "Add to Library"}</span>
-        </button>
-
-        <p className="text-center text-[9px] font-black uppercase italic text-text-muted tracking-widest opacity-40">
-          Created muscles are available across all exercises
+          Created muscles are available across your full exercise library
         </p>
       </div>
     </SubPageLayout>

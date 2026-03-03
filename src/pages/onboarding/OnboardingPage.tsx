@@ -4,14 +4,7 @@ import { GenderPicker } from "./components/GenderPicker";
 import { RulerPicker } from "./components/RulerPicker";
 import { LevelPicker } from "./components/LevelPicker";
 import { Input } from "../../components/ui/Input";
-import {
-  Loader2,
-  ChevronLeft,
-  ChevronRight,
-  Target,
-  Sparkles,
-  Trophy,
-} from "lucide-react";
+import { Loader2, ChevronLeft, Target, Sparkles, Trophy } from "lucide-react";
 import type {
   GenderType,
   UserProfile,
@@ -39,7 +32,6 @@ export const OnboardingPage = () => {
     initial_points: 0,
   });
 
-  // BMI Logic - Using semantic status colors instead of hardcoded yellow/red
   const bmiData = useMemo(() => {
     const h = formData.height / 100;
     const bmi = parseFloat((formData.current_weight / (h * h)).toFixed(1));
@@ -60,13 +52,11 @@ export const OnboardingPage = () => {
   }, [weightDiff]);
 
   const handleFinish = async () => {
-    if (!user_id) return;
+    if (!user_id || loading) return;
     setLoading(true);
-
     try {
       const now = new Date().toISOString();
       const today = now.split("T")[0];
-
       const profileData: UserProfile = {
         user_id,
         name: formData.name,
@@ -78,7 +68,6 @@ export const OnboardingPage = () => {
         created_at: now,
         updated_at: now,
       };
-
       const metricsData: BodyMetrics = {
         user_id,
         logdate: today,
@@ -87,14 +76,12 @@ export const OnboardingPage = () => {
         created_at: now,
         updated_at: now,
       };
-
       const levelData: AthleteLevel = {
         user_id,
         level_points: formData.initial_points,
         current_level: formData.selected_level,
         updated_date: today,
       };
-
       const result = await saveOnboarding(profileData, metricsData, levelData);
       if (!result.success) alert(result.error);
     } catch (err) {
@@ -105,8 +92,8 @@ export const OnboardingPage = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-bg-main text-text-main pt-safe overflow-hidden">
-      {/* 1. PROGRESS BAR - Simplified shadow to match brand system */}
+    <div className="flex flex-col h-dvh bg-bg-main text-text-main pt-safe-pro overflow-hidden">
+      {/* PROGRESS BAR */}
       <div className="flex-none h-1.5 w-full bg-bg-surface border-b border-border-color">
         <div
           className="h-full bg-brand-primary transition-all duration-700 shadow-[0_0_10px_var(--brand-primary-alpha)]"
@@ -114,9 +101,9 @@ export const OnboardingPage = () => {
         />
       </div>
 
-      {/* 2. SCROLLABLE AREA */}
-      <div className="flex-1 overflow-y-auto touch-pan-y no-scrollbar px-8 pt-8">
-        <div className="min-h-full flex flex-col">
+      {/* CONTENT - Using flex-1 and justify-center to use the "too much space" effectively */}
+      <div className="flex-1 flex flex-col px-8 overflow-hidden">
+        <div className="flex-1 flex flex-col justify-center py-4">
           {step === 1 && (
             <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
               <header className="space-y-1">
@@ -125,7 +112,7 @@ export const OnboardingPage = () => {
                   <span className="text-brand-primary">Basics</span>
                 </h1>
                 <p className="text-text-muted font-bold italic uppercase text-[11px] tracking-widest">
-                  What should we call you?
+                  Identity Calibration
                 </p>
               </header>
               <div className="space-y-6">
@@ -137,30 +124,37 @@ export const OnboardingPage = () => {
                   }
                   placeholder="John Doe"
                 />
-                <p className="text-text-muted font-black uppercase text-[10px] tracking-widest ml-1">
-                  Gender
-                </p>
-                <GenderPicker
-                  value={formData.gender}
-                  onChange={(g) => setFormData({ ...formData, gender: g })}
-                />
-                <p className="text-text-muted font-black uppercase text-[10px] tracking-widest ml-1">
-                  Birthday
-                </p>
-                <Input
-                  label="BIRTH DATE"
-                  type="date"
-                  value={formData.birthdate}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                    setFormData({ ...formData, birthdate: e.target.value })
-                  }
-                />
+                <div className="space-y-2">
+                  <p className="text-text-muted font-black uppercase text-[10px] tracking-widest ml-1">
+                    Gender
+                  </p>
+                  <GenderPicker
+                    value={formData.gender}
+                    onChange={(g) => setFormData({ ...formData, gender: g })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <p className="text-text-muted font-black uppercase text-[10px] tracking-widest ml-1">
+                    Birthday
+                  </p>
+                  <div className="flex items-center justify-center h-14 bg-bg-surface border border-border-color rounded-xl px-4">
+                    <input
+                      type="date"
+                      value={formData.birthdate}
+                      onChange={(e) =>
+                        setFormData({ ...formData, birthdate: e.target.value })
+                      }
+                      className="w-full bg-transparent border-none outline-none text-center font-black uppercase italic text-text-main"
+                      style={{ colorScheme: "dark" }}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           )}
 
           {step === 2 && (
-            <div className="flex-1 flex flex-col justify-center text-center py-6">
+            <div className="text-center py-4 animate-in fade-in duration-500">
               <Sparkles
                 className="mx-auto mb-4 text-brand-primary animate-pulse"
                 size={32}
@@ -185,12 +179,12 @@ export const OnboardingPage = () => {
           )}
 
           {step === 3 && (
-            <div className="flex-1 flex flex-col justify-center text-center py-6">
+            <div className="text-center py-4 animate-in fade-in duration-500">
               <h1 className="text-3xl font-black uppercase italic tracking-tight">
                 Current Weight
               </h1>
               <p className="text-text-muted font-bold uppercase text-[11px] tracking-widest mt-2 mb-10 italic">
-                Your starting point today
+                Starting baseline
               </p>
               <RulerPicker
                 min={30}
@@ -201,8 +195,7 @@ export const OnboardingPage = () => {
                   setFormData({ ...formData, current_weight: v })
                 }
               />
-              {/* BMI Card - Normalized to rounded-xl */}
-              <div className="mt-8 bg-bg-surface border border-border-color p-6 rounded-xl flex justify-between items-center shadow-md shadow-brand-primary/5">
+              <div className="mt-8 bg-bg-surface border border-border-color p-6 rounded-xl flex justify-between items-center">
                 <div className="text-left">
                   <p className="text-[10px] text-text-muted font-black uppercase tracking-widest">
                     BMI Index
@@ -213,7 +206,7 @@ export const OnboardingPage = () => {
                     {bmiData.label}
                   </p>
                 </div>
-                <div className="text-5xl font-black italic tabular-nums text-text-main">
+                <div className="text-5xl font-black italic tabular-nums">
                   {bmiData.val}
                 </div>
               </div>
@@ -221,14 +214,11 @@ export const OnboardingPage = () => {
           )}
 
           {step === 4 && (
-            <div className="flex-1 flex flex-col justify-center text-center py-6">
+            <div className="text-center py-4 animate-in fade-in duration-500">
               <Target className="mx-auto mb-4 text-brand-primary" size={40} />
               <h1 className="text-3xl font-black uppercase italic">
                 Target Weight
               </h1>
-              <p className="text-text-muted font-bold uppercase text-[11px] tracking-widest mt-2 mb-10 italic">
-                What is your dream goal?
-              </p>
               <RulerPicker
                 min={30}
                 max={200}
@@ -236,7 +226,7 @@ export const OnboardingPage = () => {
                 value={formData.target_weight}
                 onChange={(v) => setFormData({ ...formData, target_weight: v })}
               />
-              <div className="mt-8 py-3 px-8 bg-brand-primary/10 border border-brand-primary/20 rounded-xl inline-block mx-auto animate-in zoom-in duration-500">
+              <div className="mt-8 py-3 px-8 bg-brand-primary/10 border border-brand-primary/20 rounded-xl inline-block mx-auto">
                 <span className="text-brand-primary font-black uppercase tracking-tighter text-xs italic">
                   {encouragementText}
                 </span>
@@ -245,15 +235,14 @@ export const OnboardingPage = () => {
           )}
 
           {step === 5 && (
-            <div className="flex-1 flex flex-col justify-center text-center py-6">
-              <h1 className="text-4xl font-black uppercase mb-4 leading-tight italic">
+            <div className="text-center py-4 animate-in fade-in duration-500">
+              <h1 className="text-4xl font-black uppercase mb-4 italic">
                 Commitment
               </h1>
               <p className="text-text-muted font-bold uppercase text-[11px] tracking-widest mb-12 italic">
-                How many days a week will you train?
+                Weekly Training Days
               </p>
-              {/* Selector Container - Normalized to rounded-xl */}
-              <div className="flex justify-between items-center bg-bg-surface p-6 rounded-xl border border-border-color shadow-md shadow-brand-primary/5">
+              <div className="flex justify-between items-center bg-bg-surface p-6 rounded-xl border border-border-color">
                 {[1, 2, 3, 4, 5, 6, 7].map((d) => (
                   <button
                     key={d}
@@ -262,7 +251,7 @@ export const OnboardingPage = () => {
                     }
                     className={`w-10 h-10 rounded-lg font-black italic transition-all ${
                       formData.target_workout_days === d
-                        ? "bg-brand-primary text-bg-main scale-110 shadow-md shadow-brand-primary/20"
+                        ? "bg-brand-primary text-bg-main scale-110 shadow-glow-primary"
                         : "text-text-muted"
                     }`}
                   >
@@ -274,15 +263,12 @@ export const OnboardingPage = () => {
           )}
 
           {step === 6 && (
-            <div className="flex-1 flex flex-col justify-center py-6">
+            <div className="py-4 animate-in fade-in duration-500">
               <header className="text-center mb-8">
                 <Trophy className="mx-auto mb-2 text-brand-primary" size={32} />
                 <h1 className="text-3xl font-black uppercase italic">
                   Experience
                 </h1>
-                <p className="text-text-muted font-bold uppercase text-[11px] tracking-widest italic">
-                  Where should we start you off?
-                </p>
               </header>
               <LevelPicker
                 value={formData.selected_level}
@@ -296,16 +282,15 @@ export const OnboardingPage = () => {
               />
             </div>
           )}
-          <div className="h-6 flex-none" />
         </div>
       </div>
 
-      {/* 3. FOOTER - Normalized to rounded-xl and semantic colors */}
-      <footer className="flex-none px-8 pt-2 pb-10 flex gap-3 bg-transparent mt-auto">
+      {/* FOOTER - pb-safe ensures it respects the iPhone home bar area */}
+      <footer className="flex-none px-8 pt-4 pb-safe flex gap-3 bg-bg-main border-t border-border-color/10 mb-4">
         {step > 1 && (
           <button
             onClick={() => setStep((s) => s - 1)}
-            className="h-14 w-14 bg-bg-surface rounded-xl border border-border-color flex items-center justify-center text-text-muted active:scale-90 transition-all"
+            className="h-14 w-14 bg-bg-surface rounded-xl border border-border-color flex items-center justify-center text-text-muted active:scale-90"
           >
             <ChevronLeft size={24} />
           </button>
@@ -313,15 +298,14 @@ export const OnboardingPage = () => {
         <button
           onClick={step === 6 ? handleFinish : () => setStep((s) => s + 1)}
           disabled={loading || (step === 1 && !formData.name)}
-          className="h-14 flex-1 bg-brand-primary text-bg-main rounded-xl font-black uppercase tracking-widest italic shadow-md shadow-brand-primary/20 active:scale-[0.98] transition-all disabled:opacity-30"
+          className="h-14 flex-1 bg-brand-primary text-bg-main rounded-xl font-black uppercase tracking-widest italic shadow-md active:scale-[0.98] disabled:opacity-30"
         >
           {loading ? (
             <Loader2 className="animate-spin mx-auto" />
+          ) : step === 6 ? (
+            "Finish"
           ) : (
-            <div className="flex items-center justify-center gap-2">
-              <span>{step === 6 ? "Finish" : "Continue"}</span>
-              {step < 6 && <ChevronRight size={18} strokeWidth={3} />}
-            </div>
+            "Continue"
           )}
         </button>
       </footer>

@@ -31,19 +31,24 @@ export function BodyMap({ muscles }: BodyMapProps) {
     const active = isActive(group);
     if (active) {
       return {
-        fill: isPrimary ? "var(--brand-primary)" : "rgb(222, 83, 0)",
+        // If Primary: Use the brand color
+        // If Secondary: Mix brand color with 15% black to darken it (Dynamic)
+        fill: isPrimary
+          ? "var(--brand-primary)"
+          : "var(--color-active-secondary)",
         stroke: "#000",
         strokeWidth: "1.5",
-        filter: "drop-shadow(0 0 6px var(--brand-primary))",
+        filter: "drop-shadow(0 0 6px #000)", // Black glow for all
         transition: "all 0.4s ease",
         opacity: 1,
       };
     } else {
       return {
-        fill: isPrimary ? "rgb(229,217,201)" : "rgb(202,185,166)",
+        // These remain your specific inactive hex/rgb values
+        fill: isPrimary ? "rgb(229, 217, 201)" : "rgb(202, 185, 166)",
         stroke: "#000",
         strokeWidth: "1.5",
-        filter: "drop-shadow(0 0 6px var(--brand-primary))",
+        filter: "none",
         transition: "all 0.4s ease",
         opacity: 1,
       };

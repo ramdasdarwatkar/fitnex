@@ -8,7 +8,7 @@ import { useNavigate } from "react-router-dom";
 
 type GenderType = Database["public"]["Tables"]["user_profile"]["Row"]["gender"];
 
-interface SectionHeaderProps {
+interface SectionLabelProps {
   icon: ReactNode;
   title: string;
 }
@@ -19,6 +19,8 @@ interface SelectInputProps {
   options: string[];
   onChange: (value: string) => void;
 }
+
+// --- MAIN COMPONENT ---
 
 export const ProfileDetails = () => {
   const { user_id, athlete } = useAuth();
@@ -33,7 +35,6 @@ export const ProfileDetails = () => {
     target_days_per_week: "4",
   });
 
-  // Sync form with the athlete data whenever it updates reactively
   useEffect(() => {
     if (athlete) {
       setForm({
@@ -50,17 +51,9 @@ export const ProfileDetails = () => {
   }, [athlete]);
 
   const onSave = async () => {
-    // Explicit check to ensure athlete and its required fields are present
     if (!user_id || !athlete || !athlete.created_at || saving) return;
-
     setSaving(true);
-
     try {
-      /**
-       * 1. Construct the payload strictly as UserProfile
-       * We spread 'athlete' first, then override with form values.
-       * We explicitly re-state 'created_at' to satisfy strict TS requirements.
-       */
       const updatedProfile: UserProfile = {
         user_id,
         name: form.name.trim(),
@@ -69,17 +62,10 @@ export const ProfileDetails = () => {
         target_weight: parseFloat(form.target_weight) || 0,
         target_days_per_week: parseInt(form.target_days_per_week) || 4,
         updated_at: new Date().toISOString(),
-        created_at: athlete.created_at, // Explicitly mapped to resolve missing property error
+        created_at: athlete.created_at,
+        role: athlete.role,
       };
-
-      /**
-       * 2. Persist to Dexie
-       * This triggers a reactive update via useLiveQuery in your AuthContext/Hook.
-       */
       await UserProfileService.updateProfile(updatedProfile);
-
-      // Feedback for the user
-      console.log("Profile updated successfully");
       navigate(-1);
     } catch (err: unknown) {
       console.error("Profile update failed:", err);
@@ -89,15 +75,42 @@ export const ProfileDetails = () => {
     }
   };
 
-  return (
-    <SubPageLayout title="User Profile">
-      <div className="flex-1 flex flex-col space-y-8 pb-32 bg-bg-main animate-in fade-in duration-500">
-        {/* IDENTITY SECTION */}
-        <section className="space-y-4">
-          <SectionHeader icon={<User size={14} />} title="Identity" />
+  // Passed to SubPageLayout footer prop — sits outside the scroll area, above safe area
+  const saveButton = (
+    <button
+      disabled={saving}
+      onClick={onSave}
+      className="w-full h-16 bg-brand-primary rounded-2xl
+                 text-base font-black uppercase italic tracking-[0.25em]
+                 flex items-center justify-center gap-3
+                 active:scale-[0.98] transition-all disabled:opacity-30"
+      style={{
+        color: "var(--color-on-brand)",
+        boxShadow: "0 4px 24px var(--glow-primary)",
+      }}
+    >
+      {saving ? (
+        <RefreshCcw size={22} className="animate-spin" />
+      ) : (
+        <Save size={22} strokeWidth={2.5} />
+      )}
+      <span>{saving ? "Syncing..." : "Commit Changes"}</span>
+    </button>
+  );
 
-          <div className="bg-bg-surface border border-border-color p-6 rounded-4xl shadow-sm">
-            <p className="text-[10px] font-black text-text-muted uppercase mb-3 tracking-[0.2em] ml-1">
+  return (
+    <SubPageLayout title="Athlete Identity" footer={saveButton}>
+      <div className="space-y-8 pt-2 pb-4 animate-in fade-in duration-500">
+        {/* ── IDENTITY ── */}
+        <section className="space-y-3">
+          <SectionLabel icon={<User size={13} />} title="Core Identity" />
+
+          {/* Name */}
+          <div
+            className="bg-bg-surface border border-border-color/40 rounded-2xl px-5 pt-4 pb-5
+                          card-glow focus-within:border-brand-primary/40 transition-colors"
+          >
+            <p className="text-[9px] font-black text-text-muted/50 uppercase tracking-[0.3em] italic mb-2">
               Full Athlete Name
             </p>
             <input
@@ -106,8 +119,10 @@ export const ProfileDetails = () => {
               onChange={(e: ChangeEvent<HTMLInputElement>) =>
                 setForm({ ...form, name: e.target.value })
               }
-              className="bg-transparent border-none outline-none text-2xl font-black italic text-text-main w-full placeholder:text-text-muted/20 uppercase tracking-tighter"
-              placeholder="Full Name"
+              className="bg-transparent border-none outline-none text-3xl font-black italic
+                         text-text-main w-full placeholder:text-text-muted/15
+                         uppercase tracking-tighter"
+              placeholder="Alex Stevens"
             />
           </div>
 
@@ -118,9 +133,12 @@ export const ProfileDetails = () => {
               options={["Male", "Female", "Other"]}
               onChange={(v) => setForm({ ...form, gender: v })}
             />
-
-            <div className="bg-bg-surface border border-border-color p-6 rounded-4xl shadow-sm">
-              <p className="text-[10px] font-black text-text-muted uppercase mb-3 tracking-[0.2em] ml-1">
+            {/* Birth date */}
+            <div
+              className="bg-bg-surface border border-border-color/40 rounded-2xl px-5 pt-4 pb-5
+                            card-glow focus-within:border-brand-primary/40 transition-colors"
+            >
+              <p className="text-[9px] font-black text-text-muted/50 uppercase tracking-[0.3em] italic mb-2">
                 Birth Date
               </p>
               <input
@@ -129,20 +147,28 @@ export const ProfileDetails = () => {
                 onChange={(e: ChangeEvent<HTMLInputElement>) =>
                   setForm({ ...form, birth_date: e.target.value })
                 }
-                className="bg-transparent border-none outline-none text-sm font-black uppercase text-text-main w-full dark:invert-[0.8] cursor-pointer"
+                className="bg-transparent border-none outline-none text-sm font-black
+                           uppercase italic text-text-main w-full dark:invert-[0.8] cursor-pointer"
               />
             </div>
           </div>
         </section>
 
-        {/* GOALS SECTION */}
-        <section className="space-y-4">
-          <SectionHeader icon={<Target size={14} />} title="Goals" />
+        {/* ── GOALS ── */}
+        <section className="space-y-3">
+          <SectionLabel
+            icon={<Target size={13} />}
+            title="Biometric Objectives"
+          />
 
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-bg-surface border border-border-color p-6 rounded-4xl shadow-sm">
-              <p className="text-[10px] font-black text-text-muted uppercase mb-3 tracking-[0.2em] ml-1">
-                Target Weight
+            {/* Target weight */}
+            <div
+              className="bg-bg-surface border border-border-color/40 rounded-2xl px-5 pt-4 pb-5
+                            card-glow focus-within:border-brand-primary/40 transition-colors"
+            >
+              <p className="text-[9px] font-black text-text-muted/50 uppercase tracking-[0.3em] italic mb-2">
+                Target Mass
               </p>
               <div className="flex items-baseline gap-2">
                 <input
@@ -152,65 +178,73 @@ export const ProfileDetails = () => {
                   onChange={(e: ChangeEvent<HTMLInputElement>) =>
                     setForm({ ...form, target_weight: e.target.value })
                   }
-                  className="bg-transparent border-none outline-none text-2xl font-black italic text-text-main w-16 tabular-nums"
-                  placeholder="00"
+                  className="bg-transparent border-none outline-none text-3xl font-black italic
+                             text-text-main w-20 tabular-nums tracking-tighter
+                             placeholder:text-text-muted/15"
+                  placeholder="00.0"
                 />
-                <span className="text-brand-primary font-black italic text-xs uppercase">
+                <span className="text-brand-primary font-black italic text-xs uppercase tracking-widest">
                   kg
                 </span>
               </div>
             </div>
 
             <SelectInput
-              label="Days / Week"
+              label="Weekly Days"
               value={form.target_days_per_week}
               options={["1", "2", "3", "4", "5", "6", "7"]}
               onChange={(v) => setForm({ ...form, target_days_per_week: v })}
             />
           </div>
         </section>
-
-        {/* ACTION BUTTON */}
-        <div className="pt-4 px-2">
-          <button
-            disabled={saving}
-            onClick={onSave}
-            className="w-full py-6 bg-brand-primary text-black text-base font-black uppercase italic tracking-widest rounded-4xl flex items-center justify-center gap-3 active:scale-[0.98] transition-all disabled:opacity-30 shadow-xl shadow-brand-primary/20"
-          >
-            {saving ? (
-              <RefreshCcw size={20} className="animate-spin" />
-            ) : (
-              <Save size={20} />
-            )}
-            <span>{saving ? "Updating..." : "Update Profile"}</span>
-          </button>
-        </div>
-
-        <div className="flex-1" />
       </div>
     </SubPageLayout>
   );
 };
 
-/* --- UI SUB-COMPONENTS --- */
+// --- SUB-COMPONENTS ---
 
-const SectionHeader = ({ icon, title }: SectionHeaderProps) => (
-  <div className="flex items-center gap-2 mb-1 px-3 font-black uppercase tracking-[0.2em] text-[10px] text-text-muted italic">
-    <div className="text-brand-primary">{icon}</div>
-    {title}
+const SectionLabel = ({ icon, title }: SectionLabelProps) => (
+  <div className="flex items-center gap-3">
+    <div className="flex items-center gap-1 shrink-0">
+      <div
+        className="w-1.5 h-1.5 rounded-full bg-brand-primary"
+        style={{ boxShadow: "0 0 6px 1px var(--glow-primary)" }}
+      />
+      <div className="w-1 h-1 rounded-full bg-brand-primary/30" />
+    </div>
+    <div className="flex items-center gap-2">
+      <span className="text-brand-primary/60">{icon}</span>
+      <span className="text-[9.5px] font-black uppercase tracking-[0.35em] text-text-muted/50 italic whitespace-nowrap">
+        {title}
+      </span>
+    </div>
+    <div
+      className="h-px flex-1"
+      style={{
+        background:
+          "linear-gradient(to right, var(--border-color), transparent)",
+        opacity: 0.4,
+      }}
+    />
   </div>
 );
 
 const SelectInput = ({ label, value, options, onChange }: SelectInputProps) => (
-  <div className="bg-bg-surface border border-border-color p-6 rounded-4xl relative shadow-sm group">
-    <p className="text-[10px] font-black text-text-muted uppercase mb-3 tracking-[0.2em] ml-1">
+  <div
+    className="bg-bg-surface border border-border-color/40 rounded-2xl px-5 pt-4 pb-5
+                  card-glow focus-within:border-brand-primary/40 transition-colors group"
+  >
+    <p className="text-[9px] font-black text-text-muted/50 uppercase tracking-[0.3em] italic mb-2">
       {label}
     </p>
     <div className="relative">
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="bg-transparent border-none outline-none text-xl font-black italic text-text-main w-full appearance-none pr-10 cursor-pointer relative z-10"
+        className="bg-transparent border-none outline-none text-xl font-black italic
+                   text-text-main w-full appearance-none pr-7 cursor-pointer
+                   relative z-10 uppercase tracking-tighter"
       >
         <option value="" disabled>
           Select
@@ -227,7 +261,8 @@ const SelectInput = ({ label, value, options, onChange }: SelectInputProps) => (
       </select>
       <ChevronDown
         size={16}
-        className="absolute right-0 top-1/2 -translate-y-1/2 text-text-muted opacity-40 group-hover:text-brand-primary group-hover:opacity-100 transition-all pointer-events-none"
+        className="absolute right-0 top-1/2 -translate-y-1/2 text-text-muted/40
+                   group-hover:text-brand-primary transition-colors pointer-events-none"
       />
     </div>
   </div>

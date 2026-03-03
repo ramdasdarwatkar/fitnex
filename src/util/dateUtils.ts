@@ -73,9 +73,7 @@ export class DateUtils {
       }
     }
 
-    // Explicitly typed 'd' as Date to remove 'any' error
     const formatDate = (d: Date): string => d.toISOString().split("T")[0];
-
     return [formatDate(startDate), formatDate(endDate)];
   }
 
@@ -86,5 +84,30 @@ export class DateUtils {
   static getTodayWindow(): [string, string] {
     const today = new Date().toISOString().split("T")[0];
     return [`${today}T00:00:00.000`, `${today}T23:59:59.999`];
+  }
+
+  /**
+   * Converts a string like "TUESDAY, 03 MARCH 2026" to "03-03-2026"
+   */
+  static parseWallClockDate(input: string): string {
+    if (!input) return "";
+
+    // Remove weekday
+    const parts = input.split(", ");
+    if (parts.length < 2) return "";
+
+    const datePart = parts[1]; // "03 MARCH 2026"
+    const [day, monthName, year] = datePart.split(" ");
+
+    // Create JS Date
+    const date = new Date(`${monthName} ${day}, ${year}`);
+    if (isNaN(date.getTime())) return "";
+
+    // Format as DD-MM-YYYY
+    const dd = String(date.getDate()).padStart(2, "0");
+    const mm = String(date.getMonth() + 1).padStart(2, "0");
+    const yyyy = date.getFullYear();
+
+    return `${dd}-${mm}-${yyyy}`;
   }
 }

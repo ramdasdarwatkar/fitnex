@@ -7,32 +7,16 @@ type MetricsInsert = Database["public"]["Tables"]["body_metrics"]["Insert"];
 
 export const BodyMetricsService = {
   // Fetch the most recent entry from the view
-  async getLatestMetrics(): Promise<BodyMetrics | null> {
-    const { data, error } = await supabase
-      .from("v_latest_body_metrics")
-      .select("*")
-      .maybeSingle();
-
-    if (error) {
-      console.error("Error fetching metrics:", error.message);
-      throw error;
-    }
-    return data;
+  async getLocalMetrics(): Promise<BodyMetrics | null> {
+    return (await db.body_metrics.orderBy("logdate").reverse().first()) || null;
   },
 
   // Insert or update body metrics
   async updateMetrics(data: MetricsInsert) {
-    const { error } = await supabase.from("body_metrics").upsert({
+    return await db.body_metrics.put({
       ...data,
-      // Ensure logdate is set to today if not provided
-      logdate: data.logdate || new Date().toISOString().split("T")[0],
+      is_synced: 0,
     });
-
-    if (error) {
-      console.error("Error updating metrics:", error.message);
-      throw error;
-    }
-    return true;
   },
 
   async getMetricHistory(userId: string, columns: string[]) {

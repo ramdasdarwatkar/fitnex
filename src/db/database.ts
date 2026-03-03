@@ -52,7 +52,7 @@ export class FitnexDB extends Dexie {
       user_profile: "user_id, is_synced",
       customized_stats:
         "[user_id+start_date+end_date], user_id, start_date, end_date",
-      app_settings: "user_id",
+      app_settings: "user_id,is_synced",
       athlete_levels_lookup: "id, level_name",
       personal_records: "[user_id+exercise_id],exercise_id",
 

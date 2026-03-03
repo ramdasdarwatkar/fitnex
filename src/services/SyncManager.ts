@@ -56,8 +56,9 @@ export const SyncManager = {
     try {
       // Step 1: Push Independent Entities (Parents)
       await this.pushTable("user_profile", "user_id");
-      await this.pushTable("athlete_level", "user_id, updated_date");
+      await this.pushTable("athlete_level", "user_id");
       await this.pushTable("body_metrics", "user_id, logdate");
+      await this.pushTable("app_settings", "user_id");
       await this.pushTable("muscles", "id");
       await this.pushTable("exercises", "id");
       await this.pushTable("routines", "id");

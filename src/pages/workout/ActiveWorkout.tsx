@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
 import confetti from "canvas-confetti";
+import { createPortal } from "react-dom"; // Ensure this is imported
 import {
   Timer,
   Plus,
@@ -26,10 +27,11 @@ import { WorkoutService } from "../../services/WorkoutService";
 import { ExercisePicker } from "../library/exercises/ExercisePicker";
 import { DateUtils } from "../../util/dateUtils";
 import { PersonalRecordService } from "../../services/PersonalRecordService";
+import { PRCelebration } from "./components/PRCelebration";
 import { type LocalWorkoutLog } from "../../types/database.types";
 import { WorkoutLogsService } from "../../services/WorkoutLogsService";
 
-// --- 1. STRICT TYPE DEFINITIONS ---
+// --- TYPE DEFINITIONS ---
 
 type ActiveLog = LocalWorkoutLog;
 
@@ -55,7 +57,7 @@ interface NewPR {
   weight: number;
 }
 
-// --- 2. MAIN COMPONENT ---
+// --- MAIN COMPONENT ---
 
 export const ActiveWorkout = () => {
   const navigate = useNavigate();
@@ -86,7 +88,6 @@ export const ActiveWorkout = () => {
   const [pastStart, setPastStart] = useState(defaultTime);
   const [pastEnd, setPastEnd] = useState(defaultTime);
 
-  // Variable for the dependency array to satisfy "Complex Expression" warning
   const isTimerActive = restSeconds !== null;
 
   const stats = useMemo(() => {
@@ -149,7 +150,6 @@ export const ActiveWorkout = () => {
 
   useEffect(() => {
     let timer: ReturnType<typeof setInterval> | null = null;
-
     if (isTimerActive) {
       timer = setInterval(() => {
         setRestSeconds((prev) => {
@@ -162,7 +162,6 @@ export const ActiveWorkout = () => {
         });
       }, 1000);
     }
-
     return () => {
       if (timer) clearInterval(timer);
     };
@@ -199,7 +198,7 @@ export const ActiveWorkout = () => {
     return (
       <SubPageLayout title="Log Previous">
         <div className="flex-1 flex flex-col justify-center items-center py-10 px-6 animate-in fade-in duration-500">
-          <div className="w-full max-w-sm bg-bg-surface border border-border-color p-8 rounded-[2.5rem] space-y-6 shadow-2xl">
+          <div className="w-full max-w-sm bg-bg-surface border border-border-color p-8 rounded-[2.5rem] space-y-6 card-glow">
             <h2 className="text-xl font-black uppercase italic text-text-main text-center tracking-tight">
               Manual Log
             </h2>
@@ -208,26 +207,30 @@ export const ActiveWorkout = () => {
                 type="date"
                 value={pastDate}
                 onChange={(e) => setPastDate(e.target.value)}
-                className="w-full bg-bg-main border border-border-color p-4 rounded-2xl text-text-main font-black outline-none"
+                className="w-full bg-bg-main border border-border-color p-4 rounded-2xl text-text-main font-black outline-none focus:border-brand-primary/50 transition-colors"
               />
               <div className="grid grid-cols-2 gap-4">
                 <input
                   type="time"
                   value={pastStart}
                   onChange={(e) => setPastStart(e.target.value)}
-                  className="w-full bg-bg-main border border-border-color p-4 rounded-2xl text-text-main font-black outline-none"
+                  className="w-full bg-bg-main border border-border-color p-4 rounded-2xl text-text-main font-black outline-none focus:border-brand-primary/50 transition-colors"
                 />
                 <input
                   type="time"
                   value={pastEnd}
                   onChange={(e) => setPastEnd(e.target.value)}
-                  className="w-full bg-bg-main border border-border-color p-4 rounded-2xl text-text-main font-black outline-none"
+                  className="w-full bg-bg-main border border-border-color p-4 rounded-2xl text-text-main font-black outline-none focus:border-brand-primary/50 transition-colors"
                 />
               </div>
             </div>
             <button
               onClick={() => user_id && WorkoutService.startNewWorkout(user_id)}
-              className="w-full py-5 bg-brand-primary text-bg-main rounded-3xl font-black uppercase italic tracking-widest flex items-center justify-center gap-2 active:scale-95 shadow-xl transition-all"
+              className="w-full py-5 bg-brand-primary rounded-3xl font-black uppercase italic tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all"
+              style={{
+                color: "var(--color-on-brand)",
+                boxShadow: "0 4px 24px var(--glow-primary)",
+              }}
             >
               <Play size={18} fill="currentColor" /> Start Entry
             </button>
@@ -250,7 +253,8 @@ export const ActiveWorkout = () => {
                 navigate("/dashboard"),
               )
             }
-            className="text-brand-danger/50 active:scale-90 transition-all"
+            className="active:scale-90 transition-all"
+            style={{ color: "var(--brand-danger)" }}
           >
             <Trash2 size={18} />
           </button>
@@ -260,14 +264,82 @@ export const ActiveWorkout = () => {
               fireConfetti("heavy");
               triggerHaptic([100, 50, 100, 50, 400]);
             }}
-            className="bg-brand-primary text-bg-main px-4 py-1.5 rounded-lg text-[10px] font-black uppercase italic active:scale-95 shadow-lg"
+            className="px-4 py-1.5 rounded-lg text-[10px] font-black uppercase italic active:scale-95 transition-all bg-brand-primary"
+            style={{
+              color: "var(--color-on-brand)",
+              boxShadow: "0 2px 12px var(--glow-primary)",
+            }}
           >
             Finish
           </button>
         </div>
       }
+      footer={
+        <div
+          className={`flex items-center gap-3 w-full animate-in slide-in-from-bottom duration-500 ${!restSeconds ? "justify-end" : ""}`}
+        >
+          {/* Rest Timer Toast */}
+          {restSeconds !== null && (
+            <div
+              className="flex-1 h-14 bg-brand-primary rounded-2xl px-3 flex justify-between items-center"
+              style={{ boxShadow: "0 8px 24px var(--glow-primary)" }}
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex items-center bg-black/20 rounded-xl overflow-hidden">
+                  <button
+                    onClick={() =>
+                      setRestSeconds((s) =>
+                        s !== null ? Math.max(0, s - 15) : null,
+                      )
+                    }
+                    className="px-2 py-1 text-white active:opacity-70"
+                  >
+                    <Minus size={14} />
+                  </button>
+                  <div className="w-10 h-8 flex items-center justify-center text-sm font-black tabular-nums text-white">
+                    {restSeconds}s
+                  </div>
+                  <button
+                    onClick={() =>
+                      setRestSeconds((s) => (s !== null ? s + 15 : null))
+                    }
+                    className="px-2 py-1 text-white active:opacity-70"
+                  >
+                    <Plus size={14} />
+                  </button>
+                </div>
+                {/* RESTING TEXT RESTORED HERE */}
+                <span className="text-[10px] font-black uppercase italic tracking-widest text-white/90">
+                  Resting
+                </span>
+              </div>
+              <button
+                onClick={() => setRestSeconds(null)}
+                className="p-1.5 rounded-full bg-black/10 text-white active:opacity-70"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          )}
+
+          {/* Circular FAB */}
+          <button
+            onClick={() => {
+              setShowPicker(true);
+              triggerHaptic(30);
+            }}
+            className="w-14 h-14 bg-brand-primary rounded-full flex items-center justify-center active:scale-90 transition-all flex-shrink-0"
+            style={{
+              color: "var(--color-on-brand)",
+              boxShadow: "0 4px 20px var(--glow-primary)",
+            }}
+          >
+            <Plus size={28} />
+          </button>
+        </div>
+      }
     >
-      <div className="flex flex-col gap-6 pb-48 animate-in fade-in duration-500">
+      <div className="flex flex-col gap-6 animate-in fade-in duration-500">
         <div className="flex items-center justify-center gap-2 py-2">
           <Timer size={14} className="text-brand-primary animate-pulse" />
           <span className="text-sm font-black italic text-text-muted tabular-nums uppercase">
@@ -312,116 +384,72 @@ export const ActiveWorkout = () => {
         />
       )}
 
-      {/* PR MODAL */}
       {newPR && (
-        <div className="fixed inset-0 z-500 flex items-center justify-center p-6 bg-bg-main/80 backdrop-blur-sm">
-          <div className="bg-bg-surface border-2 border-brand-primary rounded-[3rem] p-10 flex flex-col items-center text-center shadow-2xl animate-in zoom-in duration-300">
-            <div className="w-20 h-20 bg-brand-primary rounded-full flex items-center justify-center mb-6 animate-bounce shadow-xl">
-              <Trophy size={40} className="text-bg-main" />
-            </div>
-            <h2 className="text-2xl font-black uppercase italic text-text-main mb-2">
-              New Record!
-            </h2>
-            <p className="text-text-muted text-[10px] font-black uppercase mb-4">
-              {newPR.name}
-            </p>
-            <div className="text-5xl font-black italic text-brand-primary mb-8">
-              {newPR.weight} KG
-            </div>
-            <button
-              onClick={() => setNewPR(null)}
-              className="px-10 py-4 bg-text-main text-bg-main rounded-2xl font-black uppercase italic text-xs"
-            >
-              Awesome
-            </button>
-          </div>
-        </div>
+        <PRCelebration
+          exerciseName={newPR.name}
+          weight={newPR.weight}
+          onClose={() => setNewPR(null)}
+        />
       )}
 
-      {/* FINISH MODAL */}
-      {showFinishModal && (
-        <div className="fixed inset-0 z-400 bg-bg-main/95 backdrop-blur-sm flex items-end justify-center p-4">
-          <div className="w-full max-w-md bg-bg-surface border border-border-color rounded-[3.5rem] p-8 animate-in slide-in-from-bottom duration-500 shadow-2xl">
-            <div className="flex flex-col items-center text-center mb-8">
-              <div className="w-20 h-20 bg-brand-primary rounded-full flex items-center justify-center mb-4">
-                <Trophy size={36} className="text-bg-main" />
-              </div>
-              <h2 className="text-2xl font-black uppercase italic text-text-main tracking-tight">
-                Workout Complete!
-              </h2>
-            </div>
-            <div className="grid grid-cols-3 gap-3 mb-8">
-              <StatCard icon={Weight} value={stats.volume} label="Volume" />
-              <StatCard icon={Hash} value={stats.sets} label="Sets" />
-              <StatCard icon={Activity} value={stats.reps} label="Reps" />
-            </div>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Session notes..."
-              className="w-full bg-bg-main border border-border-color rounded-3xl p-5 text-xs text-text-main h-24 mb-8 outline-none focus:border-brand-primary transition-all"
-            />
-            <button
-              onClick={handleFinishWorkout}
-              className="w-full py-6 bg-brand-primary text-bg-main rounded-4xl font-black uppercase italic shadow-xl active:scale-95 transition-all"
+      {showFinishModal &&
+        createPortal(
+          <div className="fixed inset-0 z-[100] bg-bg-main/95 backdrop-blur-sm flex items-end justify-center p-4">
+            <div
+              className="w-full max-w-md bg-bg-surface border border-border-color rounded-[3.5rem] p-8
+                 animate-in slide-in-from-bottom duration-500 card-glow mb-safe"
+              onClick={(e) => e.stopPropagation()} // Good practice to prevent accidental closes
             >
-              Save and Exit
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* REST TIMER TOAST */}
-      {restSeconds !== null && (
-        <div className="fixed bottom-28 left-6 right-6 bg-brand-primary rounded-2xl p-4 flex justify-between items-center shadow-2xl z-50 animate-in slide-in-from-bottom duration-300">
-          <div className="flex items-center gap-4 text-bg-main font-black italic">
-            <div className="flex items-center bg-bg-main/20 rounded-xl overflow-hidden">
-              <button
-                onClick={() =>
-                  setRestSeconds((s) =>
-                    s !== null ? Math.max(0, s - 15) : null,
-                  )
-                }
-                className="px-3 py-2"
-              >
-                <Minus size={16} />
-              </button>
-              <div className="w-14 h-10 bg-bg-main rounded-xl flex items-center justify-center text-brand-primary text-lg font-black tabular-nums">
-                {restSeconds}s
+              <div className="flex flex-col items-center text-center mb-8">
+                <div
+                  className="w-20 h-20 bg-brand-primary rounded-full flex items-center justify-center mb-4"
+                  style={{ boxShadow: "0 0 24px var(--glow-primary)" }}
+                >
+                  <Trophy
+                    size={36}
+                    style={{ color: "var(--color-on-brand)" }}
+                  />
+                </div>
+                <h2 className="text-2xl font-black uppercase italic text-text-main tracking-tight">
+                  Workout Complete!
+                </h2>
               </div>
+
+              <div className="grid grid-cols-3 gap-3 mb-8">
+                <StatCard
+                  icon={Weight}
+                  value={stats.volume}
+                  label="Volume"
+                  unit="kg"
+                />
+                <StatCard icon={Hash} value={stats.sets} label="Sets" />
+                <StatCard icon={Activity} value={stats.reps} label="Reps" />
+              </div>
+
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Session notes..."
+                className="w-full bg-bg-main border border-border-color rounded-3xl p-5 text-xs
+                   text-text-main h-24 mb-8 outline-none resize-none
+                   focus:border-brand-primary/50 transition-colors"
+              />
+
               <button
-                onClick={() =>
-                  setRestSeconds((s) => (s !== null ? s + 15 : null))
-                }
-                className="px-3 py-2"
+                onClick={handleFinishWorkout}
+                className="w-full py-5 bg-brand-primary rounded-3xl font-black uppercase italic
+                   active:scale-95 transition-all"
+                style={{
+                  color: "var(--color-on-brand)",
+                  boxShadow: "0 4px 24px var(--glow-primary)",
+                }}
               >
-                <Plus size={16} />
+                Save and Exit
               </button>
             </div>
-            <span className="text-[10px] uppercase tracking-widest">
-              Resting
-            </span>
-          </div>
-          <button
-            onClick={() => setRestSeconds(null)}
-            className="p-2 bg-bg-main/10 rounded-full text-bg-main"
-          >
-            <X size={16} />
-          </button>
-        </div>
-      )}
-
-      <div className="fixed bottom-10 right-6 z-40">
-        <button
-          onClick={() => {
-            setShowPicker(true);
-            triggerHaptic(30);
-          }}
-          className="w-14 h-14 bg-text-main text-bg-main rounded-full flex items-center justify-center shadow-2xl active:scale-90 transition-all"
-        >
-          <Plus size={28} />
-        </button>
-      </div>
+          </div>,
+          document.body, // This pushes it to the root body level
+        )}
     </SubPageLayout>
   );
 };
@@ -432,17 +460,24 @@ const StatCard = ({
   icon: Icon,
   value,
   label,
+  unit,
 }: {
   icon: LucideIcon;
   value: number;
   label: string;
+  unit?: string;
 }) => (
-  <div className="bg-bg-main p-5 rounded-3xl border border-border-color/50 flex flex-col items-center shadow-sm">
+  <div className="bg-bg-main p-4 rounded-3xl border border-border-color/50 flex flex-col items-center card-glow">
     <Icon size={16} className="text-brand-primary mb-3" />
     <span className="text-xl font-black text-text-main italic leading-none tabular-nums">
-      {value}
+      {value.toLocaleString()}
     </span>
-    <span className="text-[8px] text-text-muted uppercase font-black mt-2 tracking-widest">
+    {unit && (
+      <span className="text-[7px] font-black text-text-muted/40 uppercase tracking-widest mt-0.5">
+        {unit}
+      </span>
+    )}
+    <span className="text-[8px] text-text-muted/60 uppercase font-black mt-1.5 tracking-widest">
       {label}
     </span>
   </div>
@@ -494,10 +529,10 @@ const ExerciseTable = ({
     <div className="flex flex-col gap-5">
       <div className="flex justify-between items-center px-1">
         <div
-          className="flex items-center gap-3 cursor-pointer group"
+          className="flex items-center gap-3 cursor-pointer group/title"
           onClick={() => setCollapsed(!collapsed)}
         >
-          <h3 className="text-sm font-black uppercase italic text-brand-primary group-hover:opacity-80 transition-opacity">
+          <h3 className="text-sm font-black uppercase italic text-brand-primary group-hover/title:opacity-70 transition-opacity">
             {exercise?.name || "Loading..."}
           </h3>
           {collapsed ? (
@@ -508,11 +543,19 @@ const ExerciseTable = ({
         </div>
         <button
           onClick={onRemove}
-          className="text-text-muted hover:text-brand-danger active:scale-90 transition-all p-2"
+          className="p-2 transition-all active:scale-90"
+          style={{ color: "var(--text-muted)" }}
+          onMouseEnter={(e) =>
+            (e.currentTarget.style.color = "var(--brand-danger)")
+          }
+          onMouseLeave={(e) =>
+            (e.currentTarget.style.color = "var(--text-muted)")
+          }
         >
           <Trash2 size={16} />
         </button>
       </div>
+
       {!collapsed && (
         <div className="space-y-2">
           <div
@@ -521,7 +564,7 @@ const ExerciseTable = ({
               gridTemplateColumns: gridTemplate,
               gap: "10px",
             }}
-            className="px-2 mb-2 text-center text-[8px] font-black text-text-muted uppercase tracking-widest opacity-50"
+            className="px-2 mb-2 text-center text-[8px] font-black text-text-muted/50 uppercase tracking-widest"
           >
             <span>Set</span>
             {activeCols.map((col) => (
@@ -529,6 +572,7 @@ const ExerciseTable = ({
             ))}
             <span className="text-right">Done</span>
           </div>
+
           {sets.map((set, i) => (
             <WorkoutLogRow
               key={set.id}
@@ -544,6 +588,7 @@ const ExerciseTable = ({
               triggerHaptic={triggerHaptic}
             />
           ))}
+
           <button
             onClick={() =>
               WorkoutLogsService.addSet(
@@ -552,7 +597,10 @@ const ExerciseTable = ({
                 sets.length + 1,
               )
             }
-            className="w-full py-4 bg-bg-surface/30 border border-dashed border-border-color rounded-2xl text-[9px] font-black uppercase text-text-muted mt-3 hover:bg-bg-surface transition-all tracking-widest"
+            className="w-full py-4 border border-dashed border-border-color rounded-2xl
+                        text-[9px] font-black uppercase text-text-muted/50 mt-3
+                        hover:text-text-muted hover:border-border-color/80
+                        transition-all tracking-widest"
           >
             + Add Set
           </button>
@@ -635,11 +683,12 @@ const WorkoutLogRow = ({
         isDeleting
           ? "opacity-0 -translate-x-full scale-95"
           : "scale-100 opacity-100"
-      } ${set.completed === 1 ? "bg-brand-success/10" : "bg-transparent"}`}
+      } ${set.completed === 1 ? "bg-brand-primary/10" : "bg-transparent"}`}
     >
-      <span className="text-[11px] font-black text-text-muted text-center italic opacity-40">
+      <span className="text-[11px] font-black text-text-muted/40 text-center italic tabular-nums">
         {index + 1}
       </span>
+
       {activeCols.map((col) => {
         const key = col.key;
         const rawValue = set[key];
@@ -661,13 +710,22 @@ const WorkoutLogRow = ({
           />
         );
       })}
+
       <button
         onClick={handleComplete}
         className={`w-11 h-11 rounded-2xl flex items-center justify-center mx-auto transition-all active:scale-90 ${
           set.completed === 1
-            ? "bg-brand-primary text-bg-main shadow-lg shadow-brand-primary/20"
+            ? "bg-brand-primary"
             : "bg-bg-surface border border-border-color text-text-muted"
         }`}
+        style={
+          set.completed === 1
+            ? {
+                color: "var(--color-on-brand)",
+                boxShadow: "0 2px 12px var(--glow-primary)",
+              }
+            : undefined
+        }
       >
         <Check size={20} strokeWidth={4} />
       </button>
@@ -686,6 +744,7 @@ const NumberInput = ({
 }) => {
   const step = type === "distance" ? 250 : type === "weight" ? 2.5 : 1;
   const incStep = type === "distance" ? 500 : type === "weight" ? 5 : 1;
+
   const getDisplayValue = () =>
     value === null || isNaN(value)
       ? ""
@@ -694,13 +753,13 @@ const NumberInput = ({
         : value.toString();
 
   return (
-    <div className="flex items-center bg-bg-surface rounded-xl border border-border-color min-h-13">
+    <div className="flex items-center bg-bg-surface rounded-xl border border-border-color min-h-[52px]">
       <button
         onClick={() => {
           const n = Math.max(0, (Number(value) || 0) - step);
           onChange(n === 0 ? null : n);
         }}
-        className="px-2 h-full text-text-muted active:text-text-main"
+        className="px-2 h-full text-text-muted/60 active:text-text-main transition-colors"
       >
         <Minus size={12} />
       </button>
@@ -720,7 +779,7 @@ const NumberInput = ({
       />
       <button
         onClick={() => onChange((Number(value) || 0) + incStep)}
-        className="px-2 h-full text-text-muted active:text-text-main"
+        className="px-2 h-full text-text-muted/60 active:text-text-main transition-colors"
       >
         <Plus size={12} />
       </button>
@@ -740,10 +799,10 @@ const DurationInput = ({
   const secs = totalSeconds !== null ? safeTotal % 60 : null;
 
   return (
-    <div className="flex items-center bg-bg-surface rounded-xl border border-border-color min-h-13 px-1">
+    <div className="flex items-center bg-bg-surface rounded-xl border border-border-color min-h-[52px] px-1">
       <button
         onClick={() => onChange(Math.max(0, safeTotal - 60))}
-        className="p-1 text-text-muted"
+        className="p-1 text-text-muted/60 active:text-text-main transition-colors"
       >
         <Minus size={12} />
       </button>
@@ -781,7 +840,7 @@ const DurationInput = ({
       </div>
       <button
         onClick={() => onChange(safeTotal + 300)}
-        className="p-1 text-brand-primary"
+        className="p-1 text-brand-primary active:opacity-70 transition-opacity"
       >
         <Plus size={12} />
       </button>
