@@ -13,24 +13,13 @@
   --color-text-main: var(--text-main);
   --color-text-muted: var(--text-muted);
   --color-border-color: var(--border-color);
-  --color-active-secondary:var(--active-secondary);
+  --color-active-secondary: var(--active-secondary);
+
   /* UNIFIED RADIUS */
   --radius-xl: 0.75rem;
-   /* Glow shadows (rgba wrappers around brand colors) */
-  --glow-primary: rgba(34, 197, 94, 0.45);   /* emerald glow */
-  --glow-streak:  rgba(249, 115, 22, 0.15);  /* orange glow  */
-
-  /* Streak pill colors */
-  --brand-streak:   #f97316;                 /* orange-500   */
-  --streak-bg:      rgba(249, 115, 22, 0.08);
-  --streak-border:  rgba(249, 115, 22, 0.20);
 
   /* Text on brand-primary bg (month band) */
   --color-on-brand: #ffffff;
-
-  /* Card / element shadows */
-  --shadow-sm: rgba(0, 0, 0, 0.07);
-  --shadow-xs: rgba(0, 0, 0, 0.04);
 }
 
 /* ============================================= */
@@ -42,142 +31,114 @@
   --brand-primary: #22c55e; 
   --brand-success: #10b981;
   --brand-error: #ef4444;
-  
+  --brand-danger: #ef4444;
+  --brand-secondary: #38bdf8;
+  --brand-streak: #f97316;
+  --brand-rest: #22c55e;
+  --brand-missed: #ef4444;
+
   --bg-main: #f8fafc;    /* Slate 50 */
   --bg-surface: #ffffff;
   --text-main: #0f172a;  /* Slate 900 */
   --text-muted: #64748b; /* Slate 500 */
   --border-color: #e2e8f0; /* Slate 200 */
-  --active-secondary:#1DA951;
+  --active-secondary: #1DA951;
+
   /* SAFE AREAS */
   --safe-top: env(safe-area-inset-top);
   --safe-bottom: env(safe-area-inset-bottom);
-   --workout-bg:    rgba(34, 197, 94, 0.05);
-  --rest-bg:       rgba(34, 197, 94, 0.05);
-  --rest-border:   rgba(34, 197, 94, 0.35);
-  --brand-rest:    #22c55e;
-  --missed-bg:     rgba(239, 68, 68, 0.05);
+
+  /* GLOWS */
+  --glow-primary: rgba(34, 197, 94, 0.45);
+  --glow-secondary: rgba(56, 189, 248, 0.35);
+  --glow-streak: rgba(249, 115, 22, 0.15);
+  --glow-yellow: rgba(250, 204, 21, 0.35);
+  --glow-blue: rgba(96, 165, 250, 0.35);
+  --glow-violet: rgba(167, 139, 250, 0.35);
+
+  /* COMPONENT SPECIFIC */
+  --streak-bg: rgba(249, 115, 22, 0.08);
+  --streak-border: rgba(249, 115, 22, 0.20);
+  --workout-bg: rgba(34, 197, 94, 0.05);
+  --rest-bg: rgba(34, 197, 94, 0.05);
+  --rest-border: rgba(34, 197, 94, 0.35);
+  --missed-bg: rgba(239, 68, 68, 0.05);
   --missed-border: rgba(239, 68, 68, 0.35);
-  --brand-missed:  #ef4444;
-   /* Glow shadows (rgba wrappers around brand colors) */
-  --glow-primary: rgba(34, 197, 94, 0.45);   /* emerald glow */
-  --glow-streak:  rgba(249, 115, 22, 0.15);  /* orange glow  */
+  --danger-bg: rgba(239, 68, 68, 0.08);
+  --danger-border: rgba(239, 68, 68, 0.18);
 
-  /* Streak pill colors */
-  --brand-streak:   #f97316;                 /* orange-500   */
-  --streak-bg:      rgba(249, 115, 22, 0.08);
-  --streak-border:  rgba(249, 115, 22, 0.20);
-
-  /* Text on brand-primary bg (month band) */
-  --color-on-brand: #ffffff;
-
-  /* Card / element shadows */
+  /* SHADOWS */
   --shadow-sm: rgba(0, 0, 0, 0.07);
   --shadow-xs: rgba(0, 0, 0, 0.04);
 
-   --workout-bg:    rgba(34, 197, 94, 0.05);
-  --rest-bg:       rgba(34, 197, 94, 0.05);
-  --rest-border:   rgba(34, 197, 94, 0.35);
-  --brand-rest:    #22c55e;
-  --missed-bg:     rgba(239, 68, 68, 0.05);
-  --missed-border: rgba(239, 68, 68, 0.35);
-  --brand-missed:  #ef4444;
-
-  /* Per-color glow shadows */
-  --glow-yellow:  rgba(250, 204, 21, 0.35);
-  --glow-blue:    rgba(96,  165, 250, 0.35);
-  --glow-violet:  rgba(167, 139, 250, 0.35);
-
-  /* Brand colors for each tile theme */
+  /* STAT TILE BRANDING */
   --brand-yellow: #facc15;
-  --brand-blue:   #60a5fa;
+  --brand-blue: #60a5fa;
   --brand-violet: #a78bfa;
 
-  /* Icon container: bg + border per theme */
-  --tile-brand-bg:      rgba(34,  197, 94,  0.10);
-  --tile-brand-border:  rgba(34,  197, 94,  0.20);
-
-  --tile-orange-bg:     rgba(249, 115, 22,  0.10);
-  --tile-orange-border: rgba(249, 115, 22,  0.20);
-
-  --tile-yellow-bg:     rgba(250, 204, 21,  0.10);
-  --tile-yellow-border: rgba(250, 204, 21,  0.20);
-
-  --tile-blue-bg:       rgba(96,  165, 250, 0.10);
-  --tile-blue-border:   rgba(96,  165, 250, 0.20);
-
-  --tile-emerald-bg:    rgba(34,  197, 94,  0.08);
-  --tile-emerald-border:rgba(34,  197, 94,  0.18);
-
-  --tile-violet-bg:     rgba(167, 139, 250, 0.10);
+  --tile-brand-bg: rgba(34, 197, 94, 0.10);
+  --tile-brand-border: rgba(34, 197, 94, 0.20);
+  --tile-orange-bg: rgba(249, 115, 22, 0.10);
+  --tile-orange-border: rgba(249, 115, 22, 0.20);
+  --tile-yellow-bg: rgba(250, 204, 21, 0.10);
+  --tile-yellow-border: rgba(250, 204, 21, 0.20);
+  --tile-blue-bg: rgba(96, 165, 250, 0.10);
+  --tile-blue-border: rgba(96, 165, 250, 0.20);
+  --tile-emerald-bg: rgba(34, 197, 94, 0.08);
+  --tile-emerald-border: rgba(34, 197, 94, 0.18);
+  --tile-violet-bg: rgba(167, 139, 250, 0.10);
   --tile-violet-border: rgba(167, 139, 250, 0.20);
-}
-
-/* Dark mode: slightly stronger opacity so icons read on dark bg */
-[data-theme='dark'] {
-  --tile-brand-bg:       rgba(34,  197, 94,  0.12);
-  --tile-brand-border:   rgba(34,  197, 94,  0.25);
-
-  --tile-orange-bg:      rgba(249, 115, 22,  0.12);
-  --tile-orange-border:  rgba(249, 115, 22,  0.25);
-
-  --tile-yellow-bg:      rgba(250, 204, 21,  0.12);
-  --tile-yellow-border:  rgba(250, 204, 21,  0.25);
-
-  --tile-blue-bg:        rgba(96,  165, 250, 0.12);
-  --tile-blue-border:    rgba(96,  165, 250, 0.25);
-
-  --tile-emerald-bg:     rgba(34,  197, 94,  0.10);
-  --tile-emerald-border: rgba(34,  197, 94,  0.22);
-
-  --tile-violet-bg:      rgba(167, 139, 250, 0.12);
-  --tile-violet-border:  rgba(167, 139, 250, 0.25);
 }
 
 [data-theme='dark'] {
   /* EMERALD DARK THEME */
   --bg-main: #000000;
-  --bg-surface: #0f172a; /* Slate 900 */
-  --text-main: #f8fafc;  /* Slate 50 */
-  --text-muted: #94a3b8; /* Slate 400 */
-  --border-color: #1e293b; /* Slate 800 */
+  --bg-surface: #0f172a; 
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --border-color: #1e293b;
 
+  --brand-error: #f87171;
+  --brand-danger: #f87171;
+  --brand-secondary: #7dd3fc;
+
+  /* DARK GLOWS */
   --glow-primary: rgba(34, 197, 94, 0.35);
-  --glow-streak:  rgba(249, 115, 22, 0.20);
+  --glow-secondary: rgba(125, 211, 252, 0.30);
+  --glow-streak: rgba(249, 115, 22, 0.20);
 
-  --streak-bg:     rgba(249, 115, 22, 0.12);
+  /* DARK COMPONENT STATES */
+  --streak-bg: rgba(249, 115, 22, 0.12);
   --streak-border: rgba(249, 115, 22, 0.25);
-
-  --color-on-brand: #ffffff;
-
-  --shadow-sm: rgba(0, 0, 0, 0.50);
-  --shadow-xs: rgba(0, 0, 0, 0.30);
-  --workout-bg:    rgba(34, 197, 94, 0.08);
-  --rest-bg:       rgba(34, 197, 94, 0.08);
-  --rest-border:   rgba(34, 197, 94, 0.30);
-  --missed-bg:     rgba(239, 68, 68, 0.08);
+  --workout-bg: rgba(34, 197, 94, 0.08);
+  --rest-bg: rgba(34, 197, 94, 0.08);
+  --rest-border: rgba(34, 197, 94, 0.30);
+  --missed-bg: rgba(239, 68, 68, 0.08);
   --missed-border: rgba(239, 68, 68, 0.30);
+  --danger-bg: rgba(248, 113, 113, 0.10);
+  --danger-border: rgba(248, 113, 113, 0.22);
 
-  --glow-primary: rgba(34, 197, 94, 0.35);
-  --glow-streak:  rgba(249, 115, 22, 0.20);
-
-  --streak-bg:     rgba(249, 115, 22, 0.12);
-  --streak-border: rgba(249, 115, 22, 0.25);
-
-  --color-on-brand: #ffffff;
-
+  /* DARK SHADOWS */
   --shadow-sm: rgba(0, 0, 0, 0.50);
   --shadow-xs: rgba(0, 0, 0, 0.30);
 
-  --workout-bg:    rgba(34, 197, 94, 0.08);
-  --rest-bg:       rgba(34, 197, 94, 0.08);
-  --rest-border:   rgba(34, 197, 94, 0.30);
-  --missed-bg:     rgba(239, 68, 68, 0.08);
-  --missed-border: rgba(239, 68, 68, 0.30);
+  /* DARK STAT TILE OPACITY */
+  --tile-brand-bg: rgba(34, 197, 94, 0.12);
+  --tile-brand-border: rgba(34, 197, 94, 0.25);
+  --tile-orange-bg: rgba(249, 115, 22, 0.12);
+  --tile-orange-border: rgba(249, 115, 22, 0.25);
+  --tile-yellow-bg: rgba(250, 204, 21, 0.12);
+  --tile-yellow-border: rgba(250, 204, 21, 0.25);
+  --tile-blue-bg: rgba(96, 165, 250, 0.12);
+  --tile-blue-border: rgba(96, 165, 250, 0.25);
+  --tile-emerald-bg: rgba(34, 197, 94, 0.10);
+  --tile-emerald-border: rgba(34, 197, 94, 0.22);
+  --tile-violet-bg: rgba(167, 139, 250, 0.12);
+  --tile-violet-border: rgba(167, 139, 250, 0.25);
 }
 
 /* ============================================= */
-/* RESET & CORE LAYOUT                            */
+/* RESET & CORE LAYOUT                           */
 /* ============================================= */
 
 *, *::before, *::after { 
@@ -192,11 +153,10 @@ html, body {
   background-color: var(--bg-main);
   color: var(--text-main);
   font-family: "Poppins", sans-serif;
-  overscroll-behavior-y: none; /* Prevents "bounce" on iOS */
+  overscroll-behavior-y: none;
   transition: background-color 0.3s ease;
 }
 
-/* 1. Outermost Wrapper */
 .app-root {
   min-height: 100%;
   display: flex;
@@ -208,7 +168,6 @@ html, body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  /* Ensure it takes at least the full height of the parent */
   min-height: 100%; 
   animation: page-fade 300ms ease-out forwards;
 }
@@ -222,36 +181,21 @@ html, body {
 /* SCROLLING & UTILITIES                         */
 /* ============================================= */
 
-/* Hide scrollbars globally */
 * { scrollbar-width: none; -ms-overflow-style: none; }
 *::-webkit-scrollbar { display: none; }
 
-.samsung-scroll {
-  -webkit-overflow-scrolling: touch;
-}
+.samsung-scroll { -webkit-overflow-scrolling: touch; }
 
-/* Standard selection color */
 ::selection {
   background-color: color-mix(in srgb, var(--brand-primary), transparent 85%);
   color: var(--brand-primary);
 }
 
 /* ============================================= */
-/* PRODUCTION COMPONENT SHADOWS                  */
+/* INPUTS & BUTTONS                              */
 /* ============================================= */
 
-@layer utilities {
-  .shadow-soft {
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03);
-  }
-}
-
-/* ============================================= */
-/* INPUT & BUTTON STANDARDS                      */
-/* ============================================= */
-
-input[type="date"],
-input[type="time"] {
+input[type="date"], input[type="time"] {
   display: block;
   appearance: none;
   -webkit-appearance: none;
@@ -259,7 +203,6 @@ input[type="time"] {
   color: inherit;
 }
 
-/* Remove blue fill from iOS autofill */
 input:-webkit-autofill,
 input:-webkit-autofill:hover, 
 input:-webkit-autofill:focus {
@@ -267,55 +210,34 @@ input:-webkit-autofill:focus {
   transition: background-color 5000s ease-in-out 0s;
 }
 
+/* ============================================= */
+/* CUSTOM UTILITIES                              */
+/* ============================================= */
+
 @layer utilities {
-  /* Shiny Aura for Light Mode (Clean, soft grey glow) */
+  .shadow-soft {
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+  }
+
   .nav-shadow-light {
-    box-shadow: 
-      0 0 15px 0px rgba(0, 0, 0, 0.05), /* Inner soft spread */
-      0 0 30px 2px rgba(15, 23, 42, 0.08); /* Outer grey-slate halo */
+    box-shadow: 0 0 15px 0px rgba(0, 0, 0, 0.05), 0 0 30px 2px rgba(15, 23, 42, 0.08);
   }
   
-  /* Neon Emerald Glow for Dark Mode (The "Shiny" effect) */
   .nav-shadow-dark {
     box-shadow: 
-      0 0 12px 0px color-mix(in srgb, var(--brand-primary), transparent 60%), /* Core glow */
-      0 0 35px 4px color-mix(in srgb, var(--brand-primary), transparent 85%); /* Large atmosphere */
+      0 0 12px 0px color-mix(in srgb, var(--brand-primary), transparent 60%),
+      0 0 35px 4px color-mix(in srgb, var(--brand-primary), transparent 85%);
+  }
+
+  .pt-notch { padding-top: env(safe-area-inset-top, 0px); }
+  .pt-safe-standard { padding-top: max(1.25rem, env(safe-area-inset-top)); }
+  .pt-notch-slim { padding-top: clamp(20px, env(safe-area-inset-top), 40px); }
+  .pt-safe-pro { padding-top: calc(env(safe-area-inset-top, 0px) * 0.8); }
+
+  .group:hover {
+    border-color: color-mix(in srgb, var(--tile-accent, var(--brand-primary)), transparent 60%);
   }
 }
-
-/* Add these specific utilities to index.css */
-@layer utilities {
-  /* Dynamic Safe Top: Uses the notch height or falls back to a clean 1rem (16px) */
-  .pt-notch {
-    padding-top: env(safe-area-inset-top, 0px);
-  }
-  
-  /* Use this for the "Balanced" look you want */
-  .pt-safe-standard {
-    padding-top: max(1.25rem, env(safe-area-inset-top));
-  }
-}
-
-@layer utilities {
-  /* Tight/Capped Notch: Minimum 20px, Maximum 40px */
-  .pt-notch-slim {
-    padding-top: clamp(20px, env(safe-area-inset-top), 40px);
-  }
-
-  /* Golden Ratio Notch: 80% of actual hardware notch 
-     (Standard for Performance/Fitness apps) */
-  .pt-safe-pro {
-    padding-top: calc(env(safe-area-inset-top, 0px) * 0.8);
-  }
-}
-
-/* ============================================= */
-/* card-glow utility (keep existing)             */
-/* ============================================= */
-
-/* ============================================= */
-/* card-glow utility (keep existing)             */
-/* ============================================= */
 
 .card-glow {
   box-shadow: 0 2px 8px var(--shadow-sm), 0 1px 2px var(--shadow-xs);
@@ -326,165 +248,13 @@ input:-webkit-autofill:focus {
     0 4px 24px var(--shadow-sm),
     0 1px 0 rgba(255, 255, 255, 0.05),
     0 0 40px rgba(34, 197, 94, 0.06);
-}
-
-/* ============================================= */
-/* Themed hover border — reads --tile-accent     */
-/* set inline on each StatTile                   */
-/* ============================================= */
-.group:hover {
-  border-color: color-mix(in srgb, var(--tile-accent, var(--brand-primary)), transparent 60%);
-}
-
-/* ============================================= */
-/* ADD TO :root in index.css                     */
-/* ============================================= */
-
-:root {
-  /* Glow shadows (rgba wrappers around brand colors) */
-  --glow-primary: rgba(34, 197, 94, 0.45);   /* emerald glow */
-  --glow-streak:  rgba(249, 115, 22, 0.15);  /* orange glow  */
-
-  /* Streak pill colors */
-  --brand-streak:   #f97316;                 /* orange-500   */
-  --streak-bg:      rgba(249, 115, 22, 0.08);
-  --streak-border:  rgba(249, 115, 22, 0.20);
-
-  /* Text on brand-primary bg (month band) */
-  --color-on-brand: #ffffff;
-
-  /* Card / element shadows */
-  --shadow-sm: rgba(0, 0, 0, 0.07);
-  --shadow-xs: rgba(0, 0, 0, 0.04);
-}
-
-/* ============================================= */
-/* ADD TO [data-theme='dark'] in index.css       */
-/* ============================================= */
-
-[data-theme='dark'] {
-  --glow-primary: rgba(34, 197, 94, 0.35);
-  --glow-streak:  rgba(249, 115, 22, 0.20);
-
-  --streak-bg:     rgba(249, 115, 22, 0.12);
-  --streak-border: rgba(249, 115, 22, 0.25);
-
-  --color-on-brand: #ffffff;
-
-  --shadow-sm: rgba(0, 0, 0, 0.50);
-  --shadow-xs: rgba(0, 0, 0, 0.30);
-}
-
-/* ============================================= */
-/* card-glow utility (keep existing)             */
-/* ============================================= */
-
-.card-glow {
-  box-shadow: 0 2px 8px var(--shadow-sm), 0 1px 2px var(--shadow-xs);
-}
-
-[data-theme='dark'] .card-glow {
-  box-shadow:
-    0 4px 24px var(--shadow-sm),
-    0 1px 0 rgba(255, 255, 255, 0.05),
-    0 0 40px rgba(34, 197, 94, 0.06);
-}
-
-/* ============================================= */
-/* CALENDAR DAY STATE TOKENS — add to :root      */
-/* ============================================= */
-/* (In your actual index.css, merge these into   */
-/*  the existing :root and dark blocks)          */
-
-:root {
-  --workout-bg:    rgba(34, 197, 94, 0.05);
-  --rest-bg:       rgba(34, 197, 94, 0.05);
-  --rest-border:   rgba(34, 197, 94, 0.35);
-  --brand-rest:    #22c55e;
-  --missed-bg:     rgba(239, 68, 68, 0.05);
-  --missed-border: rgba(239, 68, 68, 0.35);
-  --brand-missed:  #ef4444;
-}
-
-[data-theme='dark'] {
-  --workout-bg:    rgba(34, 197, 94, 0.08);
-  --rest-bg:       rgba(34, 197, 94, 0.08);
-  --rest-border:   rgba(34, 197, 94, 0.30);
-  --missed-bg:     rgba(239, 68, 68, 0.08);
-  --missed-border: rgba(239, 68, 68, 0.30);
-}
-
-/* ============================================= */
-/* STAT TILE TOKENS — merge into :root           */
-/* ============================================= */
-
-:root {
-  /* Per-color glow shadows */
-  --glow-yellow:  rgba(250, 204, 21, 0.35);
-  --glow-blue:    rgba(96,  165, 250, 0.35);
-  --glow-violet:  rgba(167, 139, 250, 0.35);
-
-  /* Brand colors for each tile theme */
-  --brand-yellow: #facc15;
-  --brand-blue:   #60a5fa;
-  --brand-violet: #a78bfa;
-
-  /* Icon container: bg + border per theme */
-  --tile-brand-bg:      rgba(34,  197, 94,  0.10);
-  --tile-brand-border:  rgba(34,  197, 94,  0.20);
-
-  --tile-orange-bg:     rgba(249, 115, 22,  0.10);
-  --tile-orange-border: rgba(249, 115, 22,  0.20);
-
-  --tile-yellow-bg:     rgba(250, 204, 21,  0.10);
-  --tile-yellow-border: rgba(250, 204, 21,  0.20);
-
-  --tile-blue-bg:       rgba(96,  165, 250, 0.10);
-  --tile-blue-border:   rgba(96,  165, 250, 0.20);
-
-  --tile-emerald-bg:    rgba(34,  197, 94,  0.08);
-  --tile-emerald-border:rgba(34,  197, 94,  0.18);
-
-  --tile-violet-bg:     rgba(167, 139, 250, 0.10);
-  --tile-violet-border: rgba(167, 139, 250, 0.20);
-}
-
-/* Dark mode: slightly stronger opacity so icons read on dark bg */
-[data-theme='dark'] {
-  --tile-brand-bg:       rgba(34,  197, 94,  0.12);
-  --tile-brand-border:   rgba(34,  197, 94,  0.25);
-
-  --tile-orange-bg:      rgba(249, 115, 22,  0.12);
-  --tile-orange-border:  rgba(249, 115, 22,  0.25);
-
-  --tile-yellow-bg:      rgba(250, 204, 21,  0.12);
-  --tile-yellow-border:  rgba(250, 204, 21,  0.25);
-
-  --tile-blue-bg:        rgba(96,  165, 250, 0.12);
-  --tile-blue-border:    rgba(96,  165, 250, 0.25);
-
-  --tile-emerald-bg:     rgba(34,  197, 94,  0.10);
-  --tile-emerald-border: rgba(34,  197, 94,  0.22);
-
-  --tile-violet-bg:      rgba(167, 139, 250, 0.12);
-  --tile-violet-border:  rgba(167, 139, 250, 0.25);
-}
-
-/* ============================================= */
-/* Themed hover border — reads --tile-accent     */
-/* set inline on each StatTile                   */
-/* ============================================= */
-.group:hover {
-  border-color: color-mix(in srgb, var(--tile-accent, var(--brand-primary)), transparent 60%);
 }
 
 /* ============================================= */
 /* MUSCLE TAG COMPONENT                          */
 /* ============================================= */
 
-.muscle-tag {
-  position: relative;
-}
+.muscle-tag { position: relative; }
 
 .muscle-tag-bg {
   position: absolute;
@@ -533,684 +303,83 @@ input:-webkit-autofill:focus {
 }
 
 /* ============================================= */
-/* ADD TO :root in index.css                     */
+/* BRAND OVERRIDES (Core & Tiles)                */
 /* ============================================= */
 
-:root {
-  /* Glow shadows (rgba wrappers around brand colors) */
-  --glow-primary: rgba(34, 197, 94, 0.45);   /* emerald glow */
-  --glow-streak:  rgba(249, 115, 22, 0.15);  /* orange glow  */
-
-  /* Streak pill colors */
-  --brand-streak:   #f97316;                 /* orange-500   */
-  --streak-bg:      rgba(249, 115, 22, 0.08);
-  --streak-border:  rgba(249, 115, 22, 0.20);
-
-  /* Text on brand-primary bg (month band) */
-  --color-on-brand: #ffffff;
-
-  /* Card / element shadows */
-  --shadow-sm: rgba(0, 0, 0, 0.07);
-  --shadow-xs: rgba(0, 0, 0, 0.04);
+/* 1. CORAL */
+[data-brand='coral'] {
+  --brand-primary: #ff7f50;
+  --brand-success: #ff7f50;
+  --glow-primary: rgba(255, 127, 80, 0.45);
+  --active-secondary: #e67348;
+  --tile-emerald-bg: rgba(255, 127, 80, 0.10);
+  --tile-emerald-border: rgba(255, 127, 80, 0.20);
+}
+[data-theme='dark'][data-brand='coral'] {
+  --glow-primary: rgba(255, 127, 80, 0.35);
 }
 
-/* ============================================= */
-/* ADD TO [data-theme='dark'] in index.css       */
-/* ============================================= */
-
-[data-theme='dark'] {
-  --glow-primary: rgba(34, 197, 94, 0.35);
-  --glow-streak:  rgba(249, 115, 22, 0.20);
-
-  --streak-bg:     rgba(249, 115, 22, 0.12);
-  --streak-border: rgba(249, 115, 22, 0.25);
-
-  --color-on-brand: #ffffff;
-
-  --shadow-sm: rgba(0, 0, 0, 0.50);
-  --shadow-xs: rgba(0, 0, 0, 0.30);
+/* 2. HOT PINK */
+[data-brand='hotpink'] {
+  --brand-primary: #ff69b4;
+  --brand-success: #ff69b4;
+  --glow-primary: rgba(255, 105, 180, 0.45);
+  --active-secondary: #e65fa3;
+  --tile-emerald-bg: rgba(255, 105, 180, 0.10);
+  --tile-emerald-border: rgba(255, 105, 180, 0.20);
+}
+[data-theme='dark'][data-brand='hotpink'] {
+  --glow-primary: rgba(255, 105, 180, 0.35);
 }
 
-/* ============================================= */
-/* card-glow utility (keep existing)             */
-/* ============================================= */
-
-.card-glow {
-  box-shadow: 0 2px 8px var(--shadow-sm), 0 1px 2px var(--shadow-xs);
+/* 3. TOMATO */
+[data-brand='tomato'] {
+  --brand-primary: #ff6347;
+  --brand-success: #ff6347;
+  --glow-primary: rgba(255, 99, 71, 0.45);
+  --active-secondary: #e65940;
+  --tile-emerald-bg: rgba(255, 99, 71, 0.10);
+  --tile-emerald-border: rgba(255, 99, 71, 0.20);
+}
+[data-theme='dark'][data-brand='tomato'] {
+  --glow-primary: rgba(255, 99, 71, 0.35);
 }
 
-[data-theme='dark'] .card-glow {
-  box-shadow:
-    0 4px 24px var(--shadow-sm),
-    0 1px 0 rgba(255, 255, 255, 0.05),
-    0 0 40px rgba(34, 197, 94, 0.06);
+/* 4. SPRING GREEN */
+[data-brand='springgreen'] {
+  --brand-primary: #00ff7f;
+  --brand-success: #00ff7f;
+  --glow-primary: rgba(0, 255, 127, 0.45);
+  --active-secondary: #00e672;
+  --tile-emerald-bg: rgba(0, 255, 127, 0.10);
+  --tile-emerald-border: rgba(0, 255, 127, 0.20);
+}
+[data-theme='dark'][data-brand='springgreen'] {
+  --glow-primary: rgba(0, 255, 127, 0.35);
 }
 
-/* ============================================= */
-/* CALENDAR DAY STATE TOKENS — add to :root      */
-/* ============================================= */
-/* (In your actual index.css, merge these into   */
-/*  the existing :root and dark blocks)          */
-
-:root {
-  --workout-bg:    rgba(34, 197, 94, 0.05);
-  --rest-bg:       rgba(34, 197, 94, 0.05);
-  --rest-border:   rgba(34, 197, 94, 0.35);
-  --brand-rest:    #22c55e;
-  --missed-bg:     rgba(239, 68, 68, 0.05);
-  --missed-border: rgba(239, 68, 68, 0.35);
-  --brand-missed:  #ef4444;
+/* 5. VIOLET */
+[data-brand='violet'] {
+  --brand-primary: #8f00ff;
+  --brand-success: #8f00ff;
+  --glow-primary: rgba(143, 0, 255, 0.45);
+  --active-secondary: #8100e6;
+  --tile-emerald-bg: rgba(143, 0, 255, 0.10);
+  --tile-emerald-border: rgba(143, 0, 255, 0.20);
+}
+[data-theme='dark'][data-brand='violet'] {
+  --glow-primary: rgba(143, 0, 255, 0.35);
 }
 
-[data-theme='dark'] {
-  --workout-bg:    rgba(34, 197, 94, 0.08);
-  --rest-bg:       rgba(34, 197, 94, 0.08);
-  --rest-border:   rgba(34, 197, 94, 0.30);
-  --missed-bg:     rgba(239, 68, 68, 0.08);
-  --missed-border: rgba(239, 68, 68, 0.30);
+/* 6. ORANGE (As defined in your CacheDataLoader fallback) */
+[data-brand='orange'] {
+  --brand-primary: #f97316;
+  --brand-success: #f97316;
+  --glow-primary: rgba(249, 115, 22, 0.45);
+  --active-secondary: #ea580c;
+  --tile-emerald-bg: rgba(249, 115, 22, 0.10);
+  --tile-emerald-border: rgba(249, 115, 22, 0.20);
 }
-
-/* ============================================= */
-/* STAT TILE TOKENS — merge into :root           */
-/* ============================================= */
-
-:root {
-  /* Per-color glow shadows */
-  --glow-yellow:  rgba(250, 204, 21, 0.35);
-  --glow-blue:    rgba(96,  165, 250, 0.35);
-  --glow-violet:  rgba(167, 139, 250, 0.35);
-
-  /* Brand colors for each tile theme */
-  --brand-yellow: #facc15;
-  --brand-blue:   #60a5fa;
-  --brand-violet: #a78bfa;
-
-  /* Icon container: bg + border per theme */
-  --tile-brand-bg:      rgba(34,  197, 94,  0.10);
-  --tile-brand-border:  rgba(34,  197, 94,  0.20);
-
-  --tile-orange-bg:     rgba(249, 115, 22,  0.10);
-  --tile-orange-border: rgba(249, 115, 22,  0.20);
-
-  --tile-yellow-bg:     rgba(250, 204, 21,  0.10);
-  --tile-yellow-border: rgba(250, 204, 21,  0.20);
-
-  --tile-blue-bg:       rgba(96,  165, 250, 0.10);
-  --tile-blue-border:   rgba(96,  165, 250, 0.20);
-
-  --tile-emerald-bg:    rgba(34,  197, 94,  0.08);
-  --tile-emerald-border:rgba(34,  197, 94,  0.18);
-
-  --tile-violet-bg:     rgba(167, 139, 250, 0.10);
-  --tile-violet-border: rgba(167, 139, 250, 0.20);
-}
-
-/* Dark mode: slightly stronger opacity so icons read on dark bg */
-[data-theme='dark'] {
-  --tile-brand-bg:       rgba(34,  197, 94,  0.12);
-  --tile-brand-border:   rgba(34,  197, 94,  0.25);
-
-  --tile-orange-bg:      rgba(249, 115, 22,  0.12);
-  --tile-orange-border:  rgba(249, 115, 22,  0.25);
-
-  --tile-yellow-bg:      rgba(250, 204, 21,  0.12);
-  --tile-yellow-border:  rgba(250, 204, 21,  0.25);
-
-  --tile-blue-bg:        rgba(96,  165, 250, 0.12);
-  --tile-blue-border:    rgba(96,  165, 250, 0.25);
-
-  --tile-emerald-bg:     rgba(34,  197, 94,  0.10);
-  --tile-emerald-border: rgba(34,  197, 94,  0.22);
-
-  --tile-violet-bg:      rgba(167, 139, 250, 0.12);
-  --tile-violet-border:  rgba(167, 139, 250, 0.25);
-}
-
-/* ============================================= */
-/* Themed hover border — reads --tile-accent     */
-/* set inline on each StatTile                   */
-/* ============================================= */
-.group:hover {
-  border-color: color-mix(in srgb, var(--tile-accent, var(--brand-primary)), transparent 60%);
-}
-
-/* ============================================= */
-/* MUSCLE TAG COMPONENT                          */
-/* ============================================= */
-
-.muscle-tag {
-  position: relative;
-}
-
-.muscle-tag-bg {
-  position: absolute;
-  inset: 0;
-  transform: skewX(-12deg);
-  border-radius: 0.5rem;
-  background-color: var(--bg-main);
-  border: 1px solid var(--border-color);
-  transition: border-color 300ms ease, box-shadow 300ms ease;
-}
-
-.muscle-tag:hover .muscle-tag-bg {
-  border-color: color-mix(in srgb, var(--brand-primary), transparent 55%);
-  box-shadow: 0 0 10px var(--glow-primary);
-}
-
-.muscle-tag-dot {
-  width: 4px;
-  height: 4px;
-  border-radius: 9999px;
-  background-color: color-mix(in srgb, var(--text-muted), transparent 60%);
-  transition: background-color 300ms ease, box-shadow 300ms ease;
-  flex-shrink: 0;
-}
-
-.muscle-tag:hover .muscle-tag-dot {
-  background-color: var(--brand-primary);
-  box-shadow: 0 0 5px var(--glow-primary);
-}
-
-.muscle-tag-label {
-  font-size: 9px;
-  font-weight: 900;
-  text-transform: uppercase;
-  font-style: italic;
-  color: var(--text-muted);
-  letter-spacing: 0.1em;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  transition: color 300ms ease;
-}
-
-.muscle-tag:hover .muscle-tag-label {
-  color: var(--text-main);
-}
-
-/* ============================================= */
-/* SEMANTIC TOKENS — merge into :root            */
-/* ============================================= */
-
-:root {
-  --brand-danger:  #ef4444;   /* red-500 — destructive actions  */
-  --brand-success: #22c55e;   /* same as brand-primary for now   */
-}
-
-[data-theme='dark'] {
-  --brand-danger:  #f87171;   /* red-400 — slightly lighter on dark bg */
-}
-/* ============================================= */
-/* ADD TO :root in index.css                     */
-/* ============================================= */
-
-:root {
-  /* Glow shadows (rgba wrappers around brand colors) */
-  --glow-primary: rgba(34, 197, 94, 0.45);   /* emerald glow */
-  --glow-streak:  rgba(249, 115, 22, 0.15);  /* orange glow  */
-
-  /* Streak pill colors */
-  --brand-streak:   #f97316;                 /* orange-500   */
-  --streak-bg:      rgba(249, 115, 22, 0.08);
-  --streak-border:  rgba(249, 115, 22, 0.20);
-
-  /* Text on brand-primary bg (month band) */
-  --color-on-brand: #ffffff;
-
-  /* Card / element shadows */
-  --shadow-sm: rgba(0, 0, 0, 0.07);
-  --shadow-xs: rgba(0, 0, 0, 0.04);
-}
-
-/* ============================================= */
-/* ADD TO [data-theme='dark'] in index.css       */
-/* ============================================= */
-
-[data-theme='dark'] {
-  --glow-primary: rgba(34, 197, 94, 0.35);
-  --glow-streak:  rgba(249, 115, 22, 0.20);
-
-  --streak-bg:     rgba(249, 115, 22, 0.12);
-  --streak-border: rgba(249, 115, 22, 0.25);
-
-  --color-on-brand: #ffffff;
-
-  --shadow-sm: rgba(0, 0, 0, 0.50);
-  --shadow-xs: rgba(0, 0, 0, 0.30);
-}
-
-/* ============================================= */
-/* card-glow utility (keep existing)             */
-/* ============================================= */
-
-.card-glow {
-  box-shadow: 0 2px 8px var(--shadow-sm), 0 1px 2px var(--shadow-xs);
-}
-
-[data-theme='dark'] .card-glow {
-  box-shadow:
-    0 4px 24px var(--shadow-sm),
-    0 1px 0 rgba(255, 255, 255, 0.05),
-    0 0 40px rgba(34, 197, 94, 0.06);
-}
-
-/* ============================================= */
-/* CALENDAR DAY STATE TOKENS — add to :root      */
-/* ============================================= */
-/* (In your actual index.css, merge these into   */
-/*  the existing :root and dark blocks)          */
-
-:root {
-  --workout-bg:    rgba(34, 197, 94, 0.05);
-  --rest-bg:       rgba(34, 197, 94, 0.05);
-  --rest-border:   rgba(34, 197, 94, 0.35);
-  --brand-rest:    #22c55e;
-  --missed-bg:     rgba(239, 68, 68, 0.05);
-  --missed-border: rgba(239, 68, 68, 0.35);
-  --brand-missed:  #ef4444;
-}
-
-[data-theme='dark'] {
-  --workout-bg:    rgba(34, 197, 94, 0.08);
-  --rest-bg:       rgba(34, 197, 94, 0.08);
-  --rest-border:   rgba(34, 197, 94, 0.30);
-  --missed-bg:     rgba(239, 68, 68, 0.08);
-  --missed-border: rgba(239, 68, 68, 0.30);
-}
-
-/* ============================================= */
-/* STAT TILE TOKENS — merge into :root           */
-/* ============================================= */
-
-:root {
-  /* Per-color glow shadows */
-  --glow-yellow:  rgba(250, 204, 21, 0.35);
-  --glow-blue:    rgba(96,  165, 250, 0.35);
-  --glow-violet:  rgba(167, 139, 250, 0.35);
-
-  /* Brand colors for each tile theme */
-  --brand-yellow: #facc15;
-  --brand-blue:   #60a5fa;
-  --brand-violet: #a78bfa;
-
-  /* Icon container: bg + border per theme */
-  --tile-brand-bg:      rgba(34,  197, 94,  0.10);
-  --tile-brand-border:  rgba(34,  197, 94,  0.20);
-
-  --tile-orange-bg:     rgba(249, 115, 22,  0.10);
-  --tile-orange-border: rgba(249, 115, 22,  0.20);
-
-  --tile-yellow-bg:     rgba(250, 204, 21,  0.10);
-  --tile-yellow-border: rgba(250, 204, 21,  0.20);
-
-  --tile-blue-bg:       rgba(96,  165, 250, 0.10);
-  --tile-blue-border:   rgba(96,  165, 250, 0.20);
-
-  --tile-emerald-bg:    rgba(34,  197, 94,  0.08);
-  --tile-emerald-border:rgba(34,  197, 94,  0.18);
-
-  --tile-violet-bg:     rgba(167, 139, 250, 0.10);
-  --tile-violet-border: rgba(167, 139, 250, 0.20);
-}
-
-/* Dark mode: slightly stronger opacity so icons read on dark bg */
-[data-theme='dark'] {
-  --tile-brand-bg:       rgba(34,  197, 94,  0.12);
-  --tile-brand-border:   rgba(34,  197, 94,  0.25);
-
-  --tile-orange-bg:      rgba(249, 115, 22,  0.12);
-  --tile-orange-border:  rgba(249, 115, 22,  0.25);
-
-  --tile-yellow-bg:      rgba(250, 204, 21,  0.12);
-  --tile-yellow-border:  rgba(250, 204, 21,  0.25);
-
-  --tile-blue-bg:        rgba(96,  165, 250, 0.12);
-  --tile-blue-border:    rgba(96,  165, 250, 0.25);
-
-  --tile-emerald-bg:     rgba(34,  197, 94,  0.10);
-  --tile-emerald-border: rgba(34,  197, 94,  0.22);
-
-  --tile-violet-bg:      rgba(167, 139, 250, 0.12);
-  --tile-violet-border:  rgba(167, 139, 250, 0.25);
-}
-
-/* ============================================= */
-/* Themed hover border — reads --tile-accent     */
-/* set inline on each StatTile                   */
-/* ============================================= */
-.group:hover {
-  border-color: color-mix(in srgb, var(--tile-accent, var(--brand-primary)), transparent 60%);
-}
-
-/* ============================================= */
-/* MUSCLE TAG COMPONENT                          */
-/* ============================================= */
-
-.muscle-tag {
-  position: relative;
-}
-
-.muscle-tag-bg {
-  position: absolute;
-  inset: 0;
-  transform: skewX(-12deg);
-  border-radius: 0.5rem;
-  background-color: var(--bg-main);
-  border: 1px solid var(--border-color);
-  transition: border-color 300ms ease, box-shadow 300ms ease;
-}
-
-.muscle-tag:hover .muscle-tag-bg {
-  border-color: color-mix(in srgb, var(--brand-primary), transparent 55%);
-  box-shadow: 0 0 10px var(--glow-primary);
-}
-
-.muscle-tag-dot {
-  width: 4px;
-  height: 4px;
-  border-radius: 9999px;
-  background-color: color-mix(in srgb, var(--text-muted), transparent 60%);
-  transition: background-color 300ms ease, box-shadow 300ms ease;
-  flex-shrink: 0;
-}
-
-.muscle-tag:hover .muscle-tag-dot {
-  background-color: var(--brand-primary);
-  box-shadow: 0 0 5px var(--glow-primary);
-}
-
-.muscle-tag-label {
-  font-size: 9px;
-  font-weight: 900;
-  text-transform: uppercase;
-  font-style: italic;
-  color: var(--text-muted);
-  letter-spacing: 0.1em;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  transition: color 300ms ease;
-}
-
-.muscle-tag:hover .muscle-tag-label {
-  color: var(--text-main);
-}
-
-/* ============================================= */
-/* SEMANTIC TOKENS — merge into :root            */
-/* ============================================= */
-
-:root {
-  --brand-danger:  #ef4444;   /* red-500 — destructive actions  */
-  --brand-success: #22c55e;   /* same as brand-primary for now   */
-}
-
-[data-theme='dark'] {
-  --brand-danger:  #f87171;   /* red-400 — slightly lighter on dark bg */
-}
-
-/* ============================================= */
-/* SECONDARY BRAND COLOR                         */
-/* Used for bilateral metric second column,      */
-/* second chart line, etc.                       */
-/* ============================================= */
-
-:root {
-  --brand-secondary: #38bdf8;   /* sky-400 — pairs cleanly with emerald */
-}
-
-[data-theme='dark'] {
-  --brand-secondary: #7dd3fc;   /* sky-300 — slightly lighter on dark bg */
-}
-/* ============================================= */
-/* ADD TO :root in index.css                     */
-/* ============================================= */
-
-:root {
-  /* Glow shadows (rgba wrappers around brand colors) */
-  --glow-primary: rgba(34, 197, 94, 0.45);   /* emerald glow */
-  --glow-streak:  rgba(249, 115, 22, 0.15);  /* orange glow  */
-
-  /* Streak pill colors */
-  --brand-streak:   #f97316;                 /* orange-500   */
-  --streak-bg:      rgba(249, 115, 22, 0.08);
-  --streak-border:  rgba(249, 115, 22, 0.20);
-
-  /* Text on brand-primary bg (month band) */
-  --color-on-brand: #ffffff;
-
-  /* Card / element shadows */
-  --shadow-sm: rgba(0, 0, 0, 0.07);
-  --shadow-xs: rgba(0, 0, 0, 0.04);
-}
-
-/* ============================================= */
-/* ADD TO [data-theme='dark'] in index.css       */
-/* ============================================= */
-
-[data-theme='dark'] {
-  --glow-primary: rgba(34, 197, 94, 0.35);
-  --glow-streak:  rgba(249, 115, 22, 0.20);
-
-  --streak-bg:     rgba(249, 115, 22, 0.12);
-  --streak-border: rgba(249, 115, 22, 0.25);
-
-  --color-on-brand: #ffffff;
-
-  --shadow-sm: rgba(0, 0, 0, 0.50);
-  --shadow-xs: rgba(0, 0, 0, 0.30);
-}
-
-/* ============================================= */
-/* card-glow utility (keep existing)             */
-/* ============================================= */
-
-.card-glow {
-  box-shadow: 0 2px 8px var(--shadow-sm), 0 1px 2px var(--shadow-xs);
-}
-
-[data-theme='dark'] .card-glow {
-  box-shadow:
-    0 4px 24px var(--shadow-sm),
-    0 1px 0 rgba(255, 255, 255, 0.05),
-    0 0 40px rgba(34, 197, 94, 0.06);
-}
-
-/* ============================================= */
-/* CALENDAR DAY STATE TOKENS — add to :root      */
-/* ============================================= */
-/* (In your actual index.css, merge these into   */
-/*  the existing :root and dark blocks)          */
-
-:root {
-  --workout-bg:    rgba(34, 197, 94, 0.05);
-  --rest-bg:       rgba(34, 197, 94, 0.05);
-  --rest-border:   rgba(34, 197, 94, 0.35);
-  --brand-rest:    #22c55e;
-  --missed-bg:     rgba(239, 68, 68, 0.05);
-  --missed-border: rgba(239, 68, 68, 0.35);
-  --brand-missed:  #ef4444;
-}
-
-[data-theme='dark'] {
-  --workout-bg:    rgba(34, 197, 94, 0.08);
-  --rest-bg:       rgba(34, 197, 94, 0.08);
-  --rest-border:   rgba(34, 197, 94, 0.30);
-  --missed-bg:     rgba(239, 68, 68, 0.08);
-  --missed-border: rgba(239, 68, 68, 0.30);
-}
-
-/* ============================================= */
-/* STAT TILE TOKENS — merge into :root           */
-/* ============================================= */
-
-:root {
-  /* Per-color glow shadows */
-  --glow-yellow:  rgba(250, 204, 21, 0.35);
-  --glow-blue:    rgba(96,  165, 250, 0.35);
-  --glow-violet:  rgba(167, 139, 250, 0.35);
-
-  /* Brand colors for each tile theme */
-  --brand-yellow: #facc15;
-  --brand-blue:   #60a5fa;
-  --brand-violet: #a78bfa;
-
-  /* Icon container: bg + border per theme */
-  --tile-brand-bg:      rgba(34,  197, 94,  0.10);
-  --tile-brand-border:  rgba(34,  197, 94,  0.20);
-
-  --tile-orange-bg:     rgba(249, 115, 22,  0.10);
-  --tile-orange-border: rgba(249, 115, 22,  0.20);
-
-  --tile-yellow-bg:     rgba(250, 204, 21,  0.10);
-  --tile-yellow-border: rgba(250, 204, 21,  0.20);
-
-  --tile-blue-bg:       rgba(96,  165, 250, 0.10);
-  --tile-blue-border:   rgba(96,  165, 250, 0.20);
-
-  --tile-emerald-bg:    rgba(34,  197, 94,  0.08);
-  --tile-emerald-border:rgba(34,  197, 94,  0.18);
-
-  --tile-violet-bg:     rgba(167, 139, 250, 0.10);
-  --tile-violet-border: rgba(167, 139, 250, 0.20);
-}
-
-/* Dark mode: slightly stronger opacity so icons read on dark bg */
-[data-theme='dark'] {
-  --tile-brand-bg:       rgba(34,  197, 94,  0.12);
-  --tile-brand-border:   rgba(34,  197, 94,  0.25);
-
-  --tile-orange-bg:      rgba(249, 115, 22,  0.12);
-  --tile-orange-border:  rgba(249, 115, 22,  0.25);
-
-  --tile-yellow-bg:      rgba(250, 204, 21,  0.12);
-  --tile-yellow-border:  rgba(250, 204, 21,  0.25);
-
-  --tile-blue-bg:        rgba(96,  165, 250, 0.12);
-  --tile-blue-border:    rgba(96,  165, 250, 0.25);
-
-  --tile-emerald-bg:     rgba(34,  197, 94,  0.10);
-  --tile-emerald-border: rgba(34,  197, 94,  0.22);
-
-  --tile-violet-bg:      rgba(167, 139, 250, 0.12);
-  --tile-violet-border:  rgba(167, 139, 250, 0.25);
-}
-
-/* ============================================= */
-/* Themed hover border — reads --tile-accent     */
-/* set inline on each StatTile                   */
-/* ============================================= */
-.group:hover {
-  border-color: color-mix(in srgb, var(--tile-accent, var(--brand-primary)), transparent 60%);
-}
-
-/* ============================================= */
-/* MUSCLE TAG COMPONENT                          */
-/* ============================================= */
-
-.muscle-tag {
-  position: relative;
-}
-
-.muscle-tag-bg {
-  position: absolute;
-  inset: 0;
-  transform: skewX(-12deg);
-  border-radius: 0.5rem;
-  background-color: var(--bg-main);
-  border: 1px solid var(--border-color);
-  transition: border-color 300ms ease, box-shadow 300ms ease;
-}
-
-.muscle-tag:hover .muscle-tag-bg {
-  border-color: color-mix(in srgb, var(--brand-primary), transparent 55%);
-  box-shadow: 0 0 10px var(--glow-primary);
-}
-
-.muscle-tag-dot {
-  width: 4px;
-  height: 4px;
-  border-radius: 9999px;
-  background-color: color-mix(in srgb, var(--text-muted), transparent 60%);
-  transition: background-color 300ms ease, box-shadow 300ms ease;
-  flex-shrink: 0;
-}
-
-.muscle-tag:hover .muscle-tag-dot {
-  background-color: var(--brand-primary);
-  box-shadow: 0 0 5px var(--glow-primary);
-}
-
-.muscle-tag-label {
-  font-size: 9px;
-  font-weight: 900;
-  text-transform: uppercase;
-  font-style: italic;
-  color: var(--text-muted);
-  letter-spacing: 0.1em;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  transition: color 300ms ease;
-}
-
-.muscle-tag:hover .muscle-tag-label {
-  color: var(--text-main);
-}
-
-/* ============================================= */
-/* SEMANTIC TOKENS — merge into :root            */
-/* ============================================= */
-
-:root {
-  --brand-danger:  #ef4444;   /* red-500 — destructive actions  */
-  --brand-success: #22c55e;   /* same as brand-primary for now   */
-}
-
-[data-theme='dark'] {
-  --brand-danger:  #f87171;   /* red-400 — slightly lighter on dark bg */
-}
-
-/* ============================================= */
-/* SECONDARY BRAND COLOR                         */
-/* Used for bilateral metric second column,      */
-/* second chart line, etc.                       */
-/* ============================================= */
-
-:root {
-  --brand-secondary: #38bdf8;   /* sky-400 — pairs cleanly with emerald */
-}
-
-[data-theme='dark'] {
-  --brand-secondary: #7dd3fc;   /* sky-300 — slightly lighter on dark bg */
-}
-
-/* ============================================= */
-/* SECONDARY GLOW — matches --brand-secondary    */
-/* ============================================= */
-
-:root {
-  --glow-secondary: rgba(56, 189, 248, 0.35);  /* sky-400 glow */
-}
-
-[data-theme='dark'] {
-  --glow-secondary: rgba(125, 211, 252, 0.30); /* sky-300 glow */
-}
-/* ============================================= */
-/* DANGER / ERROR STATE TOKENS                   */
-/* Add to :root and [data-theme='dark'] blocks   */
-/* ============================================= */
-
-/* :root additions */
-:root {
-  --brand-error:   #ef4444;              /* alias of brand-danger        */
-  --danger-bg:     rgba(239, 68, 68, 0.08);
-  --danger-border: rgba(239, 68, 68, 0.18);
-}
-
-/* [data-theme='dark'] additions */
-[data-theme='dark'] {
-  --brand-error:   #f87171;              /* red-400 — lighter on dark bg */
-  --danger-bg:     rgba(248, 113, 113, 0.10);
-  --danger-border: rgba(248, 113, 113, 0.22);
+[data-theme='dark'][data-brand='orange'] {
+  --glow-primary: rgba(249, 115, 22, 0.35);
 }

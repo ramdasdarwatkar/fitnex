@@ -1,9 +1,18 @@
 import { useState, type ReactNode } from "react";
-import { Moon, Sun, Check, Sparkles, Paintbrush } from "lucide-react";
+import {
+  Moon,
+  Sun,
+  Check,
+  Sparkles,
+  Paintbrush,
+  RefreshCcw,
+  Save,
+} from "lucide-react";
 import { SubPageLayout } from "../../components/layout/SubPageLayout";
 import { useTheme } from "../../hooks/useTheme";
+import { useAuth } from "../../hooks/useAuth";
+import { AppSettingsService } from "../../services/AppSettingsService";
 
-// 1. Strict Interfaces
 interface ThemeCardProps {
   active: boolean;
   onClick: () => void;
@@ -12,54 +21,74 @@ interface ThemeCardProps {
   desc: string;
 }
 
-// IDs must match your [data-accent='id'] selectors in index.css
 const BRAND_PALETTE = [
-  { name: "Fitnex Orange", id: "orange", hex: "#ff7f50" },
-  { name: "Electric Blue", id: "blue", hex: "#3b82f6" },
-  { name: "Cyber Green", id: "emerald", hex: "#10b981" },
-  { name: "Neon Purple", id: "violet", hex: "#a855f7" },
-  { name: "Crimson Red", id: "rose", hex: "#ef4444" },
-  { name: "Zinc Slate", id: "zinc", hex: "#71717a" },
+  { name: "Emerald", id: "emerald", hex: "#22c55e" },
+  { name: "Coral", id: "coral", hex: "#FF7F50" },
+  { name: "HotPink", id: "hotpink", hex: "#FF69B4" },
+  { name: "Tomato", id: "tomato", hex: "#FF6347" },
+  { name: "SpringGreen", id: "springgreen", hex: "#00FF7F" },
+  { name: "Violet", id: "violet", hex: "#EE82EE" },
 ];
 
 export const ProfileTheme = () => {
   const { theme, brandColor, setTheme, setBrandColor } = useTheme();
+  const { user_id } = useAuth();
+  const [applying, setApplying] = useState(false);
 
-  /**
-   * 1. INITIALIZE STATE DIRECTLY
-   * By seeding useState with context values, we avoid the need for
-   * a useEffect sync, which prevents the "cascading render" error.
-   */
   const [pendingTheme, setPendingTheme] = useState<"dark" | "light">(theme);
   const [pendingColor, setPendingColor] = useState(brandColor);
 
-  /**
-   * 2. APPLY CHANGES
-   * Updates Dexie via ThemeContext.
-   * ThemeProvider watches Dexie and applies the [data-accent] attribute.
-   */
   const handleApply = async () => {
+    if (!user_id || applying) return;
+    setApplying(true);
     try {
+      // 1. Update Context/State
       await setTheme(pendingTheme);
       await setBrandColor(pendingColor);
+
+      // 2. Persist to AppSettingsService
+      await AppSettingsService.updateLocalAppSettings(
+        user_id,
+        pendingTheme,
+        pendingColor,
+      );
     } catch (error) {
       console.error("Failed to update appearance:", error);
+    } finally {
+      setApplying(false);
     }
   };
 
-  return (
-    <SubPageLayout title="Appearance">
-      <div className="space-y-10 pb-10 bg-bg-main animate-in fade-in duration-500">
-        {/* VISUAL MODE SECTION */}
-        <section>
-          <div className="flex items-center gap-3 mb-5 px-3">
-            <Sparkles size={14} className="text-brand-primary" />
-            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted italic">
-              Visual Mode
-            </h2>
-          </div>
+  // --- FOOTER ACTION ---
+  const applyButton = (
+    <button
+      disabled={applying}
+      onClick={handleApply}
+      className="w-full h-16 bg-brand-primary rounded-2xl
+                 text-base font-black uppercase italic tracking-[0.25em]
+                 flex items-center justify-center gap-3
+                 active:scale-[0.98] transition-all disabled:opacity-30"
+      style={{
+        color: "var(--color-on-brand)",
+        boxShadow: "0 4px 24px var(--glow-primary)",
+      }}
+    >
+      {applying ? (
+        <RefreshCcw size={22} className="animate-spin" />
+      ) : (
+        <Save size={22} strokeWidth={2.5} />
+      )}
+      <span>{applying ? "Syncing..." : "Apply Changes"}</span>
+    </button>
+  );
 
-          <div className="grid grid-cols-2 gap-3">
+  return (
+    <SubPageLayout title="Appearance" footer={applyButton}>
+      <div className="space-y-10 pt-2 pb-10 animate-in fade-in duration-500">
+        {/* VISUAL MODE */}
+        <section className="space-y-5">
+          <SectionLabel icon={<Sparkles size={13} />} title="Visual Mode" />
+          <div className="grid grid-cols-2 gap-3 px-1">
             <ThemeCard
               active={pendingTheme === "dark"}
               onClick={() => setPendingTheme("dark")}
@@ -77,16 +106,10 @@ export const ProfileTheme = () => {
           </div>
         </section>
 
-        {/* ACCENT COLOR SECTION */}
-        <section>
-          <div className="flex items-center gap-3 mb-5 px-3">
-            <Paintbrush size={14} className="text-brand-primary" />
-            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted italic">
-              Brand Accent
-            </h2>
-          </div>
-
-          <div className="p-8 rounded-[2.5rem] border border-border-color bg-bg-surface shadow-xl">
+        {/* BRAND ACCENT */}
+        <section className="space-y-5">
+          <SectionLabel icon={<Paintbrush size={13} />} title="Brand Accent" />
+          <div className="p-8 rounded-[2.5rem] border border-border-color/40 bg-bg-surface card-glow mx-1">
             <div className="grid grid-cols-3 gap-y-8 gap-x-4">
               {BRAND_PALETTE.map((color) => (
                 <button
@@ -108,30 +131,46 @@ export const ProfileTheme = () => {
                       <Check size={24} className="text-white" strokeWidth={4} />
                     )}
                   </div>
-                  <span className="text-[8px] font-black uppercase text-text-muted opacity-40 mt-1">
-                    {color.id}
+                  <span className="text-[8px] font-black uppercase text-text-muted/40 tracking-widest mt-1">
+                    {color.name}
                   </span>
                 </button>
               ))}
             </div>
           </div>
         </section>
-
-        {/* SUBMIT ACTION */}
-        <div className="pt-6 px-1">
-          <button
-            onClick={handleApply}
-            className="w-full py-6 bg-brand-primary text-bg-main font-black uppercase italic tracking-widest rounded-4xl active:scale-[0.98] transition-all shadow-xl shadow-brand-primary/20"
-          >
-            Apply Changes
-          </button>
-        </div>
       </div>
     </SubPageLayout>
   );
 };
 
-/* --- SUB-COMPONENTS --- */
+// --- REUSED SUB-COMPONENTS ---
+
+const SectionLabel = ({ icon, title }: { icon: ReactNode; title: string }) => (
+  <div className="flex items-center gap-3">
+    <div className="flex items-center gap-1 shrink-0">
+      <div
+        className="w-1.5 h-1.5 rounded-full bg-brand-primary"
+        style={{ boxShadow: "0 0 6px 1px var(--glow-primary)" }}
+      />
+      <div className="w-1 h-1 rounded-full bg-brand-primary/30" />
+    </div>
+    <div className="flex items-center gap-2">
+      <span className="text-brand-primary/60">{icon}</span>
+      <span className="text-[9.5px] font-black uppercase tracking-[0.35em] text-text-muted/50 italic">
+        {title}
+      </span>
+    </div>
+    <div
+      className="h-px flex-1"
+      style={{
+        background:
+          "linear-gradient(to right, var(--border-color), transparent)",
+        opacity: 0.4,
+      }}
+    />
+  </div>
+);
 
 const ThemeCard = ({ active, onClick, label, icon, desc }: ThemeCardProps) => (
   <button
@@ -139,7 +178,7 @@ const ThemeCard = ({ active, onClick, label, icon, desc }: ThemeCardProps) => (
     className={`p-6 rounded-[2.2rem] border-2 transition-all text-left flex-1 shadow-sm ${
       active
         ? "bg-brand-primary/5 border-brand-primary text-brand-primary"
-        : "bg-bg-surface border-border-color text-text-muted"
+        : "bg-bg-surface border-border-color/40 text-text-muted"
     }`}
   >
     <div

@@ -23,6 +23,8 @@ export const SyncManager = {
       "exercise_equipment",
       "routine_exercises",
       "workout_logs",
+      "app_settings",
+      "personal_records",
     ];
 
     const results = await Promise.all(
@@ -59,6 +61,10 @@ export const SyncManager = {
       await this.pushTable("athlete_level", "user_id");
       await this.pushTable("body_metrics", "user_id, logdate");
       await this.pushTable("app_settings", "user_id");
+      await this.pushTable(
+        "personal_records",
+        "user_id, exercise_id, value_type, record_date",
+      );
       await this.pushTable("muscles", "id");
       await this.pushTable("exercises", "id");
       await this.pushTable("routines", "id");
@@ -124,6 +130,87 @@ export const SyncManager = {
         .where(compositeIndex)
         .anyOf(compositeValues)
         .modify({ is_synced: 1 });
+    }
+  },
+
+  /**
+   * Refresh data selectively based on unsynced rows.
+   * - user_profile / body_metrics → also triggers AthleteService.syncSummary()
+   * - other tables → just sync if unsynced
+   */
+  async refresh(): Promise<void> {
+    if (!window.navigator.onLine) return;
+
+    // List of tables to check for refresh
+    const tablesToCheck = [
+      "user_profile",
+      "body_metrics",
+      "muscles",
+      "exercises",
+      "routines",
+      "exercise_muscles",
+      "exercise_equipment",
+      "routine_exercises",
+      "workouts",
+      "workout_logs",
+      "app_settings",
+      "personal_records",
+    ];
+
+    try {
+      const dirtyStatus = await Promise.all(
+        tablesToCheck.map(async (t) => {
+          const count = await db.table(t).where("is_synced").equals(0).count();
+          return { table: t, count };
+        }),
+      );
+
+      for (const { table, count } of dirtyStatus) {
+        if (count === 0) continue; // skip clean tables
+
+        switch (table) {
+          case "user_profile":
+            await this.pushTable("user_profile", "user_id");
+            await AthleteService.syncSummary(); // refresh summary
+            break;
+
+          case "body_metrics":
+            await this.pushTable("body_metrics", "user_id, logdate");
+            await AthleteService.syncSummary(); // refresh summary
+            break;
+
+          case "muscles":
+          case "exercises":
+          case "routines":
+          case "exercise_muscles":
+          case "exercise_equipment":
+          case "routine_exercises":
+            await this.pushTable(table, "id");
+            break;
+
+          case "workouts":
+            await this.pushTable("workouts", "id");
+            break;
+
+          case "workout_logs":
+            await this.pushTable("workout_logs", "id");
+            break;
+
+          case "app_settings":
+            await this.pushTable("app_settings", "user_id");
+            break;
+
+          case "personal_records":
+            await this.pushTable("personal_records", "id");
+            break;
+
+          default:
+            break;
+        }
+      }
+    } catch (err) {
+      console.error("❌ SyncManager.refresh() failed:", err);
+      throw err;
     }
   },
 };

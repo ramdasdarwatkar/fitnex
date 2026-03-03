@@ -6,35 +6,12 @@ import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../hooks/useAuth";
 import { AnalyticsService } from "../../services/AnalyticsService";
 import { startOfWeek, endOfWeek, format } from "date-fns";
-import type { AppSettings } from "../../types/database.types";
+import { applySettingsToDOM } from "../../util/themeUtils";
 
 export const CacheDataLoader = () => {
   const { user_id } = useAuth();
   const [isReady, setIsReady] = useState(false);
   const syncStarted = useRef(false);
-
-  const applySettingsToDOM = (settings: AppSettings | null): void => {
-    const root = document.documentElement;
-    const theme = settings?.theme || "dark";
-    const accentName = settings?.accent_color || "orange";
-
-    root.setAttribute("data-theme", theme);
-    if (theme === "light") {
-      root.classList.add("light-theme");
-    } else {
-      root.classList.remove("light-theme");
-    }
-
-    root.setAttribute("data-accent", accentName);
-
-    root.setAttribute("data-unit-system", settings?.unit_system || "metric");
-    root.setAttribute("data-unit-weight", settings?.weight_unit || "kg");
-    root.setAttribute("data-unit-distance", settings?.distance_unit || "km");
-    root.setAttribute("data-unit-height", settings?.height_unit || "cm");
-    root.setAttribute("data-unit-body", settings?.body_measure_unit || "cm");
-
-    console.log(`🚀 UI Sync: Mode=${theme}, Accent=${accentName}`);
-  };
 
   useEffect(() => {
     if (!user_id || syncStarted.current) return;
@@ -51,13 +28,15 @@ export const CacheDataLoader = () => {
         const todayStr = format(now, "yyyy-MM-dd");
 
         // STEP 1: Priority Hydration (Settings & Theme)
+        // We load settings first so the UI doesn't "flash" the wrong color
         await ensureTableLoaded("app_settings", "app_settings", { user_id });
         const settings = await db.app_settings.get(user_id);
+
+        // Apply the theme/brand attributes to the <html> tag immediately
         applySettingsToDOM(settings || null);
 
         // STEP 2: Parallel Hydration
         await Promise.all([
-          // Hydrate both Weekly and Daily stats for the Dashboard
           AnalyticsService.getSmartCustomizedStats(user_id, start, end),
           AnalyticsService.getSmartCustomizedStats(user_id, todayStr, todayStr),
 
@@ -92,6 +71,10 @@ export const CacheDataLoader = () => {
 
   return <Outlet />;
 };
+
+/**
+ * HELPER FUNCTIONS
+ */
 
 async function ensureTableLoaded(
   supabaseTable: string,

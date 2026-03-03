@@ -54,7 +54,8 @@ export class FitnexDB extends Dexie {
         "[user_id+start_date+end_date], user_id, start_date, end_date",
       app_settings: "user_id,is_synced",
       athlete_levels_lookup: "id, level_name",
-      personal_records: "[user_id+exercise_id],exercise_id",
+      personal_records:
+        "[user_id+exercise_id+value_type+record_date],exercise_id,is_synced",
 
       // 🆕 NEW: body_metrics store
       // Primary key is composite [user_id+logdate] to match Supabase

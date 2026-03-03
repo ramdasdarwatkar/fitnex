@@ -1,4 +1,4 @@
-import { type ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import {
   ChevronRight,
   Trophy,
@@ -10,9 +10,11 @@ import {
   LogOut,
   User,
   Palette,
+  RefreshCw,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
+import { SyncManager } from "../../services/SyncManager";
 
 // --- INTERFACES ---
 
@@ -34,6 +36,16 @@ interface MenuButtonProps {
 export const ProfileHome = () => {
   const { athlete, signOut } = useAuth();
   const navigate = useNavigate();
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handleSync = async () => {
+    try {
+      setIsSyncing(true);
+      await SyncManager.refresh();
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   if (!athlete) return null;
 
@@ -57,13 +69,10 @@ export const ProfileHome = () => {
       {/* ── HERO ── */}
       <section className="flex flex-col items-center mb-10">
         <div className="relative mb-6 group">
-          {/* Ambient glow blob */}
           <div
             className="absolute inset-0 bg-brand-primary opacity-20 blur-3xl rounded-full
                           group-hover:opacity-35 transition-opacity duration-700 pointer-events-none"
           />
-
-          {/* Avatar ring — uses token colors */}
           <div
             className="relative w-32 h-32 rounded-full p-[3px]"
             style={{
@@ -79,7 +88,6 @@ export const ProfileHome = () => {
             </div>
           </div>
 
-          {/* Rank badge */}
           <div
             className="absolute -bottom-2 right-1 p-1.5 rounded-xl bg-brand-primary
                        animate-in zoom-in duration-700 delay-300"
@@ -159,6 +167,22 @@ export const ProfileHome = () => {
             icon={<Palette size={20} />}
             onClick={() => navigate("/profile/theme")}
           />
+
+          {/* ── SYNC / REFRESH DATA BUTTON ── */}
+          <MenuButton
+            label="Sync Data"
+            sub="Refresh all stats & metrics"
+            icon={
+              isSyncing ? (
+                <span className="animate-spin">
+                  <RefreshCw size={20} />
+                </span>
+              ) : (
+                <RefreshCw size={20} />
+              )
+            }
+            onClick={handleSync}
+          />
         </nav>
       </div>
     </div>
@@ -166,7 +190,6 @@ export const ProfileHome = () => {
 };
 
 // --- SUB-COMPONENTS ---
-
 const TinyCard = ({ label, value, icon }: TinyCardProps) => (
   <div
     className="bg-bg-surface border border-border-color/40 p-5 rounded-2xl
